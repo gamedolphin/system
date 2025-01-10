@@ -1,0 +1,27 @@
+name: Tangle Code
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'README.org'
+
+permissions:
+      contents: write
+
+jobs:
+  tangle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Emacs
+        uses: purcell/setup-emacs@master
+        with:
+          version: snapshot
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Tangle
+        run: emacs README.org --batch --eval "(setq org-confirm-babel-evaluate nil)" --eval "(progn (require 'org) (org-babel-goto-named-src-block \"startup\") (org-babel-execute-src-block))" -f org-babel-tangle
+      - name: Commit
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: Tangle files from the README.

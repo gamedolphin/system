@@ -1,0 +1,2216 @@
+#+OPTIONS: toc:nil broken-links:t
+#+PROPERTY: header-args  :noweb yes :results silent :mkdirp yes
+
+#+HTML: <h1 align="center">
+#+HTML:    <div align="center">
+#+HTML:      <img src="./.github/images/nixos.svg  " width="100px" />
+#+HTML:      <img src="./.github/images/emacs.svg  " width="100px" />
+#+HTML:    </div>
+#+HTML:    <br>
+#+HTML:    <p>Sandeep's Literate System Configuration</p>
+#+HTML:       <img src="./.github/images/nord-palette.png" width="300px" /> <br>
+#+HTML:    <div align="center">
+#+HTML:       <p></p>
+#+HTML:       <div align="center">
+#+HTML:          <a href="https://orgmode.org/index.html">
+#+HTML:             <img src="https://img.shields.io/badge/org_mode-9.7-blue.svg?style=for-the-badge&labelColor=282828&logo=org&logoColor=a3be8c&color=ebcb8b">
+#+HTML:          </a>
+#+HTML:          <a = href="https://nixos.org">
+#+HTML:             <img src="https://img.shields.io/badge/NixOS-unstable-blue.svg?style=for-the-badge&labelColor=282828&logo=NixOS&logoColor=458588&color=458588">
+#+HTML:          </a>
+#+HTML:          <a = href="https://www.gnu.org/software/emacs/">
+#+HTML:             <img src="https://img.shields.io/badge/emacs-30-blue.svg?style=for-the-badge&labelColor=282828&logo=gnuemacs&logoColor=b48ead&color=5e81ac">
+#+HTML:          </a>
+#+HTML:          <a href="https://github.com/gamedolphin/system/blob/main/LICENSE">
+#+HTML:             <img src="https://img.shields.io/static/v1.svg?style=for-the-badge&label=License&message=GPL&colorA=282828&colorB=bf616a&logo=unlicense&logoColor=ebcb8b&%22"/>
+#+HTML:          </a>
+#+HTML:       </div>
+#+HTML:       <br>
+#+HTML:    </div>
+#+HTML: </h1>
+
+* Introduction
+#+HTML:    <div align="center"><img src="./.github/images/screenshot.png" width="100%" /> </div>
+Hello! Welcome to my literate file that describes (and generates) the configuration for all my computers.
+
+For people who are confused, this file has a bunch of source blocks that are then put into individual files using emacs+org's tangle mode.
+
+Once the files are generated, they are converted into an immutable system configuration using nixos.
+
+This repository consists of configuration for two machines
+- =bigbox= -- my wfh computer
+- =laptop= -- my travel laptop + office computer
+
+To generate the actual nix files, you need to open this file in emacs and then execute =M-x org-babel-tangle=.
+
+Or run the following from the command line
+#+begin_src bash :tangle no
+  emacs README.org --batch -f org-babel-tangle
+#+end_src
+
+Once the nix files are ready, you can deploy using
+#+begin_src bash :tangle no
+  nixos-rebuild switch --flake .#<machine>
+#+end_src
+
+Other files in this repo are :-
+- ~flake.lock~ so as to keep my versions intact. More on that later.
+- ~assets/*~ contains images like the wallpaper that cannot be part of this.
+- ~secrets/secrets.yaml~ contains encrypted keys and is edited using ~sops~.
+
+The other files in this repository are generated. They ideally shouldn't be edited directly.
+
+** Emacs + Org + Tangle
+- [[https://www.gnu.org/software/emacs/][Emacs]] is the text editor that I use. Some people might take offense at me calling it a [[https://karl-voit.at/2015/10/23/Emacs-is-not-just-an-editor/][text editor]].
+- [[https://orgmode.org/][Org mode]] is an inbuilt plugin for emacs that helps with managing org files like this one. Org files are similar to markdown but with [[https://www.youtube.com/watch?v=fgizHHd7nOo][superpowers]].
+- Tangle is an org mode option that lets us export snippets to other files. In this case, the configuration snippets you see are written to individual files.
+  - Anything that appears in ~<<code-id>>~ is like a variable that gets filled in later.
+    You will see them in the snippets below where they are filled in by other snippets later in the file.
+** Nix & Nixos
+- [[https://nix.dev/][Nix]] is a bespoke programming language, used mainly to configure environments and dependencies.
+- [[https://nixos.org/][Nixos]] is a linux distro where you define your operating system and other things using nix.
+  The expectation is that the output of evaluating the nix files is a "configuration" that can be applied.
+  This way your operating system is always defined by configuration files. You almost never install anything.
+  Make a change to the configuration, reapply and repeat. You need vim? Add it to the config, and rebuild.
+
+  ~YourNixCode(Input) -> System Configuration~
+
+  I use [[https://nixos.wiki/wiki/Flakes][nix flakes]] which means that the entry point for the nix evaluation is a file called ~flake.nix~ which has two parts (among other things)
+
+  #+begin_src nix
+    {
+      inputs: # describes the function input, consisting mainly of package sources
+      outputs: # what the function outputs, a nixos configuration in our case
+    }
+  #+end_src
+
+  Nix flakes is still behind an ~experimental~ flag, but it is considered the standard by most of the community.
+  Flakes allow us to pin the input package versions using a ~flake.lock~ file.
+  This prevents unwanted and surprise updates when rebuilding without changing the configuration.
+
+* TLDR App List
+
+| Window Manager       | [[https://hyprland.org/][Hyprland]]           |
+| Bar                  | [[https://github.com/Alexays/Waybar][Waybar]]             |
+| Application Launcher | [[https://github.com/philj56/tofi][Tofi]]               |
+| Notification Daemon  | [[https://github.com/dunst-project/dunst][Dunst]]              |
+| Terminal Emulator    | [[https://alacritty.org/][Alacritty]]          |
+| Shell                | [[https://ohmyz.sh/][zsh + ohmyzsh]]      |
+| Text Editor          | [[https://www.gnu.org/software/emacs/][Emacs]]              |
+| File Manager         | [[https://docs.xfce.org/xfce/thunar/start][Thunar]]             |
+| Fonts                | [[https://typeof.net/Iosevka/][Iosevka]]            |
+| Colors               | [[https://www.nordtheme.com/][Nord]]               |
+| Icons                | [[https://github.com/alvatip/Nordzy-icon][Nordzy]]             |
+| Lock Screen          | [[https://github.com/swaywm/swaylock][Swaylock]]           |
+| Wallpapers           | [[https://github.com/linuxdotexe/nordic-wallpapers][Nordic]] + [[https://github.com/hyprwm/hyprpaper][Hyprpaper]] |
+
+* Configuration Variables
+I have a bunch of constant strings that I would rather put in a file. Thats what ~user.nix~ is.
+The values are imported at the beginning and are available to almost all the functions being called to configure the system.
+#+begin_src nix :tangle user.nix
+  {
+    system = "x86_64-linux";
+    username = "nambiar";
+    gitUser = "gamedolphin";
+    gitEmail = "7590634+gamedolphin@users.noreply.github.com";  # github email
+    stateVersion = "25.05";
+    locale = "sv_SE.UTF-8";
+  }
+#+end_src
+
+* Flake Inputs
+The inputs for my system's configuration are very simple
+1. [[https://search.nixos.org/packages][nixpkgs]] - the main nix repository of packages. Its huge and growing. Pinned to the unstable release channel.
+   Sometimes pinned to a specific commit because unstable broke something and the fix hasn't made it into the release yet.
+2. [[https://nix-community.github.io/home-manager/][home-manager]] - a nix module that helps keep track of user specific dotfiles and configurations as part of my nix config.
+3. [[https://github.com/nix-community/emacs-overlay][emacs-overlay]] - this has more configuration options and generally a newer emacs available provided by the community.
+
+#+begin_src nix :tangle flake.nix :noweb tangle
+  {
+    description = "Sandeep's nixos configuration";
+
+    inputs = {
+      nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+
+      home-manager = {
+        url = "github:nix-community/home-manager";
+        inputs.nixpkgs.follows = "nixpkgs";
+      };
+
+      emacs-overlay.url = "github:nix-community/emacs-overlay";
+
+      sops-nix.url = "github:Mic92/sops-nix";
+    };
+
+    <<flake-outputs>>
+  }
+#+end_src
+
+* Flake Output
+Now that the inputs are ready, the outputs define what the system will actually look like. I also define the machines that this configuration specifies early on. Finally, I iterate over the ~machines~ list and pull files from ~/.machines/${name}~ subdirectory. This allows me to have configuration that has machine specific configuration limited to those files while also keeping a modular reusable base.
+We also add a devshell that makes editing this repository easier in emacs.
+
+#+name: flake-outputs
+#+begin_src nix :noweb no-export
+  outputs = {
+    nixpkgs,
+    home-manager,
+    emacs-overlay,
+    sops-nix,
+    ...
+  }:
+    let
+      user = import ./user.nix;
+      lib = nixpkgs.lib;
+      machines = [
+        "bigbox"
+        "laptopdell"
+      ];
+      pkgs = import nixpkgs {
+        inherit (user) system;
+      };
+    in
+      {
+        nixosConfigurations = builtins.listToAttrs (
+          builtins.map (machine: {
+            name = machine;
+            value = lib.nixosSystem {
+              modules = [
+                <<flake-emacs-module>>
+                <<flake-config-module>>
+                <<flake-home-module>>
+                sops-nix.nixosModules.sops  # sops
+              ];
+              specialArgs = {
+                hostname = machine;
+                inherit user;
+              };
+            };
+          }) machines
+        );
+        devShells.${user.system}.default = pkgs.mkShell {
+          buildInputs = with pkgs; [
+            nil               # nix lsp server
+            nixfmt-rfc-style  # nix formatter
+            sops              # used to edit secrets
+          ];
+        };
+      };
+#+end_src
+
+Lets look at the individual modules
+1. Emacs
+   The first is the emacs overlay so that it uses the nix-community emacs overlay from the inputs instead of the nixpkgs one.
+   Overlays are a special nix way to override existing packages within a repository.
+
+   #+name: flake-emacs-module
+   #+begin_src nix
+     ({ ... }: {
+       nixpkgs.overlays = [ emacs-overlay.overlays.default ];
+     })
+   #+end_src
+
+2. Then the machine specific configuration
+   #+name: flake-config-module
+   #+begin_src nix
+     ./machines/${machine}/configuration.nix
+   #+end_src
+
+3. And finally the home-manager module.
+   This can be initialized and managed on its own but I'd rather use the ~nixos-rebuild~ command to build everything instead of managing userland dotfiles separately.
+
+   #+name: flake-home-module
+   #+begin_src nix :noweb no-export
+     home-manager.nixosModules.home-manager
+     {
+       home-manager.useGlobalPkgs = true;
+       home-manager.useUserPackages = true;
+       home-manager.extraSpecialArgs = {
+         inherit user;
+       };
+       <<flake-home-backup>>
+       <<flake-home-config>>
+     }
+   #+end_src
+
+   - Home-Manager will not overwrite existing configuration files and that is good in most cases, but when everything is declarative like it is here, I'd rather that home-manager create a ~.backup~ and replace the file.
+     #+name: flake-home-backup
+     #+begin_src nix
+       home-manager.backupFileExtension = "backup";
+     #+end_src
+
+   - Finally I pull in the machine specific home configuration.
+     #+name: flake-home-config
+     #+begin_src nix
+       home-manager.users.${user.username} = {
+         imports =  [./machines/${machine}/home.nix];
+       };
+     #+end_src
+
+** Envrc + Direnv
+Editing this file will be much nicer if we have the dev environment configured.
+That is done in the devshells section. But to auto load this dev shell, we need a .envrc file.
+This tells [[https://direnv.net/][direnv]] to load the devshell in the flake.
+
+#+begin_src nix :tangle .envrc
+  use flake
+#+end_src
+
+* Machines
+The individual machines subdirectory is configured as follows :-
+#+name: tree
+#+begin_src ditaa
+  +--machine
+  |  +--configuration.nix
+  |  +--home.nix
+  |  +--hardware-configuration.nix
+#+end_src
+
+- configuration.nix has the system configuration.
+- home.nix has the user level configuration.
+- hardware-configuration.nix has the unique hardware configuration.
+
+~nixos-rebuild switch --flake .#bigbox~ looks for the bigbox configuration (in ~/machines/bigbox~)  and returns the configuration that is specific to that computer.
+
+
+** bigbox <<bigbox-initial>>
+This is my main computer and is also the base configuration (modified by the laptop).
+So here, the ~configuration.nix~ just directly imports the other files.
+
+#+begin_src nix :tangle machines/bigbox/configuration.nix :noweb tangle :mkdirp yes
+  { user, ... } :
+  {
+    imports =
+      [
+        ./hardware-configuration.nix
+        ../../hardware/nvidia.nix
+        ../../configuration
+      ];
+
+    <<bigbox-secrets>>
+  }
+#+end_src
+
+- Note about imports
+  ~imports = []~ in a nix file will pull in the function/object from the list of files provided.
+  This imported object (or function result) is just trivially merged into a common object.
+
+Lets look at ~hardware-configuration.nix~ for bigbox.
+
+#+begin_src nix :tangle machines/bigbox/hardware-configuration.nix :noweb tangle :mkdirp yes
+  {
+    hostname,
+    pkgs,
+    modulesPath,
+    ...
+  }:
+  {
+    imports = [
+      (modulesPath + "/installer/scan/not-detected.nix")
+      ../../hardware/hardware.nix
+    ];
+
+    boot.initrd.availableKernelModules = [
+      "xhci_pci"
+      "ahci"
+      "usbhid"
+      "usb_storage"
+      "sd_mod"
+    ];
+
+    fileSystems."/" = {
+      device = "/dev/disk/by-uuid/911d76da-1990-4e83-aefb-fa116e9cd0ee";
+      fsType = "ext4";
+    };
+
+    fileSystems."/boot" = {
+      device = "/dev/disk/by-uuid/BAD3-5A84";
+      fsType = "vfat";
+    };
+
+    fileSystems."/home" = {
+      device = "/dev/disk/by-uuid/18818348-1ee4-4fa5-9984-e4e01b9fa304";
+      fsType = "ext4";
+    };
+
+    swapDevices = [ ];
+
+    <<bigbox-scanner>>
+
+    networking.hostName = hostname; # this machine is available as "bigbox" on the network
+  }
+#+end_src
+
+Most of this file is copied over from the first installation of nixos where it auto-detects partitions along with existing hardware and adds them to this file.
+
+I also need the machine to detect the [[https://nixos.wiki/wiki/Scanners#Epson][epson scanner]] available on the network.
+
+#+name: bigbox-scanner
+#+begin_src nix
+  hardware.sane.enable = true;
+  hardware.sane.extraBackends = [
+    pkgs.sane-airscan
+    pkgs.utsushi
+  ];
+  services.udev.packages = [ pkgs.utsushi ]; # scanner backend for epson
+#+end_src
+
+Finally, you'll notice the ~../../hardware/hardware.nix~ import at the top.
+We can take a look at that next and see the common hardware options I have for all my machines.
+
+* Hardware
+I'll let the code comments explain the file here.
+
+#+begin_src nix :tangle hardware/hardware.nix :noweb tangle :mkdirp yes
+  { pkgs, lib, user, config, ...} :
+  {
+    # allow automatic ip assignment when connecting to a network
+    networking.useDHCP = lib.mkDefault true;
+
+    # let wifi info be NOT declarative, allowing user to configure wifi.
+    networking.wireless.userControlled.enable = true;
+
+    nixpkgs.hostPlatform = lib.mkDefault user.system;            # x86_64-linux
+    powerManagement.cpuFreqGovernor = lib.mkDefault "powersave"; # enable power saving on the cpu
+
+    # update cpu microcode with firmware that allows redistribution
+    hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+
+    hardware = {
+      # always enable bluetooth
+      bluetooth.enable = true;
+
+      # always enable graphics drivers and enable a bunch of layers for it (including vulkan validation)
+      graphics = {
+        enable = true;
+        extraPackages = with pkgs; [
+          intel-media-driver
+          vaapiIntel               # video acceleration on intel inbuilt graphics
+          vulkan-validation-layers # helps catch and debug vulkan crashes
+        ];
+      };
+    };
+
+    hardware.enableAllFirmware = true; # enable all firmware regardless of license
+  }
+#+end_src
+
+** NVIDIA
+I have nvidia graphics on both machines and configuring it is almost always painful. But this is the base I've settled on for now.
+All Nvidia related configuration goes here.
+#+begin_src nix :tangle hardware/nvidia.nix :noweb tangle :mkdirp yes
+  { config, pkgs, ... }:
+  {
+    boot.kernelParams = [
+      "nvidia-drm.modeset=1" # nvidia needs "Direct Rendering Manager" kernel mode to work with wayland.
+      "nvidia-drm.fbdev=1" # it also needs kernel frame buffer as well. Dont ask why.
+    ];
+
+    hardware.graphics.extraPackages = with pkgs; [
+      vaapiVdpau # video acceleration on nvidia graphics
+      libvdpau-va-gl # vdpau driver with opengl backend
+    ];
+
+    hardware.nvidia = {
+      modesetting.enable = true; # lets the driver set kernel mod settings autoamagically
+      powerManagement.enable = true; # allows the gpu to be switched of when not needed.
+      powerManagement.finegrained = false; # even finegrained, per app
+
+      open = false; # use proprietary drivers
+      nvidiaSettings = true; # install the nvidia-settings app
+
+      # latest greatest driver always
+      package = config.boot.kernelPackages.nvidiaPackages.latest;
+    };
+
+    # add vulkan headers and tools to the system
+    environment.systemPackages = with pkgs; [
+      vulkan-headers
+      vulkan-loader
+      vulkan-tools
+    ];
+
+    # this enables the nvidia gpu. even for wayland.
+    services.xserver.videoDrivers = [ "nvidia" ];
+  }
+
+
+#+end_src
+
+* Configuration
+This section describes the main system configuration for the computers that I have. Nix will look for a ~default.nix~ file if you give it a path to a folder to import. And ~default.nix~ looks as follows :-
+
+#+begin_src nix :tangle configuration/default.nix :noweb tangle :mkdirp yes
+  { pkgs, user, ... } :
+  {
+    imports = [
+      ./boot.nix
+      ./login.nix
+      ./cli.nix
+      ./files.nix
+      ./locale.nix
+      ./nix-settings.nix
+      ./networking.nix
+      ./hyprland.nix
+      ./services.nix
+      ./audio.nix
+      ./steam.nix
+      ./sops.nix
+      ./wireguard.nix
+    ];
+
+    <<config-system-packages>>
+
+    <<config-user>>
+
+    <<config-programs>>
+
+    <<config-fonts>>
+
+    system.stateVersion = user.stateVersion;
+  }
+#+end_src
+
+Whoa. Thats a lot of imports. Lets go through them one by one.
+
+** Nix Settings
+These are global nix settings that configure the settings for the actual tool.
+
+#+begin_src nix :tangle configuration/nix-settings.nix :noweb tangle :mkdirp yes
+  { pkgs, user, ... } :
+  {
+    nix.settings = {
+      # enable flakes
+      experimental-features = ["nix-command" "flakes"];
+
+      # add a cache that speed up new applications by downloading binaries
+      # from the trusted cache instead of compiling from source
+      substituters = [ "https://nix-community.cachix.org" ];
+      # trust the cache public key
+      trusted-public-keys = [
+        "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+      ];
+    };
+
+    # allow proprietary software on this machine. I'm not a purist.
+    nixpkgs.config.allowUnfree = true;
+
+    # I work with games and unity. And Unity 2021 needs this to work.
+    # But nix wont allow an insecure package unless explicitly declared as allowed.
+    nixpkgs.config.permittedInsecurePackages = [
+      "openssl-1.1.1w"
+    ];
+
+    # this declares how often old configurations are cleared up.
+    # i cleanup anything older than a week, every week.
+    nix.gc = {
+      automatic = true;
+      options = "--delete-older-than 7d";
+      dates = "weekly";
+    };
+
+    programs = {
+      # command line utility that makes applying changes easy and pretty
+      nh = {
+        enable = true;
+        flake = "/home/${user.username}/system";
+      };
+    };
+  }
+#+end_src
+
+** Boot
+This file has most of the settings the control how the computer boots up.
+
+#+begin_src nix :tangle configuration/boot.nix :noweb tangle :mkdirp yes
+  { pkgs, ... } :
+  {
+    boot = {
+      initrd = {
+        verbose = false;     # its a lot of logs. dont need it, unless we do.
+        kernelModules = [ ]; # no kernel modules on boot
+      };
+
+      extraModulePackages = [ ];                   # no extra packages on boot either
+      kernelPackages = pkgs.linuxPackages_latest;  # latest greatest linux kernel
+      kernelParams = [ "silent" ];                 # quiet those logs
+
+      consoleLogLevel = 0;                         # quiten more logs
+      plymouth.enable = true;                      # graphical boot animation instead
+
+      supportedFilesystems = [ "ntfs" ];           # should see the ntfs (windows)
+
+      loader = {
+        systemd-boot.enable = true;                # systemd-boot
+        efi.canTouchEfiVariables = true;           # allow editing efi to edit the boot loader
+
+        grub = {
+          # this keeps old versions of my applied configurations
+          # 50 is high, but i have disk space
+          configurationLimit = 50;
+        };
+
+        timeout = 5;                               # grub timeout to make a selection
+      };
+    };
+  }
+#+end_src
+
+** Login
+Here we control what the login screen would look like. I'm using greetd's [[https://github.com/apognu/tuigreet][tuigreet]] for the ui.
+Doesn't match the rest of the aesthetic of the system (with hyprland), but I like its simplicity.
+
+#+begin_src nix :tangle configuration/login.nix :noweb tangle :mkdirp yes
+  { pkgs, ... } :
+  {
+    environment.systemPackages = with pkgs; [
+      greetd.tuigreet
+    ];
+
+    services.greetd = {
+      enable = true;
+      settings = {
+        default_session = {
+          command = pkgs.lib.mkForce "${pkgs.greetd.tuigreet}/bin/tuigreet --time --time-format '%I:%M %p | %a • %h | %F'";
+        };
+      };
+    };
+  }
+
+#+end_src
+
+** CLI
+This is the initial system level configuration for the terminal that I use on this machine. Its just [[https://ohmyz.sh/][zsh]].
+
+#+begin_src nix :tangle configuration/cli.nix :noweb tangle :mkdirp yes
+  { pkgs, user, ... }:
+  {
+    console.useXkbConfig = true;
+    users.users.${user.username}.shell = pkgs.zsh;
+
+    environment.shells = with pkgs; [ zsh ];
+    programs.zsh.enable = true;
+  }
+#+end_src
+
+** Files
+I use Thunar as the file explorer. Also setup a few plugins for [[https://docs.xfce.org/xfce/thunar/start][Thunar]] in this config.
+Along with that, a few other utilities like zip and enabling services to automount usb drives.
+
+#+begin_src nix :tangle configuration/files.nix :noweb tangle :mkdirp yes
+  { pkgs, ... } :
+  {
+    environment.systemPackages = with pkgs; [
+      zip
+      unzip
+      p7zip
+      usbutils
+      udiskie
+    ];
+
+    programs.thunar = {
+      enable = true;
+      plugins = with pkgs.xfce; [
+        thunar-archive-plugin
+        thunar-media-tags-plugin
+      ];
+    };
+
+    services = {
+      gvfs.enable = true;    # Mount, trash, and other functionalities
+      tumbler.enable = true; # Thumbnail support for images
+      udisks2.enable = true; # Auto mount usb drives
+    };
+
+    programs.file-roller.enable = true; # thunar zip support
+  }
+#+end_src
+
+** Locale
+I live in Sweden and would like all my locale and timezone settings to match. Except my default locale.
+#+begin_src nix :tangle configuration/locale.nix :noweb tangle :mkdirp yes
+  { user, ... } :
+  let
+    locale = user.locale;
+  in
+  {
+    # Set your time zone.
+    time.timeZone = "Europe/Stockholm";
+
+    # Select internationalisation properties.
+    i18n.defaultLocale = "en_US.UTF-8";
+
+    i18n.extraLocaleSettings = {
+      LC_ADDRESS = locale;
+      LC_IDENTIFICATION = locale;
+      LC_MEASUREMENT = locale;
+      LC_MONETARY = locale;
+      LC_NAME = locale;
+      LC_NUMERIC = locale;
+      LC_PAPER = locale;
+      LC_TELEPHONE = locale;
+      LC_TIME = locale;
+    };
+  }
+#+end_src
+
+** Networking
+Not much to see here. I want networking to be enabled. I want firewall as well.
+#+begin_src nix :tangle configuration/networking.nix :noweb tangle :mkdirp yes
+  {
+    networking = {
+      networkmanager.enable = true;
+      firewall.enable = true;
+    };
+  }
+#+end_src
+
+** Hyprland
+This is a big one because the DE needs so much configuration. This section mostly installs [[https://hyprland.org/][Hyprland]].
+The configuration is done in the home manager section.
+#+begin_src nix :tangle configuration/hyprland.nix :noweb tangle :mkdirp yes
+  { pkgs, ... }:
+  {
+    nix.settings = {
+      # add the hyprland cache so that we dont build hyprland from source
+      substituters = [ "https://hyprland.cachix.org" ];
+      trusted-public-keys = [
+        "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
+      ];
+    };
+
+    # these extra portals allow for things like screen sharing
+    xdg = {
+      portal = {
+        enable = true;
+        extraPortals = [
+          pkgs.xdg-desktop-portal-wlr
+          pkgs.xdg-desktop-portal-gtk
+        ];
+      };
+    };
+
+    environment.systemPackages = with pkgs; [
+      hyprland            # the actual package
+      tofi                # launcher
+      uwsm                # wayland session manager
+      hyprland-qtutils    # needed by hyprland
+      lxqt.lxqt-policykit # to interact with polkit and show auth dialog
+    ];
+
+    # we use uwsm to manage launching hyprland
+    # uswm will add hyprland to the login sessions with greetd.
+    programs = {
+      uwsm.enable = true;
+      uwsm.waylandCompositors = {
+        hyprland = {
+          prettyName = "Hyprland";
+          comment = "Hyprland compositor managed by UWSM";
+          binPath = "/run/current-system/sw/bin/Hyprland";
+        };
+      };
+
+      hyprland = {
+        withUWSM  = true;
+        enable = true;
+        xwayland.enable = true;
+      };
+    };
+
+    # this is mainly for the lock screen
+    # lock.png is provided elsewhere
+    services.xserver = {
+      enable = true;
+
+      desktopManager = {
+        xterm.enable = false;
+      };
+
+
+      displayManager = {
+        lightdm.background = ./lock.png;
+      };
+    };
+
+    # this is a lot of env vars.
+    # and this requires some cleanup
+    # but hyprland moves fast and some of these are probably outdated already
+    environment.sessionVariables = {
+      LIBVA_DRIVER_NAME="nvidia";
+      XDG_SESSION_TYPE="wayland";
+      XDG_CURRENT_DESKTOP="Hyprland";
+      XDG_SESSION_DESKTOP="Hyprland";
+      GBM_BACKEND="nvidia-drm";
+      __GLX_VENDOR_LIBRARY_NAME="nvidia";
+      NVD_BACKEND="direct";
+      NIXOS_OZONE_WL="1";
+      GTK_THEME="Nordic";
+      XCURSOR_THEME="Nordzy-cursors";
+      XCURSOR_SIZE="24";
+      HYPRCURSOR_THEME="Nordzy-cursors";
+      HYPRCURSOR_SIZE="24";
+    };
+
+    # allow swaylock (lockscreen) to lock user session
+    security.pam.services.swaylock = { };
+    security.polkit.enable = true;
+    security.pam.services.gdm.enableGnomeKeyring = true;
+  }
+
+#+end_src
+
+** Services
+These are some of the services that I enable at the system level. Explanation in the comments.
+#+begin_src nix :tangle configuration/services.nix :noweb tangle :mkdirp yes
+  {
+    services = {
+      blueman.enable = true;                # bluetooth manager
+      fwupd.enable = true;                  # firmware updating service
+      fstrim.enable = true;                 # ssd maintenance service
+      thermald.enable = true;               # thermal regulation service
+      printing.enable = true;               # printing services, cups
+      gnome.gnome-keyring.enable = true;    # keyring
+      flatpak.enable = true;                # allow installing things from flatpaks
+
+      # printer discovery
+      avahi = {
+        enable = true;
+        nssmdns4 = true;
+        openFirewall = true;
+      };
+    };
+  }
+#+end_src
+
+** Audio
+This is still a work in progress, but it almost works. I enable all the audio related services, hoping everything is going to be okay.
+#+begin_src nix :tangle configuration/audio.nix :noweb tangle :mkdirp yes
+  { pkgs, ...}:
+  {
+    environment.systemPackages = with pkgs; [
+      pamixer
+    ];
+    services.pipewire = {
+      enable = true;
+      alsa.enable = true;
+      alsa.support32Bit = true;
+      pulse.enable = true;
+      jack.enable = true;
+    };
+
+    # pipewire needs realtime scheduling access
+    security.rtkit.enable = true;
+  }
+#+end_src
+
+** Steam
+Finally, I have steam installed and it requires a few extra things as well.
+#+begin_src nix :tangle configuration/steam.nix :noweb tangle :mkdirp yes
+  { pkgs, ... } :
+  {
+    environment.systemPackages = with pkgs; [
+      steam-run # also used for random executables that expect fhs
+    ];
+
+    programs.steam = {
+      enable = true;
+      # Open ports in the firewall for Steam Remote Play
+      remotePlay.openFirewall = true;
+      # Open ports in the firewall for Source Dedicated Server
+      dedicatedServer.openFirewall = true;
+    };
+  }
+#+end_src
+
+** Sops
+We use [[https://github.com/Mic92/sops-nix][sops]] to manage secrets on this machine.
+#+begin_src nix :tangle configuration/sops.nix :noweb tangle :mkdirp yes
+  { user, ...} :
+  {
+    sops.defaultSopsFile = ../secrets/secrets.yaml;
+    sops.defaultSopsFormat = "yaml";
+    sops.age.keyFile = "/home/${user.username}/.config/sops/age/keys.txt";
+
+    sops.secrets.claude_key = { # anthropic claude api key, used in emacs
+      owner = "${user.username}";
+    };
+  }
+#+end_src
+
+Sops requires a public ~.sops.yaml~ that dictates how the secrets are encrypted.
+This contains the public key and path to the secrets file.
+
+#+begin_src yaml :tangle .sops.yaml :mkdirp yes
+keys:
+  - &primary age1yq35g6mmlem0rhr47u6ewh8dctlwp9hj0s0ac60e4hrw9hjzlqms6crf7n
+creation_rules:
+  - path_regex: secrets/secrets.yaml$
+    key_groups:
+      - age:
+        - *primary
+#+end_src
+
+
+** WireGuard
+Use this to connect to work vpn over [[https://www.wireguard.com/][wireguard]].
+#+begin_src nix :tangle configuration/wireguard.nix :noweb tangle :mkdirp yes
+  { user, ...} :
+  {
+    sops.secrets.wireguard_coherence = {
+      owner = "${user.username}";
+    };
+    networking.wg-quick.interfaces.wg0.configFile = "/run/secrets/wireguard_coherence";
+  }
+#+end_src
+
+I can then start/stop thi service using systemctl.
+#+begin_src bash :tangle no
+  systemctl start wg-quick-wg0.service
+  systemctl stop wg-quick-wg0.service
+#+end_src
+
+** Miscellaneous Packages and Programs
+#+name: config-system-packages
+#+begin_src nix
+  environment.systemPackages = with pkgs; [
+    wget       # fetch utility
+    curl       # more fetch utility
+    binutils   # executable utilities, like ld
+    dmidecode  # tool for dumping system info
+    libnotify  # notification daemon
+    python3    # nice to have this ready for quick things
+    cacert     # certificate authority
+  ];
+#+end_src
+
+#+name: config-programs
+#+begin_src nix
+  programs = {
+    nix-ld.enable = true;   # helps with linking troubles with dynamic libraries
+    appimage.enable = true; # allow appimage installations
+    dconf.enable = true;    # to save user settings
+    gnupg.agent = {
+      # pgp client
+      enable = true;
+      enableSSHSupport = true;
+    };
+    firefox.enable = true;   # browser
+    wireshark.enable = true; # vpn
+  };
+#+end_src
+
+** Fonts
+Nothing much to see here. I love [[https://typeof.net/Iosevka/][iosevka]], and I use it everywhere.
+#+name: config-fonts
+#+begin_src nix
+  fonts.packages = with pkgs; [
+    iosevka
+    nerd-fonts.iosevka
+  ];
+#+end_src
+
+** User Config
+This creates the user profile that I login with. Initially created during install.
+#+name: config-user
+#+begin_src nix
+  users.users.${user.username} = {
+    isNormalUser = true;
+    description = "Sandeep Nambiar";
+    extraGroups = [
+      "networkmanager" # allow editing network connections
+      "wheel"          # can do sudo
+      "scanner"        # access to the network scanner
+      "lp"             # access to the printer
+    ];
+  };
+#+end_src
+
+* Home
+I use home-manager to manage my user level dotfiles and configurations.
+Most of the "theme" of the system is decided here.
+I also use it to install programs that are okay with being installed at the user level instead of the system.
+
+#+begin_src nix :tangle home/default.nix :noweb tangle :mkdirp yes
+  { pkgs, user, ... } :
+  {
+    imports = [
+      ./waybar.nix
+      ./wallpaper.nix
+      ./lock.nix
+      ./unity.nix
+      ./hyprland.nix
+      ./tofi.nix
+      ./theme.nix
+      ./terminal.nix
+      ./dev.nix
+      ./emacs
+    ];
+
+    <<home-user>>
+
+    <<home-packages>>
+
+    programs.home-manager.enable =  true;
+  }
+#+end_src
+Oof! Again with all the imports! We can go through them one at a time!
+
+** Waybar
+[[./.github/images/waybar.png]]
+
+Mostly styling and enabling modules in the [[https://github.com/Alexays/Waybar][top bar]].
+#+begin_src nix :tangle home/waybar.nix :noweb tangle :mkdirp yes
+  {
+    programs.waybar = {
+      enable = true;
+      settings = {
+        mainBar = {
+          layer = "top";
+          height = 24;
+          modules-left = [ "hyprland/workspaces" ];
+          modules-center = [ "hyprland/window" ];
+          modules-right = [
+            "idle_inhibitor"
+            "pulseaudio"
+            "network"
+            "cpu"
+            "memory"
+            "temperature"
+            "clock"
+            "tray"
+            "battery"
+          ];
+          "idle_inhibitor" = {
+            format = "{icon}";
+            format-icons = {
+              activated = "󰒳";
+              deactivated = "󰒲";
+            };
+          };
+          "network".format = "{ipaddr}";
+          "cpu".tooltip = false;
+          "temperature".tooltip = false;
+          "tray".spacing = 10;
+        };
+      };
+      style = ''
+        ,* {
+          font-family: Iosevka Nerd Font, Roboto, Helvetica, Arial, sans-serif;
+          font-size: 13px;
+        }
+
+        window#waybar {
+          background-color: #4c566a;
+          color: #ffffff;
+          transition-property: background-color;
+          border-bottom: 0px solid rgba(0, 0, 0, 0);
+          transition-duration: .5s;
+        }
+
+        #workspaces button {
+          padding: 0 5px;
+          background-color: transparent;
+          border: none;
+          border-radius: 0;
+        }
+
+        #workspaces button:hover {
+          background: #2e3440;
+          color: white;
+        }
+
+        #workspaces button.active {
+          background-color: #5e81ac;
+          box-shadow: inset 0 -3px #ffffff;
+        }
+
+        #clock,
+        #idle_inhibitor
+        #battery,
+        #cpu,
+        #memory,
+        #temperature,
+        #network,
+        #pulseaudio,
+        #tray {
+          padding: 0 10px;
+          background-color: transparent;
+        }
+
+        #window,
+        #workspaces {
+          margin: 0 4px;
+        }
+
+        .modules-left > widget:first-child > #workspaces {
+          margin-left: 0;
+        }
+
+        .modules-right > widget:last-child > #workspaces {
+          margin-right: 0;
+        }
+
+        #battery.charging, #battery.plugged {
+          color: #ffffff;
+          background-color: #26A65B;
+        }
+
+        #network.disconnected {
+          background-color: #f53c3c;
+        }
+
+        #temperature.critical {
+          background-color: #eb4d4b;
+        }
+        '';
+    };
+  }
+
+#+end_src
+
+** Wallpaper
+
+[[./assets/background.png]]
+I use [[https://wiki.hyprland.org/Hypr-Ecosystem/hyprpaper/][hyprpaper]] for setting the wallpaper. The image is copied into the home folder when applying this configuration and the tool picks it from there.
+#+begin_src nix :tangle home/wallpaper.nix :noweb tangle :mkdirp yes
+  { pkgs, ... }:
+  {
+    home.packages = with pkgs; [
+      hyprpaper
+    ];
+
+    services.hyprpaper.enable = true;
+    services.hyprpaper.settings = {
+      ipc = "on";
+      splash = false;
+      splash_offset = 2.0;
+
+      preload = [ "~/.background-image.png" ];
+      wallpaper = [ ",~/.background-image.png" ];
+    };
+
+    home.file = {
+      background = {
+        source = ../assets/background.png;
+        target = ".background-image.png";
+      };
+    };
+  }
+
+#+end_src
+** Lock Screen
+The lock screen configured using [[https://github.com/swaywm/swaylock][swaylock]].
+I use [[https://github.com/swaywm/swayidle][swayidle]] to detect idle time and use wlogout to show a logout menu.
+They are configured below.
+#+begin_src nix :tangle home/lock.nix :noweb tangle :mkdirp yes
+  { pkgs, ... } :
+  {
+    home.packages = with pkgs; [
+      swaylock
+      swayidle
+      wlogout
+    ];
+
+    programs.swaylock.enable = true;
+
+    home.file = {
+      lock = {
+        source = ../assets/lock.png;
+        target = ".lock.png";
+      };
+    };
+
+    programs.swaylock.settings = {
+      image = "~/.lock.png";
+      ignore-empty-password = true;
+      show-failed-attempts = true;
+      font = "Iosevka";
+    };
+
+    services = {
+      # swayidle to lock using swaylock after 180 seconds
+      # suspend after 10 minutes
+      # lock before suspend
+      swayidle = {
+        enable = true;
+        timeouts = [
+          {
+            timeout = 185;
+            command = "swaylock";
+          }
+          {
+            timeout = 600;
+            command = "systemctl suspend";
+          }
+        ];
+        events = [
+          {
+            event = "before-sleep";
+            command = "swaylock";
+          }
+        ];
+      };
+    };
+
+    programs.wlogout = {
+      enable = true;
+      layout = [
+        {
+          "label"  = "lock";
+          "action" = "swaylock";
+          "text" = "Lock";
+          "keybind" = "l";
+        }
+        {
+          "label" = "shutdown";
+          "action" = "systemctl poweroff";
+          "text" = "Shutdown";
+          "keybind" = "s";
+        }
+        {
+          "label" = "suspend";
+          "action" = "swaylock & sleep 1 ; systemctl suspend";
+          "text" = "Suspend";
+          "keybind" = "u";
+        }
+        {
+          "label" = "reboot";
+          "action" = "systemctl reboot";
+          "text" = "Reboot";
+          "keybind" = "r";
+        }
+        {
+          "label" = "hibernate";
+          "action" = "systemctl hibernate";
+          "text" = "Hibernate";
+          "keybind" = "h";
+        }
+        {
+          "label" = "reboot";
+          "action" = "systemctl reboot";
+          "text" = "Reboot";
+          "keybind" = "r";
+        }
+      ];
+    };
+  }
+
+#+end_src
+** Unity
+I work with the [[https://unity.com/][Unity Game Engine]] and I have the unity hub installed globally, instead of in a project flake.
+Unity 2021 depends on openssl 1.1.1 (deprecated) so we override the existing package with a version that also includes it.
+The HDRP renderer also needs vulkan libraries, but we installed that globally.
+#+begin_src nix :tangle home/unity.nix :noweb tangle :mkdirp yes.
+  { pkgs, ... }:
+  {
+    home.packages = with pkgs; [
+      (pkgs.unityhub.override {
+        extraPkgs = pkgs: with pkgs; [
+          openssl_1_1
+        ];
+      })
+    ];
+  }
+#+end_src
+
+** Hyprland
+This configures the desktop environment along with the peripherals. The comments should explain whats happening.
+#+begin_src nix :tangle home/hyprland.nix :noweb tangle :mkdirp yes.
+  {
+    # required for the default Hyprland config
+    programs.kitty.enable = true;
+
+    # enable Hyprland
+    wayland.windowManager.hyprland.enable = true;
+
+    # we start hyprland using uwsm
+    wayland.windowManager.hyprland.systemd.enable = false;
+
+    # hyprland.conf
+    wayland.windowManager.hyprland.settings = {
+      exec-once = [
+        # read in env vars
+        "dbus-update-activation-environment --systemd --all"
+        # start the wallpaper service
+        "systemctl --user enable --now hyprpaper.service"
+        # start waybar
+        "uwsm app -- waybar"
+        # start the policykit agent
+        "uwsm app -- lxqt-policykit-agent"
+      ];
+
+      input = {
+        follow_mouse = "1";
+
+        touchpad = {
+          natural_scroll = "no";
+        };
+
+        sensitivity = 0; # -1.0 - 1.0, 0 means no modification.
+
+        kb_layout = "us";
+
+        # very emacs specific, i use caps as an extra ctrl key
+        kb_options = "ctrl:nocaps";
+      };
+
+      cursor = {
+        no_hardware_cursors = "true";
+      };
+
+      general = {
+        gaps_in = 2;
+        gaps_out = 4;
+        border_size = 2;
+        "col.active_border" = "rgba(33ccffee) rgba(00ff99ee) 45deg";
+        "col.inactive_border" = "rgba(595959aa)";
+
+        layout = "dwindle";
+      };
+
+      decoration = {
+        rounding = 5;
+      };
+
+      animations = {
+        enabled = "yes";
+        bezier = "myBezier, 0.05, 0.9, 0.1, 1.05";
+
+        animation =  [
+          "windows, 1, 7, myBezier"
+          "windowsOut, 1, 7, default, popin 80%"
+          "border, 1, 10, default"
+          "borderangle, 1, 8, default"
+          "fade, 1, 7, default"
+          "workspaces, 1, 6, default"
+        ];
+      };
+
+      dwindle = {
+        pseudotile = "yes";
+        preserve_split = "yes";
+      };
+
+      gestures = {
+        workspace_swipe = "off";
+      };
+
+      misc = {
+        disable_hyprland_logo = true;
+        focus_on_activate = true;
+      };
+
+      "$mainMod" = "SUPER";
+
+      bind = [
+        "$mainMod, Return, exec, uwsm app -- alacritty"
+        "$mainMod_SHIFT, Q, killactive"
+        "$mainMod_SHIFT, M, exit"
+        "$mainMod, F, exec, uwsm app -- thunar"
+        "$mainMod_SHIFT, Space, togglefloating"
+
+        # use tofi to show exec menu
+        "$mainMod, Space, exec, uwsm app -- tofi-run | xargs hyprctl dispatch -- exec"
+        "$mainMod, P, pseudo"
+        "$mainMod, J, togglesplit"
+
+        "$mainMod_SHIFT, left, movewindow, l"
+        "$mainMod_SHIFT, right, movewindow, r"
+        "$mainMod_SHIFT, up, movewindow, u"
+        "$mainMod_SHIFT, down, movewindow, d"
+
+        "$mainMod, left, movefocus, l"
+        "$mainMod, right, movefocus, r"
+        "$mainMod, up, movefocus, u"
+        "$mainMod, down, movefocus, d"
+
+        "$mainMod, mouse_down, workspace, e+1"
+        "$mainMod, mouse_up, workspace, e-1"
+
+        "$mainMod_SHIFT, S, exec, wlogout"
+      ] ++ (
+        # workspaces
+        # binds $mod + [shift +] {1..9} to [move to] workspace {1..9}
+        builtins.concatLists (builtins.genList (i:
+          let ws = i + 1;
+          in [
+            "$mainMod, ${toString ws}, workspace, ${toString ws}"
+            "$mainMod SHIFT, ${toString ws}, movetoworkspace, ${toString ws}"
+          ]
+        )
+          9)
+      );
+
+      bindm = [
+        "$mainMod, mouse:272, movewindow"
+        "$mainMod, mouse:273, resizewindow"
+      ];
+    };
+  }
+#+end_src
+
+** Tofi
+[[https://github.com/philj56/tofi][This]] is how I launch applications. It is bound to Win+Space in the hyprland config above.
+Configuration is mostly for visual things here.
+#+begin_src nix :tangle home/tofi.nix :noweb tangle :mkdirp yes.
+  {
+    programs.tofi.enable = true;
+    programs.tofi.settings = {
+      font = "Iosevka";
+      font-size = 16;
+      selection-color = "#a3be8c";
+      prompt-text = ":";
+      width = 600;
+      height = 480;
+      background-color = "#2e3440";
+      outline-width = 0;
+      outline-color = "#080800";
+      border-width = 1;
+      border-color = "#8fbcbb";
+      corner-radius = 10;
+      padding-top = 4;
+      padding-bottom = 4;
+      padding-left = 4;
+      padding-right = 4;
+      matching-algorithm = "fuzzy";
+    };
+  }
+#+end_src
+
+** Theme
+I use the [[https://www.nordtheme.com/][Nord palette]] almost everywhere. I've heard that stylix is good for this, but for now, its manual.
+You'll notice the color values in multiple places outside this as well.
+#+begin_src nix :tangle home/theme.nix :noweb tangle :mkdirp yes.
+  { pkgs, ...}:
+  {
+    home.packages = with pkgs; [
+      nordzy-icon-theme
+      nordzy-cursor-theme
+      nordic
+    ];
+
+    gtk = {
+      enable = true;
+      iconTheme = {
+        name = "Nordzy-icon";
+        package = pkgs.nordzy-icon-theme;
+      };
+      theme = {
+        name = "Nordic";
+        package = pkgs.nordic;
+      };
+      cursorTheme = {
+        name = "Nordzy-cursors";
+        package = pkgs.nordzy-cursor-theme;
+      };
+    };
+  }
+#+end_src
+
+** Terminal
+[[https://alacritty.org/][Alacritty]] is my terminal program. The snippet below configures how it looks. Mostly nord palette things.
+#+begin_src nix :tangle home/terminal.nix :noweb tangle :mkdirp yes
+  {
+    programs = {
+      alacritty = {
+        enable = true;
+        settings = {
+          font.normal.family = "Iosevka Nerd Font";
+          font.size = 12;
+          terminal.shell.program = "zsh";
+
+          window = {
+            padding.x = 4;
+            padding.y = 4;
+          };
+
+          colors = {
+            primary = {
+              background = "#1f222d";
+              foreground = "#d8dee9";
+              dim_foreground = "#a5abb6";
+            };
+            cursor = {
+              text = "#2e3440";
+              cursor = "#d8dee9";
+            };
+            normal = {
+              black = "#3b4252";
+              red = "#bf616a";
+              green = "#a3be8c";
+              yellow = "#ebcb8b";
+              blue = "#81a1c1";
+              magenta = "#b48ead";
+              cyan = "#88c0d0";
+              white = "#e5e9f0";
+            };
+          };
+        };
+      };
+    };
+  }
+
+#+end_src
+
+** Dev Tools
+All the miscellaneous dev tools on this computer. Git config is from [[* Configuration Variables][~user.nix~]].
+#+begin_src nix :tangle home/dev.nix :noweb tangle :mkdirp yes
+  { user, ... }:
+  {
+    programs = {
+      vscode.enable = true;   # yes, sometimes i like to dabble
+      vim.enable = true;      # and this one too
+      ripgrep.enable = true;  # fast text search across projects
+      htop.enable = true;     # task manager
+
+      # this is mainly for integration with nix flakes in individual projects
+      direnv = {
+        enable = true;
+        enableZshIntegration = true;
+        nix-direnv.enable = true;
+      };
+
+      # zsh everywhere with oh-my-zsh
+      zsh = {
+        enable = true;
+        oh-my-zsh = {
+          enable = true;
+          plugins = [ "git" ];
+          theme = "robbyrussell";
+        };
+      };
+
+      # git with lfs
+      git = {
+        lfs.enable = true;
+        enable = true;
+        userName  = "${user.gitUser}";
+        userEmail = "${user.gitEmail}";
+      };
+    };
+  }
+#+end_src
+
+** Other Settings
+Some repeated info from the configuration.
+*** Home User
+#+name: home-user
+#+begin_src nix
+  home.username = "${user.username}";
+  home.homeDirectory = pkgs.lib.mkDefault "/home/${user.username}";
+  home.stateVersion = user.stateVersion;
+#+end_src
+
+*** Home Packages
+A bunch of programs that I use.
+#+name: home-packages
+#+begin_src nix
+  home.packages = with pkgs; [
+    audacity                 # audio recording
+    zoom-us                  # meetings
+    handbrake                # video transcoding
+    sway-contrib.grimshot    # screenshot tool
+    xdg-utils                # utils, for screensharing
+    vlc                      # media player
+    discord                  # other chat
+    slack                    # work chat
+    pavucontrol              # audio control
+    everdo                   # gtd tool
+    spotify                  # music player
+    simple-scan              # scanner software
+  ];
+  services.dunst.enable = true;      # notifications daemon
+  programs.obs-studio.enable = true; # screen recording tool
+#+end_src
+
+* Emacs
+I practically live inside emacs. The configuration for it is a mix between init.el and the nix configuration.
+Nix allows me to install emacs packages as part of the configuration which is most of the following file.
+I install the nix community provided emacs overlay that lets me have the latest emacs with pgtk ui (for wayland).
+Comments describe the emacs package and what it does.
+#+begin_src nix :tangle home/emacs/default.nix :noweb tangle :mkdirp yes
+  { pkgs, ... }:
+  {
+    programs.emacs = {
+      enable = true;
+      # install with tree sitter enabled
+      package = (pkgs.emacs-pgtk.override { withTreeSitter = true; });
+      extraPackages = epkgs: [
+        # also install all tree sitter grammars
+        epkgs.manualPackages.treesit-grammars.with-all-grammars
+        pkgs.nodejs                    # some emacs deps need node installed
+        pkgs.omnisharp-roslyn          # c# lsp
+        epkgs.nerd-icons               # nerd fonts support
+        epkgs.doom-modeline            # model line
+        epkgs.doom-themes              # for doom-nord theme
+        epkgs.diminish                 # hides modes from modeline
+        epkgs.eldoc                    # doc support
+        epkgs.whitespace-cleanup-mode  # cleanup accidental whitespace
+        epkgs.pulsar                   # pulses the cursor when jumping about
+        epkgs.which-key                # help porcelain
+        epkgs.expreg                   # expand region
+        epkgs.vundo                    # undo tree
+        epkgs.puni                     # structured editing
+        epkgs.avy                      # jumping utility
+        epkgs.consult                  # emacs right click
+        epkgs.vertico                  # minibuffer completion
+        epkgs.marginalia               # annotations for completions
+        epkgs.crux                     # utilities
+        epkgs.magit                    # git porcelain
+        epkgs.nerd-icons-corfu         # nerd icons for completion
+        epkgs.corfu                    # completion
+        epkgs.cape                     # completion extensions
+        epkgs.orderless                # search paradigm
+        epkgs.yasnippet                # snippets support
+        epkgs.yasnippet-snippets       # commonly used snippets
+        epkgs.projectile               # project management
+        epkgs.rg                       # ripgrep
+        epkgs.exec-path-from-shell     # load env and path
+        epkgs.flycheck                 # error integration
+        epkgs.lsp-mode                 # lsp
+        epkgs.lsp-ui                   # ui for lsp
+        epkgs.rust-mode                # rust mode (when rust-ts doesn't cut it)
+        epkgs.nix-mode                 # nix lang
+        epkgs.eat                      # better shell
+        epkgs.hcl-mode                 # hashicorp file mode
+        epkgs.shell-pop                # quick shell popup
+        epkgs.f                        # string + file utilities
+        epkgs.gptel                    # llm chat (mainly claude)
+        epkgs.copilot                  # emacs copilot plugin
+        epkgs.envrc                    # support for loading .envrc
+        epkgs.nixpkgs-fmt              # format nix files
+      ];
+    };
+
+    home.sessionVariables = {
+      EDITOR = "emacs";
+    };
+
+    home.file = {
+      emacs-init = {
+        source = ./early-init.el;
+        target = ".emacs.d/early-init.el";
+      };
+
+      emacs = {
+        source = ./init.el;
+        target = ".emacs.d/init.el";
+      };
+    };
+  }
+#+end_src
+
+** Early Initialization
+There are some emacs settings that can be configured before the gui shows up.
+And some of them help increase performance and let the gui show up that much faster.
+These are listed here.
+
+#+begin_src emacs-lisp :tangle home/emacs/early-init.el  :mkdirp yes
+  ;;; package --- early init -*- lexical-binding: t -*-
+
+  ;;; Commentary:
+  ;;; Prevents white flash and better Emacs defaults
+
+  ;;; Code:
+  (set-language-environment "UTF-8")
+
+  (setq-default
+   default-frame-alist
+   '((background-color . "#3F3F3F")
+     (bottom-divider-width . 1)            ; Thin horizontal window divider
+     (foreground-color . "#DCDCCC")        ; Default foreground color
+     (fullscreen . maximized)              ; Maximize the window by default
+     (horizontal-scroll-bars . nil)        ; No horizontal scroll-bars
+     (left-fringe . 8)                     ; Thin left fringe
+     (menu-bar-lines . 0)                  ; No menu bar
+     (right-divider-width . 1)             ; Thin vertical window divider
+     (right-fringe . 8)                    ; Thin right fringe
+     (tool-bar-lines . 0)                  ; No tool bar
+     (undecorated . t)                     ; Remove extraneous X decorations
+     (vertical-scroll-bars . nil))         ; No vertical scroll-bars
+
+   user-full-name "Sandeep Nambiar"                ; ME!
+
+   ;; memory configuration
+   ;; Higher garbage collection threshold, prevents frequent gc locks
+   gc-cons-threshold most-positive-fixnum
+   ;; Ignore warnings for (obsolete) elisp compilations
+   byte-compile-warnings '(not obsolete)
+   ;; And other log types completely
+   warning-suppress-log-types '((comp) (bytecomp))
+   ;; Large files are okay in the new millenium.
+   large-file-warning-threshold 100000000
+
+   ;; Read more based on system pipe capacity
+   read-process-output-max (max (* 10240 10240) read-process-output-max)
+
+   ;; scroll configuration
+   scroll-margin 0                                 ; Lets scroll to the end of the margin
+   scroll-conservatively 100000                    ; Never recenter the window
+   scroll-preserve-screen-position 1               ; Scrolling back and forth
+
+   ;; frame config
+   ;; Improve emacs startup time by not resizing to adjust for custom settings
+   frame-inhibit-implied-resize t
+   ;; Dont resize based on character height / width but to exact pixels
+   frame-resize-pixelwise t
+
+   ;; backups & files
+   backup-directory-alist '(("." . "~/.backups/")) ; Don't clutter
+   backup-by-copying t                             ; Don't clobber symlinks
+   create-lockfiles nil                            ; Don't have temp files
+   delete-old-versions t                           ; Cleanup automatically
+   kept-new-versions 6                             ; Update every few times
+   kept-old-versions 2                             ; And cleanup even more
+   version-control t                               ; Version them backups
+   delete-by-moving-to-trash t                     ; Dont delete, send to trash instead
+
+   ;; startup
+   inhibit-startup-screen t                        ; I have already done the tutorial. Twice
+   inhibit-startup-message t                       ; I know I am ready
+   inhibit-startup-echo-area-message t             ; Yep, still know it
+   initial-scratch-message nil                     ; I know it is the scratch buffer!
+
+   ;; tabs
+   tab-width 4                                     ; Always tab 4 spaces.
+   indent-tabs-mode nil                            ; Never use actual tabs.
+
+   ;; rendering
+   cursor-in-non-selected-windows nil              ; dont render cursors other windows
+
+   ;; packages
+   use-package-always-defer t
+
+   ;; custom
+   custom-file (concat user-emacs-directory "custom.el")
+
+   load-prefer-newer t
+
+   default-input-method nil
+   )
+    ;;; early-init.el ends here
+#+end_src
+
+** Initialization
+Now starts the main emacs configuration.
+
+#+begin_src emacs-lisp :tangle home/emacs/init.el :mkdirp yes
+  ;;; package --- Summary - My minimal Emacs init file -*- lexical-binding: t -*-
+
+  ;;; Commentary:
+  ;;; Simple Emacs setup I carry everywhere
+
+  ;;; Code:
+  (load custom-file 'noerror)            ;; no error on missing custom file
+
+  (require 'package)
+  (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+  (add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/") t)
+  (package-initialize)
+
+  (use-package emacs
+    :init
+    (global-auto-revert-mode t)          ;; revert automatically on external file changes
+    (savehist-mode)                      ;; save minibuffer history
+
+    ;; base visual
+    (menu-bar-mode -1)                   ;; no menu bar
+    (toggle-scroll-bar -1)               ;; no scroll bar
+    (tool-bar-mode -1)                   ;; no tool bar either
+    (global-hl-line-mode +1)             ;; always highlight current line
+    (blink-cursor-mode -1)               ;; stop blinking
+    (global-display-line-numbers-mode 1) ;; always show line numbers
+    (column-number-mode t)               ;; column number in the mode line
+    (size-indication-mode t)             ;; file size in the mode line
+    (pixel-scroll-precision-mode)        ;; smooth mouse scroll
+    (fset 'yes-or-no-p 'y-or-n-p)        ;; y/n is good enough
+    (electric-pair-mode)                 ;; i mean ... parens should auto create
+    (recentf-mode)                       ;; keep track of recently opened files
+
+    ;; font of the century
+    (set-frame-font "Iosevka Nerd Font 12" nil t)
+
+    :bind
+    (("C-<wheel-up>"   . pixel-scroll-precision) ; dont zoom in please, just scroll
+     ("C-<wheel-down>" . pixel-scroll-precision) ; dont zoom in either, just scroll
+     ("C-x k"          . kill-current-buffer))   ; kill the buffer, dont ask
+    )
+
+  (use-package nerd-icons
+    :custom
+    ;; disable bright icon colors
+    (nerd-icons-color-icons nil))
+
+  (use-package doom-modeline
+    :custom
+    (inhibit-compacting-font-caches t)    ;; speed
+    (doom-modeline-buffer-file-name-style 'relative-from-project)
+    (doom-modeline-major-mode-icon nil)   ;; distracting icons, no thank you
+    (doom-modeline-buffer-encoding nil)   ;; everything is utf-8 anyway
+    (doom-modeline-buffer-state-icon nil) ;; the filename already shows me
+    (doom-modeline-lsp nil)               ;; lsp state is too distracting, too often
+    :hook (after-init . doom-modeline-mode))
+
+  (use-package doom-themes
+    :commands doom-themes-visual-bell-config
+    :custom
+    (doom-themes-enable-bold t)
+    (doom-themes-enable-italic t)
+    :init
+    (load-theme 'doom-nord t)
+    (doom-themes-visual-bell-config))
+
+  (use-package diminish :demand t)         ;; declutter the modeline
+  (use-package eldoc :diminish eldoc-mode) ;; docs for everything
+
+  (use-package whitespace-cleanup-mode
+    :commands global-whitespace-cleanup-mode
+    :custom
+    (whitespace-cleanup-mode-only-if-initially-clean nil)
+    :hook
+    (after-init . global-whitespace-cleanup-mode))
+
+  (use-package pulsar
+    :commands pulsar-global-mode pulsar-recenter-top pulsar-reveal-entry
+    :init
+    (defface pulsar-nord
+      '((default :extend t)
+        (((class color) (min-colors 88) (background light))
+         :background "#2e3440")
+        (((class color) (min-colors 88) (background dark))
+         :background "#81a1c1")
+        (t :inverse-video t))
+      "Alternative nord face for `pulsar-face'."
+      :group 'pulsar-faces)
+    :custom
+    (pulsar-face 'pulsar-nord)
+    :hook
+    (after-init . pulsar-global-mode))
+
+  (use-package which-key
+    :commands which-key-mode
+    :diminish which-key-mode
+    :hook
+    (after-init . which-key-mode))
+
+  (use-package expreg
+    :bind ("M-m" . expreg-expand))
+
+  (use-package vundo) ;; undo tree
+
+  ;; better structured editing
+  (use-package puni
+    :commands puni-global-mode
+    :hook
+    (after-init . puni-global-mode))
+
+  (use-package avy
+    :bind
+    ("M-i" . avy-goto-char-2)
+    :custom
+    (avy-background t))
+
+  (use-package consult
+    :bind
+    ("C-x b"   . consult-buffer)     ;; orig. switch-to-buffer
+    ("M-y"     . consult-yank-pop)   ;; orig. yank-pop
+    ("M-g M-g" . consult-goto-line)  ;; orig. goto-line
+    :custom
+    (consult-narrow-key "<"))
+
+  (use-package vertico
+    :commands vertico-mode
+    :custom
+    (read-file-name-completion-ignore-case t)
+    (read-buffer-completion-ignore-case t)
+    (completion-ignore-case t)
+    (enable-recursive-minibuffers t)
+    :init
+    (vertico-mode)
+    :config
+    (setq minibuffer-prompt-properties
+          '(read-only t cursor-intangible t face minibuffer-prompt))
+    :hook
+    (minibuffer-setup-hook . cursor-intangible-mode))
+
+  (use-package marginalia
+    :commands marginalia-mode
+    :hook (after-init . marginalia-mode))
+
+  (use-package crux
+    :bind
+    ("C-c M-e" . crux-find-user-init-file)
+    ("C-c C-w" . crux-transpose-windows)
+    ("C-a"     . crux-move-beginning-of-line))
+
+  (use-package magit
+    :bind (("C-M-g" . magit-status)))
+
+  (use-package nerd-icons-corfu
+    :commands nerd-icons-corfu-formatter
+    :defines corfu-margin-formatters)
+
+  (use-package corfu
+    :commands global-corfu-mode
+    :custom
+    (corfu-cycle t)
+    (corfu-auto t)
+    (corfu-auto-delay  1)
+    (corfu-auto-prefix 3)
+    (corfu-separator ?_)
+    :hook
+    (after-init . global-corfu-mode)
+    :config
+    (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter))
+
+  (use-package cape)
+
+  (use-package orderless
+    :custom
+    (completion-styles '(orderless partial-completion basic))
+    (completion-category-defaults nil)
+    (completion-category-overrides nil))
+
+  (use-package yasnippet
+    :commands yas-global-mode
+    :diminish yas-minor-mode
+    :hook
+    (after-init . yas-global-mode))
+
+  (use-package yasnippet-snippets :after yasnippet)
+
+  (use-package projectile
+    :commands projectile-mode
+    :diminish projectile-mode
+    :custom
+    (projectile-globally-ignored-directories (append '("node_modules")))
+    :bind-keymap ("C-c p" . projectile-command-map)
+    :config
+    (projectile-mode +1))
+
+  (use-package exec-path-from-shell
+    :commands exec-path-from-shell-initialize
+    :custom
+    (exec-path-from-shell-arguments nil)
+    :hook
+    (after-init . exec-path-from-shell-initialize))
+
+  (use-package flycheck
+    :commands global-flycheck-mode
+    :diminish
+    :hook
+    (after-init . global-flycheck-mode))
+
+  (use-package lsp-mode
+    :commands (lsp lsp-deferred lsp-format-buffer
+                   lsp-organize-imports
+                   orderless-dispatch-flex-first
+                   cape-capf-buster lsp-completion-at-point)
+    :defines lsp-file-watch-ignored-directories
+    :diminish lsp-lens-mode
+    :bind-keymap
+    ("C-c l" . lsp-command-map)
+    :custom
+      (lsp-lens-enable nil)
+      (lsp-idle-delay 0.500)
+      (lsp-modeline-code-actions-enable t)
+      (lsp-modeline-diagnostics-enable t)
+      (lsp-csharp-omnisharp-roslyn-binary-path "OmniSharp")
+      (lsp-completion-provider :none) ;; we use Corfu!
+      (lsp-eldoc-render-all t)
+      :init
+      (defun orderless-dispatch-flex-first (_pattern index _total)
+        (and (eq index 0) 'orderless-flex))
+
+      ;; Configure the first word as flex filtered.
+      (add-hook 'orderless-style-dispatchers #'orderless-dispatch-flex-first nil 'local)
+
+      (defun lsp-mode-setup-completion ()
+        (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
+              '(orderless)))
+
+      ;; Optionally configure the cape-capf-buster.
+      (setq-local completion-at-point-functions
+                  (list (cape-capf-buster #'lsp-completion-at-point)))
+      :config
+      (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\Temp\\'")
+      (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\Logs\\'")
+      (defun lsp-cleanup ()
+        (lsp-format-buffer)
+        (lsp-organize-imports)
+        (whitespace-cleanup))
+      :hook
+      (lsp-completion-mode . lsp-mode-setup-completion)
+      (lsp-mode . lsp-enable-which-key-integration)
+      (before-save . lsp-cleanup)
+      (prog-mode . lsp-deferred))
+
+    (use-package lsp-ui :commands lsp-ui-mode
+      :custom
+      (lsp-ui-doc-enable t)
+      (lsp-ui-sideline-diagnostic-max-lines 4)
+      (lsp-ui-doc-show-with-mouse nil)
+      (lsp-ui-doc-position 'bottom)
+      (lsp-ui-doc-show-with-cursor t)
+      (lsp-eldoc-enable-hover nil)
+      )
+
+    (use-package nixpkgs-fmt
+      :custom
+      (nixpkgs-fmt-command "nixfmt"))
+
+    (use-package rust-mode
+      :custom
+      (rust-mode-treesitter-derive t)
+      (lsp-rust-analyzer-cargo-watch-command "clippy")
+      (lsp-rust-analyzer-exclude-dirs ["Temp/**"]))
+
+    (use-package typescript-ts-mode
+      :custom
+      (lsp-javascript-preferences-import-module-specifier :relative)
+      (typescript-indent-level 2)
+      (typescript-ts-mode-indent-offset 2))
+
+    (use-package eat)
+    (use-package hcl-mode)
+    (use-package jinja2-mode)
+    (use-package f :demand t)
+
+    (use-package envrc
+      :commands envrc-global-mode
+      :hook
+      (after-init . envrc-global-mode))
+
+    (use-package nix-mode
+      :hook (nix-mode . lsp-deferred))
+
+    (use-package shell-pop
+      :custom
+      (shell-pop-universal-key "M-o"))
+
+    (use-package copilot
+      :defines copilot-completion-map
+      :bind
+      (:map copilot-completion-map
+            ("<tab>" . copilot-accept-completion)
+            ("M-n" . copilot-next-completion)
+            ("M-p" . copilot-previous-completion)
+            ("C-g" . copilot-clear-overlay)))
+
+    (use-package gptel
+      :commands gptel-make-anthropic f-read-text
+      :config
+      (gptel-make-anthropic "Claude"
+        :stream t :key (f-read-text "/run/secrets/claude_key")))
+
+    (provide 'init)
+
+    ;;; init.el ends here
+  #+end_src
+
+* Machines
+Only a few more things left. Specifically the machine level extra settings.
+** bigbox
+  We already setup bigbox's [[bigbox-initial][configuration.nix]] and hardware-configuration.nix files.
+  Finally, the ssh keys that identifies this machine is exported using sops.
+  #+name: bigbox-secrets
+  #+begin_src nix
+    sops.secrets."ssh/bigbox/private" = { # ssh private key
+      owner = "${user.username}";
+      mode = "600";
+      path = "/home/${user.username}/.ssh/id_ed25519";
+    };
+    sops.secrets."ssh/bigbox/public" = { # ssh public key
+      owner = "${user.username}";
+      mode = "644";
+      path = "/home/${user.username}/.ssh/id_ed25519.pub";
+    };
+    sops.secrets."ssh/wavefunk/private" = { # ssh private key
+      owner = "${user.username}";
+      mode = "600";
+      path = "/home/${user.username}/.ssh/wavefunk";
+    };
+    sops.secrets."ssh/wavefunk/public" = { # ssh public key
+      owner = "${user.username}";
+      mode = "644";
+      path = "/home/${user.username}/.ssh/wavefunk.pub";
+    };
+    sops.secrets."ssh/wavefunk_dev/private" = { # ssh private key
+      owner = "${user.username}";
+      mode = "600";
+      path = "/home/${user.username}/.ssh/wavefunk_dev";
+    };
+    sops.secrets."ssh/wavefunk_dev/public" = { # ssh public key
+      owner = "${user.username}";
+      mode = "644";
+      path = "/home/${user.username}/.ssh/wavefunk_dev.pub";
+    };
+#+end_src
+
+We include my monitor setup at home along with default applications at launch.
+This is added to the home configuration.
+
+#+begin_src nix :tangle machines/bigbox/home.nix :noweb tangle :mkdirp yes
+  {
+    imports = [
+      ../../home
+    ];
+
+    wayland.windowManager.hyprland.settings = {
+      monitor = [
+        "HDMI-A-1, 2560x1440@60, 0x0, 1, vrr, 2"      # main monitor
+        "DP-2, 3840x2160, 2560x0, 1.5, transform, 1"  # side monitor on the right, vertical
+      ];
+
+      workspace = [
+        "1,monitor:HDMI-A-1"
+        "2,monitor:HDMI-A-1"
+        "5,monitor:DP-2"
+      ];
+
+      exec-once = [
+        "[workspace 1 silent] firefox"
+        "[workspace 2 silent] emacs"
+        "[workspace 5 silent] slack"
+      ];
+    };
+  }
+#+end_src
+
+** Laptop
+The configuration for the laptop does not change much. Most changes are because the hardware is different.
+
+*** System Level
+The only system level change is that the monitor is hidpi.
+So GDK_SCALE=2 helps with proper scaling of gdk applications.
+
+#+begin_src nix :tangle machines/laptopdell/configuration.nix :noweb tangle :mkdirp yes
+  {
+    imports =
+      [
+        ./hardware-configuration.nix
+        ../../hardware/nvidia.nix
+        ../../configuration
+      ];
+
+    environment.sessionVariables = {
+      GDK_SCALE = 2;
+    };
+  }
+#+end_src
+
+*** Hardware
+This is the most different. Mostly taken from hardware-configuration.nix setup at first install.
+As you might notice, there are a lot more kernel modules. This device has thunderbolt for example.
+
+#+begin_src nix :tangle machines/laptopdell/hardware-configuration.nix :noweb tangle :mkdirp yes
+  {
+    hostname,
+    pkgs,
+    lib,
+    modulesPath,
+    ...
+  }:
+  {
+    imports = [
+      (modulesPath + "/installer/scan/not-detected.nix")
+      ../../hardware/hardware.nix
+    ];
+
+    boot.initrd.availableKernelModules = [
+      "vmd"            # intel volume management
+      "xhci_pci"       # usb wake up (usb host controller)
+      "thunderbolt"    # :/
+      "nvme"           # support for the nvme disk in here
+      "usb_storage"    # :/
+      "sd_mod"         # hard drive controller
+      "rtsx_pci_sdmmc" # realtek card reader
+    ];
+    boot.kernelParams = lib.mkDefault [
+      "acpi_rev_override"                             # prevents nvidia disable
+      "nvidia.NVreg_PreserveVideoMemoryAllocations=1" # allow for hibernation
+    ];
+    boot.kernelModules = [ "kvm-intel" ];
+    boot.loader.grub.efiSupport = true;
+    boot.loader.grub.useOSProber = true; # detect windows since thats on a partition here
+    boot.loader.grub.devices = [ "/dev/nvme0n1" ];
+
+    fileSystems."/" = {
+      device = "/dev/disk/by-uuid/b6bd668c-9a55-4b6d-b700-ecae6c08518d";
+      fsType = "ext4";
+    };
+
+    fileSystems."/boot" = {
+      device = "/dev/disk/by-uuid/5A9D-1E16";
+      fsType = "vfat";
+      options = [
+        "fmask=0077"
+        "dmask=0077"
+      ];
+    };
+
+    swapDevices = [
+      { device = "/dev/disk/by-uuid/ab21b211-151b-46f0-ab8f-f0788228cb70"; }
+    ];
+
+
+    # enable fingerprinting services
+    services.fprintd = {
+      enable = true;
+      package = pkgs.fprintd-tod;
+      tod = {
+        enable = true;
+        driver = pkgs.libfprint-2-tod1-goodix;
+      };
+    };
+
+    networking.hostName = hostname;
+  }
+#+end_src
+
+*** Home
+Just like the bigbox machine's home configuration, this is mostly about configuring the screen and workspaces.
+#+begin_src nix :tangle machines/laptopdell/home.nix :noweb tangle :mkdirp yes
+  {
+    imports = [
+      ../../home
+    ];
+
+    wayland.windowManager.hyprland.settings = {
+      monitor = [
+        ",highres,auto,2,bitdepth,10"
+      ];
+
+      xwayland = {
+        force_zero_scaling = true;
+      };
+
+      exec-once = [
+        "[workspace 1 silent] firefox"
+        "[workspace 2 silent] emacs"
+        "[workspace 5 silent] slack"
+      ];
+    };
+  }
+#+end_src
+
+* README Utils
+*** Headers
+This script adds a =DO NOT MODIFY= header to all the generated nix files.
+#+NAME: startup
+#+BEGIN_SRC emacs-lisp
+  (progn
+    (defun add-tangle-headers ()
+      (message "running in %s" (buffer-file-name))
+      (when (string= (file-name-extension (buffer-file-name)) "nix")
+        (goto-char (point-min))
+        (insert "# WARNING : This file was generated by README.org\n# DO NOT MODIFY THIS FILE!\n# Any changes made here will be overwritten.\n")
+        (save-buffer))
+      (save-buffer))
+    (add-hook 'org-babel-post-tangle-hook 'add-tangle-headers))
+#+END_SRC
+
+# Local Variables:
+# org-confirm-babel-evaluate: nil
+# eval: (progn (org-babel-goto-named-src-block "startup") (org-babel-execute-src-block) (outline-hide-sublevels 1))
+# End:
