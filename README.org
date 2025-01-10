@@ -24,6 +24,9 @@
 #+HTML:          <a href="https://github.com/gamedolphin/system/blob/main/LICENSE">
 #+HTML:             <img src="https://img.shields.io/static/v1.svg?style=for-the-badge&label=License&message=GPL&colorA=282828&colorB=bf616a&logo=unlicense&logoColor=ebcb8b&%22"/>
 #+HTML:          </a>
+#+HTML:          <a href="https://github.com/gamedolphin/system/actions/workflows/tangle.yml">
+#+HTML:             <img src="https://img.shields.io/github/actions/workflow/status/gamedolphin/system/tangle.yml?style=for-the-badge&label=Tangle&colorA=282828&colorB=a3be8c&logo=github&logoColor=eceff4"/>
+#+HTML:          </a>
 #+HTML:       </div>
 #+HTML:       <br>
 #+HTML:    </div>
