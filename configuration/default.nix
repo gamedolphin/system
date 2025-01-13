@@ -27,6 +27,7 @@
     libnotify  # notification daemon
     python3    # nice to have this ready for quick things
     cacert     # certificate authority
+    remmina    # remote desktop app
   ];
 
   users.users.${user.username} = {

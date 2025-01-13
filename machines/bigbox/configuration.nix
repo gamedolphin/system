@@ -40,4 +40,7 @@
     mode = "644";
     path = "/home/${user.username}/.ssh/wavefunk_dev.pub";
   };
+
+  # the key is in /home so we need to make sure it boots
+  fileSystems."/home".neededForBoot = true;
 }

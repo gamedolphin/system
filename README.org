@@ -883,6 +883,7 @@ I can then start/stop thi service using systemctl.
     libnotify  # notification daemon
     python3    # nice to have this ready for quick things
     cacert     # certificate authority
+    remmina    # remote desktop app
   ];
 #+end_src
 
@@ -2048,6 +2049,9 @@ Only a few more things left. Specifically the machine level extra settings.
       mode = "644";
       path = "/home/${user.username}/.ssh/wavefunk_dev.pub";
     };
+
+    # the key is in /home so we need to make sure it boots
+    fileSystems."/home".neededForBoot = true;
 #+end_src
 
 We include my monitor setup at home along with default applications at launch.
