@@ -250,9 +250,15 @@ Lets look at the individual modules
 Editing this file will be much nicer if we have the dev environment configured.
 That is done in the devshells section. But to auto load this dev shell, we need a .envrc file.
 This tells [[https://direnv.net/][direnv]] to load the devshell in the flake.
+Finally, we also look for a .envrc-private file and try to load that. That contains devshell specific secrets.
 
 #+begin_src nix :tangle .envrc
   use flake
+
+  watch_file .envrc.private
+  if [[ -f .envrc.private ]]; then
+    source_env .envrc.private
+  fi
 #+end_src
 
 * Machines
@@ -2191,7 +2197,6 @@ This is mostly about configuring the monitor and key bindings. And laptop specif
     mode = "600";
     path = "/home/${user.username}/.ssh/id_ed25519";
   };
-
   sops.secrets."ssh/smallbox/public" = { # ssh public key
     owner = "${user.username}";
     mode = "644";
