@@ -23,8 +23,6 @@
     graphics = {
       enable = true;
       extraPackages = with pkgs; [
-        intel-media-driver
-        vaapiIntel               # video acceleration on intel inbuilt graphics
         vulkan-validation-layers # helps catch and debug vulkan crashes
       ];
     };

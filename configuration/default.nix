@@ -16,7 +16,6 @@
     ./audio.nix
     ./steam.nix
     ./sops.nix
-    ./wireguard.nix
   ];
 
   environment.systemPackages = with pkgs; [

@@ -40,9 +40,8 @@ For people who are confused, this file has a bunch of source blocks that are the
 
 Once the files are generated, they are converted into an immutable system configuration using nixos.
 
-This repository consists of configuration for two machines
-- =bigbox= -- my wfh computer
-- =laptop= -- my travel laptop + office computer
+This repository consists of configuration for my main machine
+- =smallbox= -- my wfh computer and main laptop
 
 To generate the actual nix files, you need to open this file in emacs and then execute =M-x org-babel-tangle=.
 
@@ -59,7 +58,7 @@ Once the nix files are ready, you can deploy using
 Other files in this repo are :-
 - ~flake.lock~ so as to keep my versions intact. More on that later.
 - ~assets/*~ contains images like the wallpaper that cannot be part of this.
-- ~secrets/secrets.yaml~ contains encrypted keys and is edited using ~sops~.
+- ~secrets/secrets.yaml~ contains encrypted keys and is edited using ~sopsx~.
 
 The other files in this repository are generated. They ideally shouldn't be edited directly.
 
@@ -104,7 +103,7 @@ The other files in this repository are generated. They ideally shouldn't be edit
 | Fonts                | [[https://typeof.net/Iosevka/][Iosevka]]            |
 | Colors               | [[https://www.nordtheme.com/][Nord]]               |
 | Icons                | [[https://github.com/alvatip/Nordzy-icon][Nordzy]]             |
-| Lock Screen          | [[https://github.com/swaywm/swaylock][Swaylock]]           |
+| Lock Screen          | [[https://wiki.hyprland.org/Hypr-Ecosystem/hyprlock/][Hyprlock]]           |
 | Wallpapers           | [[https://github.com/linuxdotexe/nordic-wallpapers][Nordic]] + [[https://github.com/hyprwm/hyprpaper][Hyprpaper]] |
 
 * Configuration Variables
@@ -164,8 +163,7 @@ We also add a devshell that makes editing this repository easier in emacs.
       user = import ./user.nix;
       lib = nixpkgs.lib;
       machines = [
-        "bigbox"
-        "laptopdell"
+        "smallbox"
       ];
       pkgs = import nixpkgs {
         inherit (user) system;
@@ -271,93 +269,25 @@ The individual machines subdirectory is configured as follows :-
 - home.nix has the user level configuration.
 - hardware-configuration.nix has the unique hardware configuration.
 
-~nixos-rebuild switch --flake .#bigbox~ looks for the bigbox configuration (in ~/machines/bigbox~)  and returns the configuration that is specific to that computer.
-
-
-** bigbox <<bigbox-initial>>
-This is my main computer and is also the base configuration (modified by the laptop).
-So here, the ~configuration.nix~ just directly imports the other files.
-
-#+begin_src nix :tangle machines/bigbox/configuration.nix :noweb tangle :mkdirp yes
-  { user, ... } :
-  {
-    imports =
-      [
-        ./hardware-configuration.nix
-        ../../hardware/nvidia.nix
-        ../../configuration
-      ];
-
-    <<bigbox-secrets>>
-  }
-#+end_src
+~nixos-rebuild switch --flake .#smallbox~ looks for the smallbox configuration (in ~/machines/smallbox~)  and returns the configuration that is specific to that computer.
 
 - Note about imports
   ~imports = []~ in a nix file will pull in the function/object from the list of files provided.
   This imported object (or function result) is just trivially merged into a common object.
 
-Lets look at ~hardware-configuration.nix~ for bigbox.
-
-#+begin_src nix :tangle machines/bigbox/hardware-configuration.nix :noweb tangle :mkdirp yes
-  {
-    hostname,
-    pkgs,
-    modulesPath,
-    ...
-  }:
-  {
-    imports = [
-      (modulesPath + "/installer/scan/not-detected.nix")
-      ../../hardware/hardware.nix
-    ];
-
-    boot.initrd.availableKernelModules = [
-      "xhci_pci"
-      "ahci"
-      "usbhid"
-      "usb_storage"
-      "sd_mod"
-    ];
-
-    fileSystems."/" = {
-      device = "/dev/disk/by-uuid/911d76da-1990-4e83-aefb-fa116e9cd0ee";
-      fsType = "ext4";
-    };
-
-    fileSystems."/boot" = {
-      device = "/dev/disk/by-uuid/BAD3-5A84";
-      fsType = "vfat";
-    };
-
-    fileSystems."/home" = {
-      device = "/dev/disk/by-uuid/18818348-1ee4-4fa5-9984-e4e01b9fa304";
-      fsType = "ext4";
-    };
-
-    swapDevices = [ ];
-
-    <<bigbox-scanner>>
-
-    networking.hostName = hostname; # this machine is available as "bigbox" on the network
-  }
+We can take a look at that the common hardware options I have for all my machines.
+*** Other Utils
+**** Updates
+To update the computer, I just need to update the ~flake.lock~ file to have references to the latest repository. This is done with :-
+#+begin_src bash
+  nix flake update
 #+end_src
 
-Most of this file is copied over from the first installation of nixos where it auto-detects partitions along with existing hardware and adds them to this file.
-
-I also need the machine to detect the [[https://nixos.wiki/wiki/Scanners#Epson][epson scanner]] available on the network.
-
-#+name: bigbox-scanner
-#+begin_src nix
-  hardware.sane.enable = true;
-  hardware.sane.extraBackends = [
-    pkgs.sane-airscan
-    pkgs.utsushi
-  ];
-  services.udev.packages = [ pkgs.utsushi ]; # scanner backend for epson
+**** Editing secrets
+The age key needs to exist. Then I can edit the secrets using :-
+#+begin_src bash
+  sops edit secrets/secrets.yaml
 #+end_src
-
-Finally, you'll notice the ~../../hardware/hardware.nix~ import at the top.
-We can take a look at that next and see the common hardware options I have for all my machines.
 
 * Hardware
 I'll let the code comments explain the file here.
@@ -385,8 +315,6 @@ I'll let the code comments explain the file here.
       graphics = {
         enable = true;
         extraPackages = with pkgs; [
-          intel-media-driver
-          vaapiIntel               # video acceleration on intel inbuilt graphics
           vulkan-validation-layers # helps catch and debug vulkan crashes
         ];
       };
@@ -395,49 +323,6 @@ I'll let the code comments explain the file here.
     hardware.enableAllFirmware = true; # enable all firmware regardless of license
   }
 #+end_src
-
-** NVIDIA
-I have nvidia graphics on both machines and configuring it is almost always painful. But this is the base I've settled on for now.
-All Nvidia related configuration goes here.
-#+begin_src nix :tangle hardware/nvidia.nix :noweb tangle :mkdirp yes
-  { config, pkgs, ... }:
-  {
-    boot.kernelParams = [
-      "nvidia-drm.modeset=1" # nvidia needs "Direct Rendering Manager" kernel mode to work with wayland.
-      "nvidia-drm.fbdev=1" # it also needs kernel frame buffer as well. Dont ask why.
-    ];
-
-    hardware.graphics.extraPackages = with pkgs; [
-      vaapiVdpau # video acceleration on nvidia graphics
-      libvdpau-va-gl # vdpau driver with opengl backend
-    ];
-
-    hardware.nvidia = {
-      modesetting.enable = true; # lets the driver set kernel mod settings autoamagically
-      powerManagement.enable = true; # allows the gpu to be switched of when not needed.
-      powerManagement.finegrained = false; # even finegrained, per app
-
-      open = false; # use proprietary drivers
-      nvidiaSettings = true; # install the nvidia-settings app
-
-      # latest greatest driver always
-      package = config.boot.kernelPackages.nvidiaPackages.latest;
-    };
-
-    # add vulkan headers and tools to the system
-    environment.systemPackages = with pkgs; [
-      vulkan-headers
-      vulkan-loader
-      vulkan-tools
-    ];
-
-    # this enables the nvidia gpu. even for wayland.
-    services.xserver.videoDrivers = [ "nvidia" ];
-  }
-
-
-#+end_src
-
 * Configuration
 This section describes the main system configuration for the computers that I have. Nix will look for a ~default.nix~ file if you give it a path to a folder to import. And ~default.nix~ looks as follows :-
 
@@ -457,7 +342,6 @@ This section describes the main system configuration for the computers that I ha
       ./audio.nix
       ./steam.nix
       ./sops.nix
-      ./wireguard.nix
     ];
 
     <<config-system-packages>>
@@ -495,12 +379,6 @@ These are global nix settings that configure the settings for the actual tool.
 
     # allow proprietary software on this machine. I'm not a purist.
     nixpkgs.config.allowUnfree = true;
-
-    # I work with games and unity. And Unity 2021 needs this to work.
-    # But nix wont allow an insecure package unless explicitly declared as allowed.
-    nixpkgs.config.permittedInsecurePackages = [
-      "openssl-1.1.1w"
-    ];
 
     # this declares how often old configurations are cleared up.
     # i cleanup anything older than a week, every week.
@@ -562,7 +440,7 @@ Here we control what the login screen would look like. I'm using greetd's [[http
 Doesn't match the rest of the aesthetic of the system (with hyprland), but I like its simplicity.
 
 #+begin_src nix :tangle configuration/login.nix :noweb tangle :mkdirp yes
-  { pkgs, ... } :
+  { pkgs, user, ... } :
   {
     environment.systemPackages = with pkgs; [
       greetd.tuigreet
@@ -572,7 +450,7 @@ Doesn't match the rest of the aesthetic of the system (with hyprland), but I lik
       enable = true;
       settings = {
         default_session = {
-          command = pkgs.lib.mkForce "${pkgs.greetd.tuigreet}/bin/tuigreet --time --time-format '%I:%M %p | %a • %h | %F'";
+          command = pkgs.lib.mkForce "${pkgs.greetd.tuigreet}/bin/tuigreet --remember --time --time-format '%I:%M %p | %a • %h | %F'";
         };
       };
     };
@@ -614,16 +492,18 @@ Along with that, a few other utilities like zip and enabling services to automou
       plugins = with pkgs.xfce; [
         thunar-archive-plugin
         thunar-media-tags-plugin
+        thunar-volman
       ];
     };
+
+    programs.file-roller.enable = true; # thunar zip support
+    programs.xfconf.enable = true; # to save thunar settings
 
     services = {
       gvfs.enable = true;    # Mount, trash, and other functionalities
       tumbler.enable = true; # Thumbnail support for images
       udisks2.enable = true; # Auto mount usb drives
     };
-
-    programs.file-roller.enable = true; # thunar zip support
   }
 #+end_src
 
@@ -696,7 +576,7 @@ The configuration is done in the home manager section.
       tofi                # launcher
       uwsm                # wayland session manager
       hyprland-qtutils    # needed by hyprland
-      lxqt.lxqt-policykit # to interact with polkit and show auth dialog
+      hyprpolkitagent     # polkit agent
     ];
 
     # we use uwsm to manage launching hyprland
@@ -737,13 +617,9 @@ The configuration is done in the home manager section.
     # and this requires some cleanup
     # but hyprland moves fast and some of these are probably outdated already
     environment.sessionVariables = {
-      LIBVA_DRIVER_NAME="nvidia";
       XDG_SESSION_TYPE="wayland";
       XDG_CURRENT_DESKTOP="Hyprland";
       XDG_SESSION_DESKTOP="Hyprland";
-      GBM_BACKEND="nvidia-drm";
-      __GLX_VENDOR_LIBRARY_NAME="nvidia";
-      NVD_BACKEND="direct";
       NIXOS_OZONE_WL="1";
       GTK_THEME="Nordic";
       XCURSOR_THEME="Nordzy-cursors";
@@ -752,8 +628,8 @@ The configuration is done in the home manager section.
       HYPRCURSOR_SIZE="24";
     };
 
-    # allow swaylock (lockscreen) to lock user session
-    security.pam.services.swaylock = { };
+    # allow hyprlock (lockscreen) to lock user session
+    security.pam.services.hyprlock = { };
     security.polkit.enable = true;
     security.pam.services.gdm.enableGnomeKeyring = true;
   }
@@ -763,6 +639,7 @@ The configuration is done in the home manager section.
 ** Services
 These are some of the services that I enable at the system level. Explanation in the comments.
 #+begin_src nix :tangle configuration/services.nix :noweb tangle :mkdirp yes
+  { user, ...} :
   {
     services = {
       blueman.enable = true;                # bluetooth manager
@@ -780,6 +657,9 @@ These are some of the services that I enable at the system level. Explanation in
         openFirewall = true;
       };
     };
+
+    virtualisation.docker.enable = true;    # enable docker
+    users.users.${user.username}.extraGroups = [ "docker" ];
   }
 #+end_src
 
@@ -849,25 +729,6 @@ creation_rules:
     key_groups:
       - age:
         - *primary
-#+end_src
-
-
-** WireGuard
-Use this to connect to work vpn over [[https://www.wireguard.com/][wireguard]].
-#+begin_src nix :tangle configuration/wireguard.nix :noweb tangle :mkdirp yes
-  { user, ...} :
-  {
-    sops.secrets.wireguard_coherence = {
-      owner = "${user.username}";
-    };
-    networking.wg-quick.interfaces.wg0.configFile = "/run/secrets/wireguard_coherence";
-  }
-#+end_src
-
-I can then start/stop thi service using systemctl.
-#+begin_src bash :tangle no
-  systemctl start wg-quick-wg0.service
-  systemctl stop wg-quick-wg0.service
 #+end_src
 
 ** Miscellaneous Packages and Programs
@@ -969,8 +830,7 @@ Mostly styling and enabling modules in the [[https://github.com/Alexays/Waybar][
         mainBar = {
           layer = "top";
           height = 24;
-          modules-left = [ "hyprland/workspaces" ];
-          modules-center = [ "hyprland/window" ];
+          modules-left = [ "hyprland/workspaces" "hyprland/window" ];
           modules-right = [
             "idle_inhibitor"
             "pulseaudio"
@@ -978,93 +838,151 @@ Mostly styling and enabling modules in the [[https://github.com/Alexays/Waybar][
             "cpu"
             "memory"
             "temperature"
-            "clock"
-            "tray"
             "battery"
+            "tray"
+            "clock"
           ];
           "idle_inhibitor" = {
             format = "{icon}";
             format-icons = {
-              activated = "󰒳";
-              deactivated = "󰒲";
+              activated = "  ";
+              deactivated = " 󰒲  ";
             };
           };
-          "network".format = "{ipaddr}";
+            "pulseaudio" = {
+              "format" =  "{volume}% {icon}";
+              "format-bluetooth" = "{volume}% {icon}";
+              "format-muted" = "";
+              "format-icons"= {
+                 "headphones"= "";
+                 "headset"= "";
+                "phone"= "";
+              "portab  le"= "";
+                "default"= ["" ""];
+            };
+            "on-click"= "pavucontrol";
+          };
+          "network" = {
+            "format-wifi" = "  ({bandwidthDownBits})";
+            "format-ethernet" = "  ({bandwidthDownBits})";
+            "format-disconnected" =  "Disconnected ⚠";
+            "tooltip-format-wifi" = "{essid} ({signalStrength}%)";
+            "tooltip-format-ethernet" = "{ifname}: {ipaddr}/{cidr}";
+          };
+          "cpu".format = "{usage}%  ";
           "cpu".tooltip = false;
+          "temperature" = {
+            "format" = "{temperatureC}°C ";
+          };
           "temperature".tooltip = false;
           "tray".spacing = 10;
+          "tray".icon-size = 14;
+          "clock".format = "{:%a, %d %b %Y - %H:%M}";
+          "clock".tooltip = false;
+          "battery" = {
+            "bat" = "BAT0";
+            "states" = {
+              "good" = 95;
+              "warning" = 30;
+              "critical" = 15;
+            };
+            "format" = "{capacity}% {icon}";
+            "format-charging" =  "{capacity}% 󰂄";
+            "format-plugged" = "{capacity}%  ";
+            "format-icons" = ["󰁺" "󰁼" "󰁾" "󰂀" "󱈏 "];
+          };
+          "memory".format = "{percentage}%  ";
         };
       };
       style = ''
-        ,* {
-          font-family: Iosevka Nerd Font, Roboto, Helvetica, Arial, sans-serif;
-          font-size: 13px;
-        }
+          ,* {
+            font-family: Iosevka Nerd Font, Roboto, Helvetica, Arial, sans-serif;
+            font-size: 13px;
+          }
 
-        window#waybar {
-          background-color: #4c566a;
-          color: #ffffff;
-          transition-property: background-color;
-          border-bottom: 0px solid rgba(0, 0, 0, 0);
-          transition-duration: .5s;
-        }
+          window#waybar {
+            background-color: #4c566a;
+            color: #ffffff;
+            transition-property: background-color;
+            border-bottom: 0px solid rgba(0, 0, 0, 0);
+            transition-duration: .5s;
+          }
 
-        #workspaces button {
-          padding: 0 5px;
-          background-color: transparent;
-          border: none;
-          border-radius: 0;
-        }
+          #workspaces button {
+            padding: 0 5px;
+            background-color: transparent;
+            border: none;
+            border-radius: 0;
+          }
 
-        #workspaces button:hover {
-          background: #2e3440;
-          color: white;
-        }
+          #workspaces button:hover {
+            background: #2e3440;
+            color: white;
+          }
 
-        #workspaces button.active {
-          background-color: #5e81ac;
-          box-shadow: inset 0 -3px #ffffff;
-        }
+          #workspaces button.active {
+            background-color: #5e81ac;
+            box-shadow: inset 0 -3px #ffffff;
+          }
 
-        #clock,
-        #idle_inhibitor
-        #battery,
-        #cpu,
-        #memory,
-        #temperature,
-        #network,
-        #pulseaudio,
-        #tray {
-          padding: 0 10px;
-          background-color: transparent;
-        }
+          #clock,
+          #idle_inhibitor
+          #battery,
+          #cpu,
+          #memory,
+          #temperature,
+          #network,
+          #pulseaudio,
+          #tray {
+            margin: 0 5px;
+            padding: 0 2px;
+          }
 
-        #window,
-        #workspaces {
-          margin: 0 4px;
-        }
+          #idle_inhibitor.activated {
+            background-color: #a3be8c;
+          }
 
-        .modules-left > widget:first-child > #workspaces {
-          margin-left: 0;
-        }
+          #battery.charging {
+             color: #a3be8c;
+          }
 
-        .modules-right > widget:last-child > #workspaces {
-          margin-right: 0;
-        }
+          @keyframes blink {
+            to {
+               background-color: #ffffff;
+               color: black;
+            }
+          }
 
-        #battery.charging, #battery.plugged {
-          color: #ffffff;
-          background-color: #26A65B;
-        }
+          #battery.warning:not(.charging) {
+            color: white;
+            animation-name: blink;
+            animation-duration: 0.5s;
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+            animation-direction: alternate;
+         }
 
-        #network.disconnected {
-          background-color: #f53c3c;
-        }
+          #window,
+          #workspaces {
+            margin: 0 4px;
+          }
 
-        #temperature.critical {
-          background-color: #eb4d4b;
-        }
-        '';
+          .modules-left > widget:first-child > #workspaces {
+            margin-left: 0;
+          }
+
+          .modules-right > widget:last-child > #workspaces {
+            margin-right: 0;
+          }
+
+          #network.disconnected {
+            background-color: #f53c3c;
+          }
+
+          #temperature.critical {
+            background-color: #eb4d4b;
+          }
+          '';
     };
   }
 
@@ -1096,24 +1014,28 @@ I use [[https://wiki.hyprland.org/Hypr-Ecosystem/hyprpaper/][hyprpaper]] for set
         source = ../assets/background.png;
         target = ".background-image.png";
       };
+
+      me = {
+        source = ../assets/me.jpg;
+        target = ".me.jpg";
+      };
     };
   }
 
 #+end_src
 ** Lock Screen
-The lock screen configured using [[https://github.com/swaywm/swaylock][swaylock]].
-I use [[https://github.com/swaywm/swayidle][swayidle]] to detect idle time and use wlogout to show a logout menu.
+The lock screen configured using [[https://wiki.hyprland.org/Hypr-Ecosystem/hyprlock/][hyprlock]].
+I use [[https://wiki.hyprland.org/Hypr-Ecosystem/hypridle/][hypridle]] to detect idle time and use wlogout to show a logout menu.
 They are configured below.
 #+begin_src nix :tangle home/lock.nix :noweb tangle :mkdirp yes
   { pkgs, ... } :
   {
     home.packages = with pkgs; [
-      swaylock
-      swayidle
+      hyprlock
+      hypridle
       wlogout
     ];
 
-    programs.swaylock.enable = true;
 
     home.file = {
       lock = {
@@ -1122,35 +1044,43 @@ They are configured below.
       };
     };
 
-    programs.swaylock.settings = {
-      image = "~/.lock.png";
-      ignore-empty-password = true;
-      show-failed-attempts = true;
-      font = "Iosevka";
-    };
-
     services = {
-      # swayidle to lock using swaylock after 180 seconds
-      # suspend after 10 minutes
-      # lock before suspend
-      swayidle = {
+      # hypridle to
+      # 150 seconds - turn of monitor
+      # 300 seconds - lock screen
+      # 330 seconds - turn of monitor
+      #  30 minutes - put to sleep
+      hypridle = {
         enable = true;
-        timeouts = [
-          {
-            timeout = 185;
-            command = "swaylock";
-          }
-          {
-            timeout = 600;
-            command = "systemctl suspend";
-          }
-        ];
-        events = [
-          {
-            event = "before-sleep";
-            command = "swaylock";
-          }
-        ];
+        settings = {
+          general = {
+            lock_cmd = "pidof hyprlock || hyprlock";       # avoid starting multiple hyprlock instances.
+            before_sleep_cmd = "loginctl lock-session";    # lock before suspend.
+            after_sleep_cmd = "hyprctl dispatch dpms on";  # to avoid having to press a key twice to turn on the display.
+          };
+
+          listener = [
+            {
+              timeout = 150;                                # 2.5min.
+              on-timeout = "brightnessctl -s set 10";         # set monitor backlight to minimum, avoid 0 on OLED monitor.
+              on-resume = "brightnessctl -r";                 # monitor backlight restore.
+            }
+            {
+              timeout = 300;                                 # 5min
+              on-timeout = "loginctl lock-session";            # lock screen when timeout has passed
+            }
+            {
+              timeout = 330;                                                     # 5.5min
+              on-timeout = "hyprctl dispatch dpms off";                            # screen off when timeout has passed
+              on-resume = "hyprctl dispatch dpms on && brightnessctl -r";          # screen on when activity is detected after timeout has fired.
+            }
+            {
+              timeout = 1800;                                # 30min
+              on-timeout = "systemctl suspend";                # suspend pc
+            }
+          ];
+
+        };
       };
     };
 
@@ -1159,7 +1089,7 @@ They are configured below.
       layout = [
         {
           "label"  = "lock";
-          "action" = "swaylock";
+          "action" = "hyprlock";
           "text" = "Lock";
           "keybind" = "l";
         }
@@ -1171,7 +1101,7 @@ They are configured below.
         }
         {
           "label" = "suspend";
-          "action" = "swaylock & sleep 1 ; systemctl suspend";
+          "action" = "systemctl suspend";
           "text" = "Suspend";
           "keybind" = "u";
         }
@@ -1200,15 +1130,14 @@ They are configured below.
 #+end_src
 ** Unity
 I work with the [[https://unity.com/][Unity Game Engine]] and I have the unity hub installed globally, instead of in a project flake.
-Unity 2021 depends on openssl 1.1.1 (deprecated) so we override the existing package with a version that also includes it.
-The HDRP renderer also needs vulkan libraries, but we installed that globally.
+Often I work with dotnet directly inside of unity and so we set that up too.
 #+begin_src nix :tangle home/unity.nix :noweb tangle :mkdirp yes.
   { pkgs, ... }:
   {
     home.packages = with pkgs; [
       (pkgs.unityhub.override {
         extraPkgs = pkgs: with pkgs; [
-          openssl_1_1
+          dotnet-sdk
         ];
       })
     ];
@@ -1222,6 +1151,8 @@ This configures the desktop environment along with the peripherals. The comments
     # required for the default Hyprland config
     programs.kitty.enable = true;
 
+    services.hyprpolkitagent.enable = true;
+
     # enable Hyprland
     wayland.windowManager.hyprland.enable = true;
 
@@ -1233,8 +1164,6 @@ This configures the desktop environment along with the peripherals. The comments
       exec-once = [
         # read in env vars
         "dbus-update-activation-environment --systemd --all"
-        # start the wallpaper service
-        "systemctl --user enable --now hyprpaper.service"
         # start waybar
         "uwsm app -- waybar"
         # start the policykit agent
@@ -1246,9 +1175,11 @@ This configures the desktop environment along with the peripherals. The comments
 
         touchpad = {
           natural_scroll = "no";
+          scroll_factor = 0.5;
         };
 
-        sensitivity = 0; # -1.0 - 1.0, 0 means no modification.
+        accel_profile =  "adaptive";
+        sensitivity = -0.5; # -1.0 - 1.0, 0 means no modification.
 
         kb_layout = "us";
 
@@ -1308,7 +1239,7 @@ This configures the desktop environment along with the peripherals. The comments
         "$mainMod, Return, exec, uwsm app -- alacritty"
         "$mainMod_SHIFT, Q, killactive"
         "$mainMod_SHIFT, M, exit"
-        "$mainMod, F, exec, uwsm app -- thunar"
+        "$mainMod, F, exec, thunar"
         "$mainMod_SHIFT, Space, togglefloating"
 
         # use tofi to show exec menu
@@ -1348,6 +1279,118 @@ This configures the desktop environment along with the peripherals. The comments
         "$mainMod, mouse:273, resizewindow"
       ];
     };
+
+    programs.hyprlock = {
+      enable = true;
+
+      # hyprlock.conf
+      settings = {
+        background = {
+          monitor = "";
+          path = "~/.background-image.png";
+          blur_passes = 2;
+          contrast = 1;
+          brightness = 0.5;
+          vibrancy = 0.2;
+          vibrancy_darkness = 0.2;
+        };
+
+        auth = {
+          fingerprint = {
+            enabled = true;
+          };
+        };
+
+        # GENERAL
+        general = {
+          hide_cursor = false;
+          grace = 0;
+        };
+
+        # INPUT FIELD
+        input-field = [
+          {
+            size = "250, 60";
+            outline_thickness = 2;
+            dots_size = 0.2;
+            dots_spacing = 0.35;
+            dots_center = true;
+            outer_color = "rgba(216,222,233,0.2)";
+            inner_color = "rgba(216,222,233,1)";
+            font_color = "rgba(41,46,57,1)";
+            fade_on_empty = false;
+            rounding = -1;
+            check_color = "rgb(163,190,140)";
+            placeholder_text = ''<i><span>Password</span></i>'';
+            hide_input = false;
+            position = "0, -400";
+            halign = "center";
+            valign = "center";
+          }
+        ];
+
+        # DATE
+        label = [
+          {
+            monitor = "";
+            text = ''cmd[update:1000] echo "$(date +"%A, %B %d")"'';
+            color = "rgba(242, 243, 244, 0.75)";
+            font_size = 22;
+            font_family = "Iosevka";
+            position = "0, 300";
+            halign = "center";
+            valign = "center";
+          }
+          # TIME
+          {
+            monitor = "";
+            text = ''cmd[update:1000] echo "$(date +"%-I:%M")"'';
+            color = "rgba(242, 243, 244, 0.75)";
+            font_size = 95;
+            font_family = "Iosevka";
+            position = "0, 200";
+            halign = "center";
+            valign = "center";
+          }
+          # USER
+          {
+            monitor = "";
+            text = ''cmd[update:1000] echo $USER'';
+            color = "rgba(242, 243, 244, 0.75)";
+            font_size = 30;
+            font_family = "Iosevka";
+            position = "0, -250";
+            halign = "center";
+            valign = "center";
+          }
+
+          # battery
+          {
+            monitor = "";
+            text = ''cmd[update:1000] echo "$(cat /sys/class/power_supply/BAT0/capacity) 󰁹"'';
+            color = "rgba(242, 243, 244, 0.75)";
+            font_size = 20;
+            font_family = "Iosevka";
+            position = "-20, -20";
+            halign = "right";
+            valign = "top";
+          }
+        ];
+
+        # Profile Picture
+        image = [
+          {
+            monitor = "";
+            path = "~/.me.jpg";
+            size = 200;
+            border_size = 2;
+            position = "0, -100";
+            halign = "center";
+            valign = "center";
+          }
+        ];
+      };
+    };
   }
 #+end_src
 
@@ -1386,7 +1429,6 @@ You'll notice the color values in multiple places outside this as well.
   { pkgs, ...}:
   {
     home.packages = with pkgs; [
-      nordzy-icon-theme
       nordzy-cursor-theme
       nordic
     ];
@@ -1394,8 +1436,8 @@ You'll notice the color values in multiple places outside this as well.
     gtk = {
       enable = true;
       iconTheme = {
-        name = "Nordzy-icon";
-        package = pkgs.nordzy-icon-theme;
+        name = "Nordic-bluish";
+        package = pkgs.nordic;
       };
       theme = {
         name = "Nordic";
@@ -1455,7 +1497,7 @@ You'll notice the color values in multiple places outside this as well.
 #+end_src
 
 ** Dev Tools
-All the miscellaneous dev tools on this computer. Git config is from [[* Configuration Variables][~user.nix~]].
+All the miscellaneous dev tools on this computer.
 #+begin_src nix :tangle home/dev.nix :noweb tangle :mkdirp yes
   { user, ... }:
   {
@@ -1486,8 +1528,6 @@ All the miscellaneous dev tools on this computer. Git config is from [[* Configu
       git = {
         lfs.enable = true;
         enable = true;
-        userName  = "${user.gitUser}";
-        userEmail = "${user.gitEmail}";
       };
     };
   }
@@ -1536,7 +1576,7 @@ Comments describe the emacs package and what it does.
     programs.emacs = {
       enable = true;
       # install with tree sitter enabled
-      package = (pkgs.emacs-pgtk.override { withTreeSitter = true; });
+      package = (pkgs.emacs-git-pgtk.override { withTreeSitter = true; });
       extraPackages = epkgs: [
         # also install all tree sitter grammars
         epkgs.manualPackages.treesit-grammars.with-all-grammars
@@ -2012,95 +2052,20 @@ Now starts the main emacs configuration.
 
 * Machines
 Only a few more things left. Specifically the machine level extra settings.
-** bigbox
-  We already setup bigbox's [[bigbox-initial][configuration.nix]] and hardware-configuration.nix files.
-  Finally, the ssh keys that identifies this machine is exported using sops.
-  #+name: bigbox-secrets
-  #+begin_src nix
-    sops.secrets."ssh/bigbox/private" = { # ssh private key
-      owner = "${user.username}";
-      mode = "600";
-      path = "/home/${user.username}/.ssh/id_ed25519";
-    };
-    sops.secrets."ssh/bigbox/public" = { # ssh public key
-      owner = "${user.username}";
-      mode = "644";
-      path = "/home/${user.username}/.ssh/id_ed25519.pub";
-    };
-    sops.secrets."ssh/wavefunk/private" = { # ssh private key
-      owner = "${user.username}";
-      mode = "600";
-      path = "/home/${user.username}/.ssh/wavefunk";
-    };
-    sops.secrets."ssh/wavefunk/public" = { # ssh public key
-      owner = "${user.username}";
-      mode = "644";
-      path = "/home/${user.username}/.ssh/wavefunk.pub";
-    };
-    sops.secrets."ssh/wavefunk_dev/private" = { # ssh private key
-      owner = "${user.username}";
-      mode = "600";
-      path = "/home/${user.username}/.ssh/wavefunk_dev";
-    };
-    sops.secrets."ssh/wavefunk_dev/public" = { # ssh public key
-      owner = "${user.username}";
-      mode = "644";
-      path = "/home/${user.username}/.ssh/wavefunk_dev.pub";
-    };
-
-    # the key is in /home so we need to make sure it boots
-    fileSystems."/home".neededForBoot = true;
-#+end_src
-
-We include my monitor setup at home along with default applications at launch.
-This is added to the home configuration.
-
-#+begin_src nix :tangle machines/bigbox/home.nix :noweb tangle :mkdirp yes
-  {
-    imports = [
-      ../../home
-    ];
-
-    wayland.windowManager.hyprland.settings = {
-      monitor = [
-        "HDMI-A-1, 2560x1440@60, 0x0, 1, vrr, 2"      # main monitor
-        "DP-2, 3840x2160, 2560x0, 1.5, transform, 1"  # side monitor on the right, vertical
-      ];
-
-      workspace = [
-        "1,monitor:HDMI-A-1"
-        "2,monitor:HDMI-A-1"
-        "5,monitor:DP-2"
-      ];
-
-      exec-once = [
-        "[workspace 1 silent] firefox"
-        "[workspace 2 silent] emacs"
-        "[workspace 5 silent] slack"
-      ];
-    };
-  }
-#+end_src
-
-** Laptop
+** Smallbox
 The configuration for the laptop does not change much. Most changes are because the hardware is different.
-
 *** System Level
-The only system level change is that the monitor is hidpi.
-So GDK_SCALE=2 helps with proper scaling of gdk applications.
+Nothing specific for the laptop.
 
-#+begin_src nix :tangle machines/laptopdell/configuration.nix :noweb tangle :mkdirp yes
-  {
+#+begin_src nix :tangle machines/smallbox/configuration.nix :noweb tangle :mkdirp yes
+  { user, ... } : {
     imports =
       [
         ./hardware-configuration.nix
-        ../../hardware/nvidia.nix
         ../../configuration
       ];
 
-    environment.sessionVariables = {
-      GDK_SCALE = 2;
-    };
+    <<smallbox-secrets>>
   }
 #+end_src
 
@@ -2108,7 +2073,7 @@ So GDK_SCALE=2 helps with proper scaling of gdk applications.
 This is the most different. Mostly taken from hardware-configuration.nix setup at first install.
 As you might notice, there are a lot more kernel modules. This device has thunderbolt for example.
 
-#+begin_src nix :tangle machines/laptopdell/hardware-configuration.nix :noweb tangle :mkdirp yes
+#+begin_src nix :tangle machines/smallbox/hardware-configuration.nix :noweb tangle :mkdirp yes
   {
     hostname,
     pkgs,
@@ -2123,72 +2088,91 @@ As you might notice, there are a lot more kernel modules. This device has thunde
     ];
 
     boot.initrd.availableKernelModules = [
-      "vmd"            # intel volume management
       "xhci_pci"       # usb wake up (usb host controller)
       "thunderbolt"    # :/
       "nvme"           # support for the nvme disk in here
       "usb_storage"    # :/
       "sd_mod"         # hard drive controller
-      "rtsx_pci_sdmmc" # realtek card reader
     ];
-    boot.kernelParams = lib.mkDefault [
-      "acpi_rev_override"                             # prevents nvidia disable
-      "nvidia.NVreg_PreserveVideoMemoryAllocations=1" # allow for hibernation
-    ];
-    boot.kernelModules = [ "kvm-intel" ];
+
+    boot.kernelParams = [ "amd_pstate=active"
+                          "acpi.ec_no_wakeup=1"
+                          # Force use of the thinkpad_acpi driver for backlight control.
+                          # This allows the backlight save/load systemd service to work.
+                          "acpi_backlight=native"
+                          # Needed for touchpad to work properly (click doesn't register by pushing down the touchpad).
+                          "psmouse.synaptics_intertouch=0"
+                        ];
+    boot.kernelModules = [ "kvm-amd" ];
     boot.loader.grub.efiSupport = true;
     boot.loader.grub.useOSProber = true; # detect windows since thats on a partition here
     boot.loader.grub.devices = [ "/dev/nvme0n1" ];
 
     fileSystems."/" = {
-      device = "/dev/disk/by-uuid/b6bd668c-9a55-4b6d-b700-ecae6c08518d";
+      device = "/dev/disk/by-uuid/0bda9355-76f4-4b55-9012-0a14a73ac6b9";
       fsType = "ext4";
     };
 
+    boot.initrd.luks.devices."luks-f400c0ed-57e0-4b5a-b701-c1a10c19480f".device = "/dev/disk/by-uuid/f400c0ed-57e0-4b5a-b701-c1a10c19480f";
+
     fileSystems."/boot" = {
-      device = "/dev/disk/by-uuid/5A9D-1E16";
+      device = "/dev/disk/by-uuid/5A5A-DEFE";
       fsType = "vfat";
-      options = [
-        "fmask=0077"
-        "dmask=0077"
-      ];
+      options = [ "fmask=0077" "dmask=0077" ];
     };
 
-    swapDevices = [
-      { device = "/dev/disk/by-uuid/ab21b211-151b-46f0-ab8f-f0788228cb70"; }
-    ];
+    swapDevices = [];
 
-
-    # enable fingerprinting services
-    services.fprintd = {
-      enable = true;
-      package = pkgs.fprintd-tod;
-      tod = {
-        enable = true;
-        driver = pkgs.libfprint-2-tod1-goodix;
-      };
+    hardware.graphics = {
+      enable = lib.mkDefault true;
+      enable32Bit = lib.mkDefault true;
     };
 
+    hardware.amdgpu.initrd.enable = lib.mkDefault true;
     networking.hostName = hostname;
+
+    # enalbe fingerprinting services
+    services.fprintd.enable = true;
   }
 #+end_src
 
 *** Home
-Just like the bigbox machine's home configuration, this is mostly about configuring the screen and workspaces.
-#+begin_src nix :tangle machines/laptopdell/home.nix :noweb tangle :mkdirp yes
-  {
+This is mostly about configuring the monitor and key bindings. And laptop specific utilities.
+#+begin_src nix :tangle machines/smallbox/home.nix :noweb tangle :mkdirp yes
+  { pkgs, ... } : {
     imports = [
       ../../home
     ];
 
+    home.packages = with pkgs; [
+      brightnessctl
+    ];
+
     wayland.windowManager.hyprland.settings = {
-      monitor = [
-        ",highres,auto,2,bitdepth,10"
+      bind = [
+        ", XF86MonBrightnessUp, exec, brightnessctl set 5%+"
+        ", XF86MonBrightnessDown, exec, brightnessctl set 5%-"
+        ", XF86AudioRaiseVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"
+        ", XF86AudioLowerVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"
+        ", XF86AudioMute, exec, wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
+        ", XF86AudioMicMute, exec, wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"
       ];
 
-      xwayland = {
-        force_zero_scaling = true;
-      };
+      bindl = [
+        '', switch:on:Lid Switch, exec, hyprctl keyword monitor "eDP-1, disable"''
+        '', switch:off:Lid Switch, exec, hyprctl keyword monitor "eDP-1, preferred, 2560x0, 2"''
+      ];
+
+      monitor = [
+        "desc:AOC Q3279WG5B 0x00000161, preferred, 0x0, 1, vrr, 2"      # main monitor
+        "eDP-1, preferred, 2560x0, 2"  # laptop monitor
+      ];
+
+      workspace = [
+        "1,monitor:desc:AOC Q3279WG5B 0x00000161"
+        "2,monitor:desc:AOC Q3279WG5B 0x00000161"
+        "5,monitor:eDP-1"
+      ];
 
       exec-once = [
         "[workspace 1 silent] firefox"
@@ -2199,6 +2183,42 @@ Just like the bigbox machine's home configuration, this is mostly about configur
   }
 #+end_src
 
+*** Secrets
+#+name: smallbox-secrets
+  #+begin_src nix
+  sops.secrets."ssh/smallbox/private" = { # ssh private key
+    owner = "${user.username}";
+    mode = "600";
+    path = "/home/${user.username}/.ssh/id_ed25519";
+  };
+
+  sops.secrets."ssh/smallbox/public" = { # ssh public key
+    owner = "${user.username}";
+    mode = "644";
+    path = "/home/${user.username}/.ssh/id_ed25519.pub";
+  };
+
+  sops.secrets."ssh/wavefunk/private" = { # ssh private key
+    owner = "${user.username}";
+    mode = "600";
+    path = "/home/${user.username}/.ssh/wavefunk";
+  };
+  sops.secrets."ssh/wavefunk/public" = { # ssh public key
+    owner = "${user.username}";
+    mode = "644";
+    path = "/home/${user.username}/.ssh/wavefunk.pub";
+  };
+  sops.secrets."ssh/wavefunk_dev/private" = { # ssh private key
+    owner = "${user.username}";
+    mode = "600";
+    path = "/home/${user.username}/.ssh/wavefunk_dev";
+  };
+  sops.secrets."ssh/wavefunk_dev/public" = { # ssh public key
+    owner = "${user.username}";
+    mode = "644";
+    path = "/home/${user.username}/.ssh/wavefunk_dev.pub";
+  };
+#+end_src
 * README Utils
 *** Headers
 This script adds a =DO NOT MODIFY= header to all the generated nix files.

@@ -4,7 +4,6 @@
 { pkgs, ...}:
 {
   home.packages = with pkgs; [
-    nordzy-icon-theme
     nordzy-cursor-theme
     nordic
   ];
@@ -12,8 +11,8 @@
   gtk = {
     enable = true;
     iconTheme = {
-      name = "Nordzy-icon";
-      package = pkgs.nordzy-icon-theme;
+      name = "Nordic-bluish";
+      package = pkgs.nordic;
     };
     theme = {
       name = "Nordic";

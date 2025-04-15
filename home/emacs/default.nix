@@ -6,7 +6,7 @@
   programs.emacs = {
     enable = true;
     # install with tree sitter enabled
-    package = (pkgs.emacs-pgtk.override { withTreeSitter = true; });
+    package = (pkgs.emacs-git-pgtk.override { withTreeSitter = true; });
     extraPackages = epkgs: [
       # also install all tree sitter grammars
       epkgs.manualPackages.treesit-grammars.with-all-grammars

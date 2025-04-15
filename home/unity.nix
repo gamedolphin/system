@@ -6,7 +6,7 @@
   home.packages = with pkgs; [
     (pkgs.unityhub.override {
       extraPkgs = pkgs: with pkgs; [
-        openssl_1_1
+        dotnet-sdk
       ];
     })
   ];

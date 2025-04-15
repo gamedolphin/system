@@ -22,5 +22,10 @@
       source = ../assets/background.png;
       target = ".background-image.png";
     };
+
+    me = {
+      source = ../assets/me.jpg;
+      target = ".me.jpg";
+    };
   };
 }

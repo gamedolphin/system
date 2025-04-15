@@ -30,8 +30,6 @@
     git = {
       lfs.enable = true;
       enable = true;
-      userName  = "${user.gitUser}";
-      userEmail = "${user.gitEmail}";
     };
   };
 }

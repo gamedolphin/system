@@ -4,8 +4,6 @@
 {
   system = "x86_64-linux";
   username = "nambiar";
-  gitUser = "gamedolphin";
-  gitEmail = "7590634+gamedolphin@users.noreply.github.com";  # github email
   stateVersion = "25.05";
   locale = "sv_SE.UTF-8";
 }

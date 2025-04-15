@@ -27,7 +27,7 @@
     tofi                # launcher
     uwsm                # wayland session manager
     hyprland-qtutils    # needed by hyprland
-    lxqt.lxqt-policykit # to interact with polkit and show auth dialog
+    hyprpolkitagent     # polkit agent
   ];
 
   # we use uwsm to manage launching hyprland
@@ -68,13 +68,9 @@
   # and this requires some cleanup
   # but hyprland moves fast and some of these are probably outdated already
   environment.sessionVariables = {
-    LIBVA_DRIVER_NAME="nvidia";
     XDG_SESSION_TYPE="wayland";
     XDG_CURRENT_DESKTOP="Hyprland";
     XDG_SESSION_DESKTOP="Hyprland";
-    GBM_BACKEND="nvidia-drm";
-    __GLX_VENDOR_LIBRARY_NAME="nvidia";
-    NVD_BACKEND="direct";
     NIXOS_OZONE_WL="1";
     GTK_THEME="Nordic";
     XCURSOR_THEME="Nordzy-cursors";
@@ -83,8 +79,8 @@
     HYPRCURSOR_SIZE="24";
   };
 
-  # allow swaylock (lockscreen) to lock user session
-  security.pam.services.swaylock = { };
+  # allow hyprlock (lockscreen) to lock user session
+  security.pam.services.hyprlock = { };
   security.polkit.enable = true;
   security.pam.services.gdm.enableGnomeKeyring = true;
 }

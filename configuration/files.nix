@@ -16,14 +16,16 @@
     plugins = with pkgs.xfce; [
       thunar-archive-plugin
       thunar-media-tags-plugin
+      thunar-volman
     ];
   };
+
+  programs.file-roller.enable = true; # thunar zip support
+  programs.xfconf.enable = true; # to save thunar settings
 
   services = {
     gvfs.enable = true;    # Mount, trash, and other functionalities
     tumbler.enable = true; # Thumbnail support for images
     udisks2.enable = true; # Auto mount usb drives
   };
-
-  programs.file-roller.enable = true; # thunar zip support
 }

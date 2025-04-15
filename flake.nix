@@ -28,8 +28,7 @@
       user = import ./user.nix;
       lib = nixpkgs.lib;
       machines = [
-        "bigbox"
-        "laptopdell"
+        "smallbox"
       ];
       pkgs = import nixpkgs {
         inherit (user) system;
@@ -72,6 +71,11 @@
             nixfmt-rfc-style  # nix formatter
             sops              # used to edit secrets
           ];
+
+          GIT_COMMITTER_NAME="Sandeep Nambiar";
+          GIT_COMMITTER_EMAIL="contact@sandeepnambiar.com";
+          GIT_AUTHOR_NAME="Sandeep Nambiar";
+          GIT_AUTHOR_EMAIL="contact@sandeepnambiar.com";
         };
       };
 }

@@ -19,12 +19,6 @@
   # allow proprietary software on this machine. I'm not a purist.
   nixpkgs.config.allowUnfree = true;
 
-  # I work with games and unity. And Unity 2021 needs this to work.
-  # But nix wont allow an insecure package unless explicitly declared as allowed.
-  nixpkgs.config.permittedInsecurePackages = [
-    "openssl-1.1.1w"
-  ];
-
   # this declares how often old configurations are cleared up.
   # i cleanup anything older than a week, every week.
   nix.gc = {
