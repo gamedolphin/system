@@ -18,7 +18,6 @@
     mode = "644";
     path = "/home/${user.username}/.ssh/id_ed25519.pub";
   };
-  
   sops.secrets."ssh/wavefunk/private" = { # ssh private key
     owner = "${user.username}";
     mode = "600";
