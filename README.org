@@ -114,8 +114,6 @@ The values are imported at the beginning and are available to almost all the fun
   {
     system = "x86_64-linux";
     username = "nambiar";
-    gitUser = "gamedolphin";
-    gitEmail = "7590634+gamedolphin@users.noreply.github.com";  # github email
     stateVersion = "25.05";
     locale = "sv_SE.UTF-8";
   }
