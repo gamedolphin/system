@@ -1,3 +1,4 @@
 /.direnv/
 *.md
 /.envrc-private
+/.envrc.private

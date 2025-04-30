@@ -6,6 +6,7 @@
   pkgs,
   lib,
   modulesPath,
+  user,
   ...
 }:
 {
@@ -46,6 +47,12 @@
     device = "/dev/disk/by-uuid/5A5A-DEFE";
     fsType = "vfat";
     options = [ "fmask=0077" "dmask=0077" ];
+  };
+
+  # external disk
+  fileSystems."/home/${user.username}/external" = {
+    device = "/dev/disk/by-uuid/18818348-1ee4-4fa5-9984-e4e01b9fa304";
+    fsType = "ext4";
   };
 
   swapDevices = [];
