@@ -662,7 +662,30 @@ These are some of the services that I enable at the system level. Explanation in
         nssmdns4 = true;
         openFirewall = true;
       };
+
+      # syncthing
+      syncthing = {
+        enable = true;
+        openDefaultPorts = true;
+        user = "${user.username}";
+        configDir = "/home/${user.username}/.conifg/syncthing";
+        settings = {
+          devices = {
+            "phone" = { id = "AC6CP4C-TBXMOU5-DSLTDSJ-B2ZJ65D-EXILKVV-U4QEDVA-AIAJZNJ-MX2RHQP"; };
+          };
+
+          folders = {
+            "OrgSync" = {
+              path = "/home/${user.username}/org";
+              devices = [ "phone" ];
+              ignorePerms = true;
+            };
+          };
+        };
+      };
     };
+
+    systemd.services.syncthing.environment.STNODEFAULTFOLDER = "true"; # Don't create default ~/Sync folder
 
     virtualisation.docker.enable = true;    # enable docker
     users.users.${user.username}.extraGroups = [ "docker" ];
@@ -1257,6 +1280,9 @@ This configures the desktop environment along with the peripherals. The comments
         "$mainMod_SHIFT, right, movewindow, r"
         "$mainMod_SHIFT, up, movewindow, u"
         "$mainMod_SHIFT, down, movewindow, d"
+
+        "$mainMod_CTRL, left, movecurrentworkspacetomonitor, l"
+        "$mainMod_CTRL, right, movecurrentworkspacetomonitor, r"
 
         "$mainMod, left, movefocus, l"
         "$mainMod, right, movefocus, r"
@@ -2182,9 +2208,17 @@ This is mostly about configuring the monitor and key bindings. And laptop specif
       ];
 
       workspace = [
-        "1,monitor:desc:AOC Q3279WG5B 0x00000161"
-        "2,monitor:desc:AOC Q3279WG5B 0x00000161"
-        "5,monitor:eDP-1"
+        "1,monitor:desc:AOC Q3279WG5B 0x00000161, default:true"
+        "2,monitor:desc:AOC Q3279WG5B 0x00000161, default:true"
+        "3,monitor:desc:AOC Q3279WG5B 0x00000161, default:true"
+        "5,monitor:eDP-1, default:true"
+        "6,monitor:eDP-1, default:tru"e
+      ];
+
+      windowrule = [
+        "workspace:1, class:firefox"
+        "workspace:2, class:emacs"
+        "workspace:5, class:Slack"
       ];
 
       exec-once = [
