@@ -31,9 +31,15 @@
     ];
 
     workspace = [
-      "1,monitor:desc:AOC Q3279WG5B 0x00000161"
-      "2,monitor:desc:AOC Q3279WG5B 0x00000161"
-      "5,monitor:eDP-1"
+      "1,monitor:desc:AOC Q3279WG5B 0x00000161, default:true"
+      "2,monitor:desc:AOC Q3279WG5B 0x00000161, default:true"
+      "5,monitor:eDP-1, default:true"
+    ];
+
+    windowrule = [
+      "workspace:1, class:firefox"
+      "workspace:2, class:emacs"
+      "workspace:5, class:Slack"
     ];
 
     exec-once = [

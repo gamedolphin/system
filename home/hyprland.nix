@@ -106,6 +106,9 @@
       "$mainMod_SHIFT, up, movewindow, u"
       "$mainMod_SHIFT, down, movewindow, d"
 
+      "$mainMod_CTRL, left, movecurrentworkspacetomonitor, l"
+      "$mainMod_CTRL, right, movecurrentworkspacetomonitor, r"
+
       "$mainMod, left, movefocus, l"
       "$mainMod, right, movefocus, r"
       "$mainMod, up, movefocus, u"
