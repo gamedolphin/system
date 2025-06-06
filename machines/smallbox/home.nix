@@ -33,7 +33,9 @@
     workspace = [
       "1,monitor:desc:AOC Q3279WG5B 0x00000161, default:true"
       "2,monitor:desc:AOC Q3279WG5B 0x00000161, default:true"
+      "3,monitor:desc:AOC Q3279WG5B 0x00000161, default:true"
       "5,monitor:eDP-1, default:true"
+      "6,monitor:eDP-1, default:tru"e
     ];
 
     windowrule = [
