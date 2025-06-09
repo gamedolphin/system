@@ -20,8 +20,6 @@
       "dbus-update-activation-environment --systemd --all"
       # start waybar
       "uwsm app -- waybar"
-      # start the policykit agent
-      "uwsm app -- lxqt-policykit-agent"
     ];
 
     input = {

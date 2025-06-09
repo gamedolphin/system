@@ -1195,8 +1195,6 @@ This configures the desktop environment along with the peripherals. The comments
         "dbus-update-activation-environment --systemd --all"
         # start waybar
         "uwsm app -- waybar"
-        # start the policykit agent
-        "uwsm app -- lxqt-policykit-agent"
       ];
 
       input = {
@@ -2212,7 +2210,7 @@ This is mostly about configuring the monitor and key bindings. And laptop specif
         "2,monitor:desc:AOC Q3279WG5B 0x00000161, default:true"
         "3,monitor:desc:AOC Q3279WG5B 0x00000161, default:true"
         "5,monitor:eDP-1, default:true"
-        "6,monitor:eDP-1, default:tru"e
+        "6,monitor:eDP-1, default:true"
       ];
 
       windowrule = [
