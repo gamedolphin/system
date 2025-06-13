@@ -5,7 +5,7 @@
   description = "Sandeep's nixos configuration";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs/e84fe27f74e11d151b627bc5513db2e128b7a6cd";
 
     home-manager = {
       url = "github:nix-community/home-manager";

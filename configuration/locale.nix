@@ -4,13 +4,14 @@
 { user, ... } :
 let
   locale = user.locale;
+  defaultLocale = "en_GB.UTF-8";
 in
 {
   # Set your time zone.
   time.timeZone = "Europe/Stockholm";
 
   # Select internationalisation properties.
-  i18n.defaultLocale = "en_US.UTF-8";
+  i18n.defaultLocale = defaultLocale;
 
   i18n.extraLocaleSettings = {
     LC_ADDRESS = locale;
@@ -21,6 +22,6 @@ in
     LC_NUMERIC = locale;
     LC_PAPER = locale;
     LC_TELEPHONE = locale;
-    LC_TIME = locale;
+    LC_TIME = defaultLocale;
   };
 }

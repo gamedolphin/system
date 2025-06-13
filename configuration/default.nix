@@ -37,6 +37,7 @@
       "wheel"          # can do sudo
       "scanner"        # access to the network scanner
       "lp"             # access to the printer
+      "davfs2"
     ];
   };
 

@@ -214,98 +214,160 @@
   :bind-keymap
   ("C-c l" . lsp-command-map)
   :custom
-    (lsp-lens-enable nil)
-    (lsp-idle-delay 0.500)
-    (lsp-modeline-code-actions-enable t)
-    (lsp-modeline-diagnostics-enable t)
-    (lsp-csharp-omnisharp-roslyn-binary-path "OmniSharp")
-    (lsp-completion-provider :none) ;; we use Corfu!
-    (lsp-eldoc-render-all t)
-    :init
-    (defun orderless-dispatch-flex-first (_pattern index _total)
-      (and (eq index 0) 'orderless-flex))
+  (lsp-lens-enable nil)
+  (lsp-idle-delay 0.500)
+  (lsp-modeline-code-actions-enable t)
+  (lsp-modeline-diagnostics-enable t)
+  (lsp-csharp-omnisharp-roslyn-binary-path "OmniSharp")
+  (lsp-completion-provider :none) ;; we use Corfu!
+  (lsp-eldoc-render-all t)
+  :init
+  (defun orderless-dispatch-flex-first (_pattern index _total)
+    (and (eq index 0) 'orderless-flex))
 
-    ;; Configure the first word as flex filtered.
-    (add-hook 'orderless-style-dispatchers #'orderless-dispatch-flex-first nil 'local)
+  ;; Configure the first word as flex filtered.
+  (add-hook 'orderless-style-dispatchers #'orderless-dispatch-flex-first nil 'local)
 
-    (defun lsp-mode-setup-completion ()
-      (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
-            '(orderless)))
+  (defun lsp-mode-setup-completion ()
+    (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
+          '(orderless)))
 
-    ;; Optionally configure the cape-capf-buster.
-    (setq-local completion-at-point-functions
-                (list (cape-capf-buster #'lsp-completion-at-point)))
-    :config
-    (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\Temp\\'")
-    (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\Logs\\'")
-    (defun lsp-cleanup ()
-      (lsp-format-buffer)
-      (lsp-organize-imports)
-      (whitespace-cleanup))
-    :hook
-    (lsp-completion-mode . lsp-mode-setup-completion)
-    (lsp-mode . lsp-enable-which-key-integration)
-    (before-save . lsp-cleanup)
-    (prog-mode . lsp-deferred))
+  ;; Optionally configure the cape-capf-buster.
+  (setq-local completion-at-point-functions
+              (list (cape-capf-buster #'lsp-completion-at-point)))
+  :config
+  (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\Temp\\'")
+  (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\Logs\\'")
+  (defun lsp-cleanup ()
+    (lsp-format-buffer)
+    (lsp-organize-imports)
+    (whitespace-cleanup))
+  :hook
+  (lsp-completion-mode . lsp-mode-setup-completion)
+  (lsp-mode . lsp-enable-which-key-integration)
+  (before-save . lsp-cleanup)
+  (prog-mode . lsp-deferred))
 
-  (use-package lsp-ui :commands lsp-ui-mode
-    :custom
-    (lsp-ui-doc-enable t)
-    (lsp-ui-sideline-diagnostic-max-lines 4)
-    (lsp-ui-doc-show-with-mouse nil)
-    (lsp-ui-doc-position 'bottom)
-    (lsp-ui-doc-show-with-cursor t)
-    (lsp-eldoc-enable-hover nil)
-    )
+(use-package lsp-ui :commands lsp-ui-mode
+  :custom
+  (lsp-ui-doc-enable t)
+  (lsp-ui-sideline-diagnostic-max-lines 4)
+  (lsp-ui-doc-show-with-mouse nil)
+  (lsp-ui-doc-position 'bottom)
+  (lsp-ui-doc-show-with-cursor t)
+  (lsp-eldoc-enable-hover nil)
+  )
 
-  (use-package nixpkgs-fmt
-    :custom
-    (nixpkgs-fmt-command "nixfmt"))
+(use-package nixpkgs-fmt
+  :custom
+  (nixpkgs-fmt-command "nixfmt"))
 
-  (use-package rust-mode
-    :custom
-    (rust-mode-treesitter-derive t)
-    (lsp-rust-analyzer-cargo-watch-command "clippy")
-    (lsp-rust-analyzer-exclude-dirs ["Temp/**"]))
+(use-package rust-mode
+  :custom
+  (rust-mode-treesitter-derive t)
+  (lsp-rust-analyzer-cargo-watch-command "clippy")
+  (lsp-rust-analyzer-exclude-dirs ["Temp/**"]))
 
-  (use-package typescript-ts-mode
-    :custom
-    (lsp-javascript-preferences-import-module-specifier :relative)
-    (typescript-indent-level 2)
-    (typescript-ts-mode-indent-offset 2))
+(use-package typescript-ts-mode
+  :custom
+  (lsp-javascript-preferences-import-module-specifier :relative)
+  (typescript-indent-level 2)
+  (typescript-ts-mode-indent-offset 2))
 
-  (use-package eat)
-  (use-package hcl-mode)
-  (use-package jinja2-mode)
-  (use-package f :demand t)
+(use-package eat)
+(use-package hcl-mode)
+(use-package jinja2-mode)
+(use-package f :demand t)
 
-  (use-package envrc
-    :commands envrc-global-mode
-    :hook
-    (after-init . envrc-global-mode))
+(use-package envrc
+  :commands envrc-global-mode
+  :hook
+  (after-init . envrc-global-mode))
 
-  (use-package nix-mode
-    :hook (nix-mode . lsp-deferred))
+(use-package nix-mode
+  :hook (nix-mode . lsp-deferred))
 
-  (use-package shell-pop
-    :custom
-    (shell-pop-universal-key "M-o"))
+(use-package shell-pop
+  :custom
+  (shell-pop-universal-key "M-o"))
 
-  (use-package copilot
-    :defines copilot-completion-map
-    :bind
-    (:map copilot-completion-map
-          ("<tab>" . copilot-accept-completion)
-          ("M-n" . copilot-next-completion)
-          ("M-p" . copilot-previous-completion)
-          ("C-g" . copilot-clear-overlay)))
+(use-package copilot
+  :defines copilot-completion-map
+  :hook prog-mode
+  :bind
+  (:map copilot-completion-map
+        ("<tab>" . copilot-accept-completion)
+        ("M-n" . copilot-next-completion)
+        ("M-p" . copilot-previous-completion)
+        ("C-g" . copilot-clear-overlay)))
 
-  (use-package gptel
-    :commands gptel-make-anthropic f-read-text
-    :config
-    (gptel-make-anthropic "Claude"
-      :stream t :key (f-read-text "/run/secrets/claude_key")))
+(use-package gptel
+  :commands gptel-make-anthropic f-read-text
+  :config
+  (gptel-make-anthropic "Claude"
+    :stream t :key (f-read-text "/run/secrets/claude_key")))
 
-  (provide 'init)
+(use-package org
+  :ensure t
+  :defer t
+  :commands (org-mode org-capture org-agenda)
+  :init
+  (defvar org-journal-file "~/org/Journal.org")
+  (defvar org-archive-file "~/org/Archive.org")
+  (defvar org-notes-file "~/org/Notes.org")
+  (defvar org-inbox-file "~/org/Inbox.org")
+  (defvar org-work-file "~/org/Work.org")
+  (defun my/org-capture-project-target-heading ()
+    "Determine Org target headings from the current file's project path.
 
-  ;;; init.el ends here
+  This function assumes a directory structure like '~/projects/COMPANY/PROJECT/'.
+  It extracts 'COMPANY' and 'PROJECT' to use as nested headlines
+  for an Org capture template.
+
+  If the current buffer is not visiting a file within such a
+  project structure, it returns nil, causing capture to default to
+  the top of the file."
+    (when-let ((path (buffer-file-name))) ; Ensure we are in a file-visiting buffer
+      (let ((path-parts (split-string path "/" t " ")))
+        (when-let* ((projects-pos (cl-position "projects" path-parts :test #'string=))
+                    (company      (nth (+ 1 projects-pos) path-parts))
+                    (project      (nth (+ 2 projects-pos) path-parts)))
+          ;; Return a list of headlines for Org to find or create.
+          (list company project)))))
+  :bind
+  (("C-c c" . org-capture)
+   ("C-c i" . org-store-link)
+   ("C-c a" . org-agenda)
+   :map org-mode-map
+   ("C-c t" . org-toggle-inline-images)
+   ("C-c l" . org-toggle-link-display))
+  :custom
+  (org-agenda-files (list org-inbox-file org-journal-file))
+  (org-directory "~/org")
+  (org-default-notes-file org-inbox-file)
+  (org-archive-location (concat org-archive-file "::* From %s"))
+  (org-log-done 'time)
+  (org-log-into-drawer t)
+  (org-hide-emphasis-markers t)
+  (org-src-fontify-natively t)
+  (org-src-tab-acts-natively t)
+  (org-capture-templates '(("t" "Todo" entry (file org-inbox-file)
+                            "* TODO %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n\n%a\n\n)")
+                           ("j" "Journal" entry (file+olp+datetree org-journal-file)
+                            "* %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n\n%a\n\n")
+                           ("n" "Note" entry (file org-notes-file)
+                            "* %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n\n%a\n\n")
+                           ("p" "Project Task" item
+                            (file+function org-work-file my/org-capture-project-target-heading)
+                            "* TODO %? \n  CLOCK: %U"
+                            :unnarrowed t))
+                         )
+  :config
+  ;; Enable syntax highlighting in code blocks
+  (add-hook 'org-mode-hook 'turn-on-font-lock)
+  (add-hook 'org-mode-hook 'org-indent-mode))
+
+
+(provide 'init)
+
+;;; init.el ends here

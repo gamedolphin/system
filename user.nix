@@ -4,6 +4,6 @@
 {
   system = "x86_64-linux";
   username = "nambiar";
-  stateVersion = "25.05";
+  stateVersion = "25.11";
   locale = "sv_SE.UTF-8";
 }

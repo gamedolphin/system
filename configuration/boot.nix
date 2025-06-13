@@ -20,13 +20,9 @@
 
     loader = {
       systemd-boot.enable = true;                # systemd-boot
+      systemd-boot.configurationLimit = 5;
       efi.canTouchEfiVariables = true;           # allow editing efi to edit the boot loader
 
-      grub = {
-        # this keeps old versions of my applied configurations
-        # 50 is high, but i have disk space
-        configurationLimit = 50;
-      };
 
       timeout = 5;                               # grub timeout to make a selection
     };

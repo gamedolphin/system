@@ -18,30 +18,7 @@
       nssmdns4 = true;
       openFirewall = true;
     };
-
-    # syncthing
-    syncthing = {
-      enable = true;
-      openDefaultPorts = true;
-      user = "${user.username}";
-      configDir = "/home/${user.username}/.conifg/syncthing";
-      settings = {
-        devices = {
-          "phone" = { id = "AC6CP4C-TBXMOU5-DSLTDSJ-B2ZJ65D-EXILKVV-U4QEDVA-AIAJZNJ-MX2RHQP"; };
-        };
-
-        folders = {
-          "OrgSync" = {
-            path = "/home/${user.username}/org";
-            devices = [ "phone" ];
-            ignorePerms = true;
-          };
-        };
-      };
-    };
   };
-
-  systemd.services.syncthing.environment.STNODEFAULTFOLDER = "true"; # Don't create default ~/Sync folder
 
   virtualisation.docker.enable = true;    # enable docker
   users.users.${user.username}.extraGroups = [ "docker" ];
