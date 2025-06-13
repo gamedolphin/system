@@ -360,7 +360,7 @@
                            ("p" "Project Task" item
                             (file+function org-work-file my/org-capture-project-target-heading)
                             "* TODO %? \n  CLOCK: %U"
-                            :unnarrowed t))
+                            ))
                          )
   :config
   ;; Enable syntax highlighting in code blocks
