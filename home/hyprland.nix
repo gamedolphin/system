@@ -30,6 +30,8 @@
         scroll_factor = 0.5;
       };
 
+      scroll_factor = 0.5;
+
       accel_profile =  "adaptive";
       sensitivity = -0.5; # -1.0 - 1.0, 0 means no modification.
 

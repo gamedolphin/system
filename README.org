@@ -130,7 +130,7 @@ The inputs for my system's configuration are very simple
     description = "Sandeep's nixos configuration";
 
     inputs = {
-      nixpkgs.url = "github:nixos/nixpkgs/e84fe27f74e11d151b627bc5513db2e128b7a6cd";
+      nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
       home-manager = {
         url = "github:nix-community/home-manager";
@@ -417,7 +417,7 @@ This file has most of the settings the control how the computer boots up.
       };
 
       extraModulePackages = [ ];                   # no extra packages on boot either
-      kernelPackages = pkgs.linuxPackages_latest;  # latest greatest linux kernel
+      kernelPackages = pkgs.linuxPackages_testing; # latest greatest linux kernel
       kernelParams = [ "silent" ];                 # quiet those logs
 
       consoleLogLevel = 0;                         # quiten more logs
@@ -445,14 +445,14 @@ Doesn't match the rest of the aesthetic of the system (with hyprland), but I lik
   { pkgs, user, ... } :
   {
     environment.systemPackages = with pkgs; [
-      greetd.tuigreet
+      tuigreet
     ];
 
     services.greetd = {
       enable = true;
       settings = {
         default_session = {
-          command = pkgs.lib.mkForce "${pkgs.greetd.tuigreet}/bin/tuigreet --remember --time --time-format '%I:%M %p | %a • %h | %F'";
+          command = pkgs.lib.mkForce "${pkgs.tuigreet}/bin/tuigreet --remember --time --time-format '%I:%M %p | %a • %h | %F'";
         };
       };
     };
@@ -471,6 +471,7 @@ This is the initial system level configuration for the terminal that I use on th
 
     environment.shells = with pkgs; [ zsh ];
     programs.zsh.enable = true;
+    environment.pathsToLink = [ "/share/zsh" ];
   }
 #+end_src
 
@@ -487,7 +488,6 @@ Along with that, a few other utilities like zip and enabling services to automou
       p7zip
       usbutils
       udiskie
-      davfs2
     ];
 
     programs.thunar = {
@@ -506,42 +506,6 @@ Along with that, a few other utilities like zip and enabling services to automou
       gvfs.enable = true;    # Mount, trash, and other functionalities
       tumbler.enable = true; # Thumbnail support for images
       udisks2.enable = true; # Auto mount usb drives
-      davfs2.enable = true;  # webdav mount
-    };
-
-    services.davfs2.settings = {
-      globalSection = {
-        use_locks = false;
-      };
-    };
-
-
-    sops.secrets.davfs = {
-      path = "/etc/davfs2/secrets";
-      mode = "0600";
-    };
-
-    sops.secrets.davfs_mount = {
-      path = "/home/${user.username}/scripts/mount_webdav";
-      mode = "0755";
-    };
-
-    systemd.services."mount-webdav-org" = {
-      description = "Mount WebDAV org folder";
-
-      path = [ pkgs.bash pkgs.davfs2 ];
-
-      after = [ "network-online.target" "sops-nix.service" ];
-      wants = [ "network-online.target" "sops-nix.service" ];
-
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-        ExecStart = "${config.sops.secrets.davfs_mount.path}";
-        ExecStop = "/run/current-system/sw/bin/umount /home/${user.username}/org";
-      };
-
-      wantedBy = [ "default.target" ];
     };
   }
 #+end_src
@@ -620,7 +584,7 @@ The configuration is done in the home manager section.
     ];
 
     # we use uwsm to manage launching hyprland
-    # uswm will add hyprland to the login sessions with greetd.
+    # uswm will add hyprland to the login sessions with tuigreet.
     programs = {
       uwsm.enable = true;
       uwsm.waylandCompositors = {
@@ -783,6 +747,7 @@ creation_rules:
     python3    # nice to have this ready for quick things
     cacert     # certificate authority
     remmina    # remote desktop app
+    aider-chat # aider terminal package
   ];
 #+end_src
 
@@ -824,7 +789,6 @@ This creates the user profile that I login with. Initially created during instal
       "wheel"          # can do sudo
       "scanner"        # access to the network scanner
       "lp"             # access to the printer
-      "davfs2"
     ];
   };
 #+end_src
@@ -1175,13 +1139,14 @@ Often I work with dotnet directly inside of unity and so we set that up too.
 #+begin_src nix :tangle home/unity.nix :noweb tangle :mkdirp yes.
   { pkgs, ... }:
   {
-    home.packages = with pkgs; [
-      (pkgs.unityhub.override {
-        extraPkgs = pkgs: with pkgs; [
-          dotnet-sdk
-        ];
-      })
-    ];
+     home.packages = with pkgs; [
+       (pkgs.unityhub.override {
+         extraPkgs = pkgs: with pkgs; [
+           dotnet-sdk
+         ];
+       })
+     ];
+
   }
 #+end_src
 
@@ -1216,6 +1181,8 @@ This configures the desktop environment along with the peripherals. The comments
           natural_scroll = "no";
           scroll_factor = 0.5;
         };
+
+        scroll_factor = 0.5;
 
         accel_profile =  "adaptive";
         sensitivity = -0.5; # -1.0 - 1.0, 0 means no modification.
@@ -1541,7 +1508,7 @@ You'll notice the color values in multiple places outside this as well.
 ** Dev Tools
 All the miscellaneous dev tools on this computer.
 #+begin_src nix :tangle home/dev.nix :noweb tangle :mkdirp yes
-  { user, ... }:
+  { user, pkgs, ... }:
   {
     programs = {
       vscode.enable = true;   # yes, sometimes i like to dabble
@@ -1564,6 +1531,11 @@ All the miscellaneous dev tools on this computer.
           plugins = [ "git" ];
           theme = "robbyrussell";
         };
+
+        initContent = pkgs.lib.mkOrder 1200 ''
+          [ -n "$EAT_SHELL_INTEGRATION_DIR" ] && \
+          source "$EAT_SHELL_INTEGRATION_DIR/zsh"
+        '';
       };
 
       # git with lfs
@@ -1654,6 +1626,7 @@ Comments describe the emacs package and what it does.
         epkgs.lsp-mode                 # lsp
         epkgs.lsp-ui                   # ui for lsp
         epkgs.rust-mode                # rust mode (when rust-ts doesn't cut it)
+        epkgs.rustic                   # more rust things
         epkgs.nix-mode                 # nix lang
         epkgs.eat                      # better shell
         epkgs.hcl-mode                 # hashicorp file mode
@@ -1663,6 +1636,7 @@ Comments describe the emacs package and what it does.
         epkgs.copilot                  # emacs copilot plugin
         epkgs.envrc                    # support for loading .envrc
         epkgs.nixpkgs-fmt              # format nix files
+        epkgs.aider                    # aider for emacs
       ];
     };
 
@@ -1680,6 +1654,10 @@ Comments describe the emacs package and what it does.
         source = ./init.el;
         target = ".emacs.d/init.el";
       };
+    };
+
+    services.nextcloud-client = {
+      enable = true;
     };
   }
 #+end_src
@@ -2027,7 +2005,8 @@ Now starts the main emacs configuration.
     (lsp-completion-mode . lsp-mode-setup-completion)
     (lsp-mode . lsp-enable-which-key-integration)
     (before-save . lsp-cleanup)
-    (prog-mode . lsp-deferred))
+    (rust-mode . lsp-deferred)
+    (csharp-ts-mode . lsp-deferred))
 
   (use-package lsp-ui :commands lsp-ui-mode
     :custom
@@ -2039,15 +2018,24 @@ Now starts the main emacs configuration.
     (lsp-eldoc-enable-hover nil)
     )
 
+  (use-package rust-mode
+  :ensure t
+  :init
+  (setq rust-mode-treesitter-derive t))
+
+  (use-package rustic
+    :ensure t
+    :after (rust-mode)
+    :config
+    (setq rustic-format-on-save nil)
+    :custom
+    (rustic-cargo-use-last-stored-arguments t))
+
+
+
   (use-package nixpkgs-fmt
     :custom
     (nixpkgs-fmt-command "nixfmt"))
-
-  (use-package rust-mode
-    :custom
-    (rust-mode-treesitter-derive t)
-    (lsp-rust-analyzer-cargo-watch-command "clippy")
-    (lsp-rust-analyzer-exclude-dirs ["Temp/**"]))
 
   (use-package typescript-ts-mode
     :custom
@@ -2055,7 +2043,10 @@ Now starts the main emacs configuration.
     (typescript-indent-level 2)
     (typescript-ts-mode-indent-offset 2))
 
-  (use-package eat)
+  (use-package eat
+    :bind
+    (("C-c e p" . eat-project)
+     ("C-c e t" . eat)))
   (use-package hcl-mode)
   (use-package jinja2-mode)
   (use-package f :demand t)
@@ -2093,11 +2084,11 @@ Now starts the main emacs configuration.
     :defer t
     :commands (org-mode org-capture org-agenda)
     :init
-    (defvar org-journal-file "~/org/Journal.org")
-    (defvar org-archive-file "~/org/Archive.org")
-    (defvar org-notes-file "~/org/Notes.org")
-    (defvar org-inbox-file "~/org/Inbox.org")
-    (defvar org-work-file "~/org/Work.org")
+    (defvar org-journal-file "~/nextcloud/org/journal.org")
+    (defvar org-archive-file "~/nextcloud/org/archive.org")
+    (defvar org-notes-file "~/nextcloud/org/notes.org")
+    (defvar org-inbox-file "~/nextcloud/org/inbox.org")
+    (defvar org-work-file "~/nextcloud/org/work.org")
     (defun my/org-capture-project-target-heading ()
       "Determine Org target headings from the current file's project path.
 
@@ -2124,7 +2115,7 @@ Now starts the main emacs configuration.
      ("C-c l" . org-toggle-link-display))
     :custom
     (org-agenda-files (list org-inbox-file org-journal-file))
-    (org-directory "~/org")
+    (org-directory "~/nextcloud/org")
     (org-default-notes-file org-inbox-file)
     (org-archive-location (concat org-archive-file "::* From %s"))
     (org-log-done 'time)
@@ -2147,6 +2138,16 @@ Now starts the main emacs configuration.
     ;; Enable syntax highlighting in code blocks
     (add-hook 'org-mode-hook 'turn-on-font-lock)
     (add-hook 'org-mode-hook 'org-indent-mode))
+
+  (use-package aider
+    :config
+    ;; For latest claude sonnet model
+    (setq aider-args '("--model" "sonnet" "--no-auto-accept-architect"))
+    (setenv "ANTHROPIC_API_KEY" (f-read-text "/run/secrets/claude_key"))
+    ;; Optional: Set a key binding for the transient menu
+    (global-set-key (kbd "C-c a") 'aider-transient-menu) ;; for wider screen
+    ;; or use aider-transient-menu-2cols / aider-transient-menu-1col, for narrow screen
+    (aider-magit-setup-transients))
 
 
   (provide 'init)

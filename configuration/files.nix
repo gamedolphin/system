@@ -9,7 +9,6 @@
     p7zip
     usbutils
     udiskie
-    davfs2
   ];
 
   programs.thunar = {
@@ -28,41 +27,5 @@
     gvfs.enable = true;    # Mount, trash, and other functionalities
     tumbler.enable = true; # Thumbnail support for images
     udisks2.enable = true; # Auto mount usb drives
-    davfs2.enable = true;  # webdav mount
-  };
-
-  services.davfs2.settings = {
-    globalSection = {
-      use_locks = false;
-    };
-  };
-
-
-  sops.secrets.davfs = {
-    path = "/etc/davfs2/secrets";
-    mode = "0600";
-  };
-
-  sops.secrets.davfs_mount = {
-    path = "/home/${user.username}/scripts/mount_webdav";
-    mode = "0755";
-  };
-
-  systemd.services."mount-webdav-org" = {
-    description = "Mount WebDAV org folder";
-
-    path = [ pkgs.bash pkgs.davfs2 ];
-
-    after = [ "network-online.target" "sops-nix.service" ];
-    wants = [ "network-online.target" "sops-nix.service" ];
-
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      ExecStart = "${config.sops.secrets.davfs_mount.path}";
-      ExecStop = "/run/current-system/sw/bin/umount /home/${user.username}/org";
-    };
-
-    wantedBy = [ "default.target" ];
   };
 }

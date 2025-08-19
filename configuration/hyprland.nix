@@ -31,7 +31,7 @@
   ];
 
   # we use uwsm to manage launching hyprland
-  # uswm will add hyprland to the login sessions with greetd.
+  # uswm will add hyprland to the login sessions with tuigreet.
   programs = {
     uwsm.enable = true;
     uwsm.waylandCompositors = {

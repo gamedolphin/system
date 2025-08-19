@@ -4,14 +4,14 @@
 { pkgs, user, ... } :
 {
   environment.systemPackages = with pkgs; [
-    greetd.tuigreet
+    tuigreet
   ];
 
   services.greetd = {
     enable = true;
     settings = {
       default_session = {
-        command = pkgs.lib.mkForce "${pkgs.greetd.tuigreet}/bin/tuigreet --remember --time --time-format '%I:%M %p | %a • %h | %F'";
+        command = pkgs.lib.mkForce "${pkgs.tuigreet}/bin/tuigreet --remember --time --time-format '%I:%M %p | %a • %h | %F'";
       };
     };
   };

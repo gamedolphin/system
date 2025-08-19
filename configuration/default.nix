@@ -27,6 +27,7 @@
     python3    # nice to have this ready for quick things
     cacert     # certificate authority
     remmina    # remote desktop app
+    aider-chat # aider terminal package
   ];
 
   users.users.${user.username} = {
@@ -37,7 +38,6 @@
       "wheel"          # can do sudo
       "scanner"        # access to the network scanner
       "lp"             # access to the printer
-      "davfs2"
     ];
   };
 

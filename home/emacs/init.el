@@ -246,7 +246,8 @@
   (lsp-completion-mode . lsp-mode-setup-completion)
   (lsp-mode . lsp-enable-which-key-integration)
   (before-save . lsp-cleanup)
-  (prog-mode . lsp-deferred))
+  (rust-mode . lsp-deferred)
+  (csharp-ts-mode . lsp-deferred))
 
 (use-package lsp-ui :commands lsp-ui-mode
   :custom
@@ -258,15 +259,24 @@
   (lsp-eldoc-enable-hover nil)
   )
 
+(use-package rust-mode
+:ensure t
+:init
+(setq rust-mode-treesitter-derive t))
+
+(use-package rustic
+  :ensure t
+  :after (rust-mode)
+  :config
+  (setq rustic-format-on-save nil)
+  :custom
+  (rustic-cargo-use-last-stored-arguments t))
+
+
+
 (use-package nixpkgs-fmt
   :custom
   (nixpkgs-fmt-command "nixfmt"))
-
-(use-package rust-mode
-  :custom
-  (rust-mode-treesitter-derive t)
-  (lsp-rust-analyzer-cargo-watch-command "clippy")
-  (lsp-rust-analyzer-exclude-dirs ["Temp/**"]))
 
 (use-package typescript-ts-mode
   :custom
@@ -274,7 +284,10 @@
   (typescript-indent-level 2)
   (typescript-ts-mode-indent-offset 2))
 
-(use-package eat)
+(use-package eat
+  :bind
+  (("C-c e p" . eat-project)
+   ("C-c e t" . eat)))
 (use-package hcl-mode)
 (use-package jinja2-mode)
 (use-package f :demand t)
@@ -312,11 +325,11 @@
   :defer t
   :commands (org-mode org-capture org-agenda)
   :init
-  (defvar org-journal-file "~/org/Journal.org")
-  (defvar org-archive-file "~/org/Archive.org")
-  (defvar org-notes-file "~/org/Notes.org")
-  (defvar org-inbox-file "~/org/Inbox.org")
-  (defvar org-work-file "~/org/Work.org")
+  (defvar org-journal-file "~/nextcloud/org/journal.org")
+  (defvar org-archive-file "~/nextcloud/org/archive.org")
+  (defvar org-notes-file "~/nextcloud/org/notes.org")
+  (defvar org-inbox-file "~/nextcloud/org/inbox.org")
+  (defvar org-work-file "~/nextcloud/org/work.org")
   (defun my/org-capture-project-target-heading ()
     "Determine Org target headings from the current file's project path.
 
@@ -343,7 +356,7 @@
    ("C-c l" . org-toggle-link-display))
   :custom
   (org-agenda-files (list org-inbox-file org-journal-file))
-  (org-directory "~/org")
+  (org-directory "~/nextcloud/org")
   (org-default-notes-file org-inbox-file)
   (org-archive-location (concat org-archive-file "::* From %s"))
   (org-log-done 'time)
@@ -366,6 +379,16 @@
   ;; Enable syntax highlighting in code blocks
   (add-hook 'org-mode-hook 'turn-on-font-lock)
   (add-hook 'org-mode-hook 'org-indent-mode))
+
+(use-package aider
+  :config
+  ;; For latest claude sonnet model
+  (setq aider-args '("--model" "sonnet" "--no-auto-accept-architect"))
+  (setenv "ANTHROPIC_API_KEY" (f-read-text "/run/secrets/claude_key"))
+  ;; Optional: Set a key binding for the transient menu
+  (global-set-key (kbd "C-c a") 'aider-transient-menu) ;; for wider screen
+  ;; or use aider-transient-menu-2cols / aider-transient-menu-1col, for narrow screen
+  (aider-magit-setup-transients))
 
 
 (provide 'init)

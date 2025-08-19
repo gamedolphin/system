@@ -3,11 +3,12 @@
 # Any changes made here will be overwritten.
 { pkgs, ... }:
 {
-  home.packages = with pkgs; [
-    (pkgs.unityhub.override {
-      extraPkgs = pkgs: with pkgs; [
-        dotnet-sdk
-      ];
-    })
-  ];
+   home.packages = with pkgs; [
+     (pkgs.unityhub.override {
+       extraPkgs = pkgs: with pkgs; [
+         dotnet-sdk
+       ];
+     })
+   ];
+
 }

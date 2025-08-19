@@ -42,6 +42,7 @@
       epkgs.lsp-mode                 # lsp
       epkgs.lsp-ui                   # ui for lsp
       epkgs.rust-mode                # rust mode (when rust-ts doesn't cut it)
+      epkgs.rustic                   # more rust things
       epkgs.nix-mode                 # nix lang
       epkgs.eat                      # better shell
       epkgs.hcl-mode                 # hashicorp file mode
@@ -51,6 +52,7 @@
       epkgs.copilot                  # emacs copilot plugin
       epkgs.envrc                    # support for loading .envrc
       epkgs.nixpkgs-fmt              # format nix files
+      epkgs.aider                    # aider for emacs
     ];
   };
 
@@ -68,5 +70,9 @@
       source = ./init.el;
       target = ".emacs.d/init.el";
     };
+  };
+
+  services.nextcloud-client = {
+    enable = true;
   };
 }
