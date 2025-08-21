@@ -10,7 +10,7 @@
     };
 
     extraModulePackages = [ ];                   # no extra packages on boot either
-    kernelPackages = pkgs.linuxPackages_testing; # latest greatest linux kernel
+    kernelPackages = pkgs.linuxPackages_latest; # latest greatest linux kernel
     kernelParams = [ "silent" ];                 # quiet those logs
 
     consoleLogLevel = 0;                         # quiten more logs
@@ -20,7 +20,7 @@
 
     loader = {
       systemd-boot.enable = true;                # systemd-boot
-      systemd-boot.configurationLimit = 5;
+      systemd-boot.configurationLimit = 2;
       efi.canTouchEfiVariables = true;           # allow editing efi to edit the boot loader
 
 

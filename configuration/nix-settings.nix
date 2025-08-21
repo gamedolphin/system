@@ -18,6 +18,8 @@
 
   # allow proprietary software on this machine. I'm not a purist.
   nixpkgs.config.allowUnfree = true;
+  # unityhub depends on this... for now
+  nixpkgs.config.permittedInsecurePackages = [ "libxml2-2.13.8" ];
 
   # this declares how often old configurations are cleared up.
   # i cleanup anything older than a week, every week.

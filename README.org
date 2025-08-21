@@ -385,6 +385,8 @@ These are global nix settings that configure the settings for the actual tool.
 
     # allow proprietary software on this machine. I'm not a purist.
     nixpkgs.config.allowUnfree = true;
+    # unityhub depends on this... for now
+    nixpkgs.config.permittedInsecurePackages = [ "libxml2-2.13.8" ];
 
     # this declares how often old configurations are cleared up.
     # i cleanup anything older than a week, every week.
@@ -417,7 +419,7 @@ This file has most of the settings the control how the computer boots up.
       };
 
       extraModulePackages = [ ];                   # no extra packages on boot either
-      kernelPackages = pkgs.linuxPackages_testing; # latest greatest linux kernel
+      kernelPackages = pkgs.linuxPackages_latest; # latest greatest linux kernel
       kernelParams = [ "silent" ];                 # quiet those logs
 
       consoleLogLevel = 0;                         # quiten more logs
@@ -427,7 +429,7 @@ This file has most of the settings the control how the computer boots up.
 
       loader = {
         systemd-boot.enable = true;                # systemd-boot
-        systemd-boot.configurationLimit = 5;
+        systemd-boot.configurationLimit = 2;
         efi.canTouchEfiVariables = true;           # allow editing efi to edit the boot loader
 
 
