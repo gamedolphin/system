@@ -35,9 +35,9 @@
     pinta                    # image editor
     mpv                      # media player
   ];
-
+  
   services.dunst.enable = true;      # notifications daemon
-
+  
   programs.obs-studio.enable = true; # screen recording tool
 
   programs.home-manager.enable =  true;

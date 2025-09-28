@@ -38,7 +38,7 @@
     mode = "644";
     path = "/home/${user.username}/.ssh/wavefunk_dev.pub";
   };
-
+  
   programs._1password.enable = true;
   programs._1password-gui = {
     enable = true;

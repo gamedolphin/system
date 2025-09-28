@@ -28,7 +28,7 @@
     cacert     # certificate authority
     remmina    # remote desktop app
   ];
-
+  
   # to enable icons with wlogout
   # https://github.com/catppuccin/nix/issues/584
   programs.gdk-pixbuf.modulePackages = [ pkgs.librsvg ];
