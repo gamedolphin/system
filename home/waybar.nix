@@ -7,7 +7,7 @@
     settings = {
       mainBar = {
         layer = "top";
-        height = 24;
+        height = 34;
         modules-left = [ "hyprland/workspaces" "hyprland/window" ];
         modules-right = [
           "idle_inhibitor"
@@ -27,16 +27,16 @@
             deactivated = " 󰒲  ";
           };
         };
-          "pulseaudio" = {
-            "format" =  "{volume}% {icon}";
-            "format-bluetooth" = "{volume}% {icon}";
-            "format-muted" = "";
-            "format-icons"= {
-               "headphones"= "";
-               "headset"= "";
-              "phone"= "";
+        "pulseaudio" = {
+          "format" =  "{volume}% {icon}";
+          "format-bluetooth" = "{volume}% {icon}";
+          "format-muted" = "";
+          "format-icons"= {
+            "headphones"= "";
+            "headset"= "";
+            "phone"= "";
             "portab  le"= "";
-              "default"= ["" ""];
+            "default"= ["" ""];
           };
           "on-click"= "pavucontrol";
         };
@@ -46,6 +46,7 @@
           "format-disconnected" =  "Disconnected ⚠";
           "tooltip-format-wifi" = "{essid} ({signalStrength}%)";
           "tooltip-format-ethernet" = "{ifname}: {ipaddr}/{cidr}";
+          "on-click" = "impala";
         };
         "cpu".format = "{usage}%  ";
         "cpu".tooltip = false;
@@ -73,93 +74,95 @@
       };
     };
     style = ''
-        * {
-          font-family: Iosevka Nerd Font, Roboto, Helvetica, Arial, sans-serif;
-          font-size: 13px;
+         * {
+           font-family: Aporetic Sans Mono, Iosevka Nerd Font, Roboto, Helvetica, Arial, sans-serif;
+           font-size: 13px;
+         }
+
+         window#waybar {
+           background-color: @base;
+           color: @text;
+           transition-property: background-color;
+           border-bottom: 0px solid rgba(0, 0, 0, 0);
+           transition-duration: .5s;
+         }
+
+         #workspaces button {
+           padding: 0 5px;
+           background-color: transparent;
+           border: none;
+           border-radius: 0;
+           color: @text;
+         }
+
+         #workspaces button:hover {
+           background: @surface1;
+           color: @text;
+         }
+
+         #workspaces button.active {
+           background-color: @green;
+           color: @base;
+           box-shadow: inset 0 -3px @subtext1;
+         }
+
+         #clock,
+         #idle_inhibitor
+         #battery,
+         #cpu,
+         #memory,
+         #temperature,
+         #network,
+         #pulseaudio,
+         #tray {
+           margin: 0 5px;
+           padding: 0 2px;
+         }
+
+         #idle_inhibitor.activated {
+           background-color: @green;
+         }
+
+         #battery.charging {
+            color: @green;
+         }
+
+         @keyframes blink {
+           to {
+              background-color: #ffffff;
+              color: black;
+           }
+         }
+
+         #battery.warning:not(.charging) {
+           color: white;
+           animation-name: blink;
+           animation-duration: 0.5s;
+           animation-timing-function: linear;
+           animation-iteration-count: infinite;
+           animation-direction: alternate;
         }
 
-        window#waybar {
-          background-color: #4c566a;
-          color: #ffffff;
-          transition-property: background-color;
-          border-bottom: 0px solid rgba(0, 0, 0, 0);
-          transition-duration: .5s;
-        }
+         #window,
+         #workspaces {
+           margin: 0 4px;
+         }
 
-        #workspaces button {
-          padding: 0 5px;
-          background-color: transparent;
-          border: none;
-          border-radius: 0;
-        }
+         .modules-left > widget:first-child > #workspaces {
+           margin-left: 0;
+         }
 
-        #workspaces button:hover {
-          background: #2e3440;
-          color: white;
-        }
+         .modules-right > widget:last-child > #workspaces {
+           margin-right: 0;
+         }
 
-        #workspaces button.active {
-          background-color: #5e81ac;
-          box-shadow: inset 0 -3px #ffffff;
-        }
+         #network.disconnected {
+           background-color: @red;
+         }
 
-        #clock,
-        #idle_inhibitor
-        #battery,
-        #cpu,
-        #memory,
-        #temperature,
-        #network,
-        #pulseaudio,
-        #tray {
-          margin: 0 5px;
-          padding: 0 2px;
-        }
-
-        #idle_inhibitor.activated {
-          background-color: #a3be8c;
-        }
-
-        #battery.charging {
-           color: #a3be8c;
-        }
-
-        @keyframes blink {
-          to {
-             background-color: #ffffff;
-             color: black;
-          }
-        }
-
-        #battery.warning:not(.charging) {
-          color: white;
-          animation-name: blink;
-          animation-duration: 0.5s;
-          animation-timing-function: linear;
-          animation-iteration-count: infinite;
-          animation-direction: alternate;
-       }
-
-        #window,
-        #workspaces {
-          margin: 0 4px;
-        }
-
-        .modules-left > widget:first-child > #workspaces {
-          margin-left: 0;
-        }
-
-        .modules-right > widget:last-child > #workspaces {
-          margin-right: 0;
-        }
-
-        #network.disconnected {
-          background-color: #f53c3c;
-        }
-
-        #temperature.critical {
-          background-color: #eb4d4b;
-        }
-        '';
+         #temperature.critical {
+           background-color: @red;
+         }
+         '';
   };
 }

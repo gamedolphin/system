@@ -8,9 +8,9 @@
 
 (setq-default
  default-frame-alist
- '((background-color . "#3F3F3F")
+ '((background-color . "#1e1e2e")
    (bottom-divider-width . 1)            ; Thin horizontal window divider
-   (foreground-color . "#DCDCCC")        ; Default foreground color
+   (foreground-color . "#bac2de")        ; Default foreground color
    (fullscreen . maximized)              ; Maximize the window by default
    (horizontal-scroll-bars . nil)        ; No horizontal scroll-bars
    (left-fringe . 8)                     ; Thin left fringe
@@ -24,7 +24,7 @@
  user-full-name "Sandeep Nambiar"                ; ME!
 
  ;; memory configuration
- ;; Higher garbage collection threshold, prevents frequent gc locks
+ ;; Higher garbage collection threshold, prevents frequent gc locks, reset later
  gc-cons-threshold most-positive-fixnum
  ;; Ignore warnings for (obsolete) elisp compilations
  byte-compile-warnings '(not obsolete)
@@ -32,6 +32,13 @@
  warning-suppress-log-types '((comp) (bytecomp))
  ;; Large files are okay in the new millenium.
  large-file-warning-threshold 100000000
+ ;; dont show garbage collection messages at startup, will reset later
+ garbage-collection-messages nil
+ ;; native compilation
+ package-native-compile t
+ native-comp-warning-on-missing-source nil
+ native-comp-async-report-warnings-errors 'silent
+
 
  ;; Read more based on system pipe capacity
  read-process-output-max (max (* 10240 10240) read-process-output-max)
@@ -62,6 +69,15 @@
  inhibit-startup-message t                       ; I know I am ready
  inhibit-startup-echo-area-message t             ; Yep, still know it
  initial-scratch-message nil                     ; I know it is the scratch buffer!
+ initial-buffer-choice nil
+ inhibit-startup-buffer-menu t
+ inhibit-x-resources t
+ initial-major-mode 'fundamental-mode
+
+ pgtk-wait-for-event-timeout 0.001               ; faster child frames
+
+ ad-redefinition-action 'accept                  ; dont care about legacy things being redefined
+ inhibit-compacting-font-caches t
 
  ;; tabs
  tab-width 4                                     ; Always tab 4 spaces.
@@ -73,11 +89,30 @@
  ;; packages
  use-package-always-defer t
 
- ;; custom
- custom-file (concat user-emacs-directory "custom.el")
-
  load-prefer-newer t
 
  default-input-method nil
+
+ use-dialog-box nil
+
+ use-file-dialog nil
+
+ use-package-expand-minimally t
+
+ package-enable-at-startup nil
+
+ use-package-enable-imenu-support t
+
+ auto-mode-case-fold nil  ; No second pass of case-insensitive search over auto-mode-alist.
+
+ package-archives '(("melpa"        . "https://melpa.org/packages/")
+                       ("gnu"          . "https://elpa.gnu.org/packages/")
+                       ("nongnu"       . "https://elpa.nongnu.org/nongnu/")
+                       ("melpa-stable" . "https://stable.melpa.org/packages/"))
+
+ package-archive-priorities '(("gnu"    . 99)
+                                 ("nongnu" . 80)
+                                 ("melpa"  . 70)
+                                 ("melpa-stable" . 50))
  )
  ;;; early-init.el ends here

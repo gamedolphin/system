@@ -3,9 +3,7 @@
 # Any changes made here will be overwritten.
 { pkgs, ...}:
 {
-  environment.systemPackages = with pkgs; [
-    pamixer
-  ];
+  environment.systemPackages = with pkgs; [ pamixer ];
   services.pipewire = {
     enable = true;
     alsa.enable = true;

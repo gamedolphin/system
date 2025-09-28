@@ -1,43 +1,125 @@
 ;;; package --- Summary - My minimal Emacs init file -*- lexical-binding: t -*-
 
-;;; Commentary:
-;;; Simple Emacs setup I carry everywhere
+  ;;; Commentary:
+  ;;; Simple Emacs setup I carry everywhere
 
-;;; Code:
+  ;;; Code:
+(setq custom-file (locate-user-emacs-file "custom.el"))
 (load custom-file 'noerror)            ;; no error on missing custom file
 
 (require 'package)
-(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
-(add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/") t)
 (package-initialize)
 
-(use-package emacs
-  :init
-  (global-auto-revert-mode t)          ;; revert automatically on external file changes
-  (savehist-mode)                      ;; save minibuffer history
+(defun reset-custom-vars ()
+  "Resets the custom variables that were set to crazy numbers"
+  (setopt gc-cons-threshold (* 1024 1024 100))
+  (setopt garbage-collection-messages t))
 
+(use-package emacs
+  :custom
+  (native-comp-async-query-on-exit t)
+  (read-answer-short t)
+  (use-short-answers t)
+  (enable-recursive-minibuffers t)
+  (which-func-update-delay 1.0)
+  (visible-bell nil)
+  (custom-buffer-done-kill t)
+  (whitespace-line-column nil)
+  (x-underline-at-descent-line t)
+  (imenu-auto-rescan t)
+  (uniquify-buffer-name-style 'forward)
+  (confirm-nonexistent-file-or-buffer nil)
+  (create-lockfiles nil)
+  (make-backup-files nil)
+  (kill-do-not-save-duplicates t)
+  (sentence-end-double-space nil)
+  (treesit-enabled-modes t)
+  :init
   ;; base visual
   (menu-bar-mode -1)                   ;; no menu bar
   (toggle-scroll-bar -1)               ;; no scroll bar
   (tool-bar-mode -1)                   ;; no tool bar either
-  (global-hl-line-mode +1)             ;; always highlight current line
   (blink-cursor-mode -1)               ;; stop blinking
-  (global-display-line-numbers-mode 1) ;; always show line numbers
-  (column-number-mode t)               ;; column number in the mode line
-  (size-indication-mode t)             ;; file size in the mode line
-  (pixel-scroll-precision-mode)        ;; smooth mouse scroll
-  (fset 'yes-or-no-p 'y-or-n-p)        ;; y/n is good enough
-  (electric-pair-mode)                 ;; i mean ... parens should auto create
-  (recentf-mode)                       ;; keep track of recently opened files
 
   ;; font of the century
-  (set-frame-font "Iosevka Nerd Font 12" nil t)
+  (set-frame-font "Aporetic Sans Mono 12" nil t)
 
   :bind
   (("C-<wheel-up>"   . pixel-scroll-precision) ; dont zoom in please, just scroll
    ("C-<wheel-down>" . pixel-scroll-precision) ; dont zoom in either, just scroll
    ("C-x k"          . kill-current-buffer))   ; kill the buffer, dont ask
+  :hook
+  (text-mode . delete-trailing-whitespace-mode)
+  (prog-mode . delete-trailing-whitespace-mode)
+  (after-init . global-display-line-numbers-mode) ;; always show line numbers
+  (after-init . column-number-mode)               ;; column number in the mode line
+  (after-init . size-indication-mode)             ;; file size in the mode line
+  (after-init . pixel-scroll-precision-mode)      ;; smooth mouse scroll
+  (after-init . electric-pair-mode)               ;; i mean ... parens should auto create
+  (after-init . reset-custom-vars)
   )
+
+(use-package autorevert
+  :ensure nil
+  :custom
+  (auto-revert-interval 3)
+  (auto-revert-remote-files nil)
+  (auto-revert-use-notify t)
+  (auto-revert-avoid-polling nil)
+  (auto-revert-verbose t)
+  :hook
+  (after-init . global-auto-revert-mode))
+
+(use-package recentf
+  :ensure nil
+  :commands (recentf-mode recentf-cleanup)
+  :hook
+  (after-init . recentf-mode)
+  :custom
+  (recentf-auto-cleanup 'never)
+  (recentf-exclude
+   (list "\\.tar$" "\\.tbz2$" "\\.tbz$" "\\.tgz$" "\\.bz2$"
+         "\\.bz$" "\\.gz$" "\\.gzip$" "\\.xz$" "\\.zip$"
+         "\\.7z$" "\\.rar$"
+         "COMMIT_EDITMSG\\'"
+         "\\.\\(?:gz\\|gif\\|svg\\|png\\|jpe?g\\|bmp\\|xpm\\)$"
+         "-autoloads\\.el$" "autoload\\.el$"))
+
+  :config
+  ;; A cleanup depth of -90 ensures that `recentf-cleanup' runs before
+  ;; `recentf-save-list', allowing stale entries to be removed before the list
+  ;; is saved by `recentf-save-list', which is automatically added to
+  ;; `kill-emacs-hook' by `recentf-mode'.
+  (add-hook 'kill-emacs-hook #'recentf-cleanup -90))
+
+(use-package savehist
+  :ensure nil
+  :commands (savehist-mode savehist-save)
+  :hook
+  (after-init . savehist-mode)
+  :custom
+  (savehist-autosave-interval 600)
+  (savehist-additional-variables
+   '(kill-ring                        ; clipboard
+     register-alist                   ; macros
+     mark-ring global-mark-ring       ; marks
+     search-ring regexp-search-ring)))
+
+(use-package hl-line
+  :ensure nil
+  :custom
+  (hl-line-sticky-flag nil)
+  (global-hl-line-sticky-flag nil)
+  :hook
+  (after-init . global-hl-line-mode))
+
+(use-package saveplace
+  :ensure nil
+  :commands (save-place-mode save-place-local-mode)
+  :hook
+  (after-init . save-place-mode)
+  :custom
+  (save-place-limit 400))
 
 (use-package nerd-icons
   :custom
@@ -54,39 +136,36 @@
   (doom-modeline-lsp nil)               ;; lsp state is too distracting, too often
   :hook (after-init . doom-modeline-mode))
 
-(use-package doom-themes
-  :commands doom-themes-visual-bell-config
-  :custom
-  (doom-themes-enable-bold t)
-  (doom-themes-enable-italic t)
-  :init
-  (load-theme 'doom-nord t)
-  (doom-themes-visual-bell-config))
+(load-theme 'catppuccin :no-confirm)
 
 (use-package diminish :demand t)         ;; declutter the modeline
-(use-package eldoc :diminish eldoc-mode) ;; docs for everything
-
-(use-package whitespace-cleanup-mode
-  :commands global-whitespace-cleanup-mode
+(use-package eldoc
+  :diminish eldoc-mode
   :custom
-  (whitespace-cleanup-mode-only-if-initially-clean nil)
-  :hook
-  (after-init . global-whitespace-cleanup-mode))
+  (eldoc-echo-area-use-multiline-p nil)) ;; docs for everything
+
+(use-package eldoc-box
+  :defer t
+  :config
+  (set-face-background 'eldoc-box-border (catppuccin-color 'green))
+  (set-face-background 'eldoc-box-body (catppuccin-color 'base))
+  :bind
+  (("M-h" . eldoc-box-help-at-point)))
 
 (use-package pulsar
   :commands pulsar-global-mode pulsar-recenter-top pulsar-reveal-entry
   :init
-  (defface pulsar-nord
-    '((default :extend t)
+  (defface pulsar-catppuccin
+    `((default :extend t)
       (((class color) (min-colors 88) (background light))
-       :background "#2e3440")
+       :background ,(catppuccin-color 'sapphire))
       (((class color) (min-colors 88) (background dark))
-       :background "#81a1c1")
+       :background ,(catppuccin-color 'sapphire))
       (t :inverse-video t))
     "Alternative nord face for `pulsar-face'."
     :group 'pulsar-faces)
   :custom
-  (pulsar-face 'pulsar-nord)
+  (pulsar-face 'pulsar-catppuccin)
   :hook
   (after-init . pulsar-global-mode))
 
@@ -118,6 +197,8 @@
   ("C-x b"   . consult-buffer)     ;; orig. switch-to-buffer
   ("M-y"     . consult-yank-pop)   ;; orig. yank-pop
   ("M-g M-g" . consult-goto-line)  ;; orig. goto-line
+  ("M-g i"   . consult-imenu)      ;; consult version is interactive
+  ("M-g r"   . consult-ripgrep)    ;; find in project also works
   :custom
   (consult-narrow-key "<"))
 
@@ -128,11 +209,9 @@
   (read-buffer-completion-ignore-case t)
   (completion-ignore-case t)
   (enable-recursive-minibuffers t)
+  (minibuffer-prompt-properties '(read-only t cursor-intangible t face minibuffer-prompt))
   :init
   (vertico-mode)
-  :config
-  (setq minibuffer-prompt-properties
-        '(read-only t cursor-intangible t face minibuffer-prompt))
   :hook
   (minibuffer-setup-hook . cursor-intangible-mode))
 
@@ -144,6 +223,7 @@
   :bind
   ("C-c M-e" . crux-find-user-init-file)
   ("C-c C-w" . crux-transpose-windows)
+  ("C-c M-d" . crux-find-current-directory-dir-locals-file)
   ("C-a"     . crux-move-beginning-of-line))
 
 (use-package magit
@@ -182,15 +262,6 @@
 
 (use-package yasnippet-snippets :after yasnippet)
 
-(use-package projectile
-  :commands projectile-mode
-  :diminish projectile-mode
-  :custom
-  (projectile-globally-ignored-directories (append '("node_modules")))
-  :bind-keymap ("C-c p" . projectile-command-map)
-  :config
-  (projectile-mode +1))
-
 (use-package exec-path-from-shell
   :commands exec-path-from-shell-initialize
   :custom
@@ -198,98 +269,15 @@
   :hook
   (after-init . exec-path-from-shell-initialize))
 
-(use-package flycheck
-  :commands global-flycheck-mode
-  :diminish
-  :hook
-  (after-init . global-flycheck-mode))
-
-(use-package lsp-mode
-  :commands (lsp lsp-deferred lsp-format-buffer
-                 lsp-organize-imports
-                 orderless-dispatch-flex-first
-                 cape-capf-buster lsp-completion-at-point)
-  :defines lsp-file-watch-ignored-directories
-  :diminish lsp-lens-mode
-  :bind-keymap
-  ("C-c l" . lsp-command-map)
-  :custom
-  (lsp-lens-enable nil)
-  (lsp-idle-delay 0.500)
-  (lsp-modeline-code-actions-enable t)
-  (lsp-modeline-diagnostics-enable t)
-  (lsp-csharp-omnisharp-roslyn-binary-path "OmniSharp")
-  (lsp-completion-provider :none) ;; we use Corfu!
-  (lsp-eldoc-render-all t)
-  :init
-  (defun orderless-dispatch-flex-first (_pattern index _total)
-    (and (eq index 0) 'orderless-flex))
-
-  ;; Configure the first word as flex filtered.
-  (add-hook 'orderless-style-dispatchers #'orderless-dispatch-flex-first nil 'local)
-
-  (defun lsp-mode-setup-completion ()
-    (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
-          '(orderless)))
-
-  ;; Optionally configure the cape-capf-buster.
-  (setq-local completion-at-point-functions
-              (list (cape-capf-buster #'lsp-completion-at-point)))
-  :config
-  (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\Temp\\'")
-  (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\Logs\\'")
-  (defun lsp-cleanup ()
-    (lsp-format-buffer)
-    (lsp-organize-imports)
-    (whitespace-cleanup))
-  :hook
-  (lsp-completion-mode . lsp-mode-setup-completion)
-  (lsp-mode . lsp-enable-which-key-integration)
-  (before-save . lsp-cleanup)
-  (rust-mode . lsp-deferred)
-  (csharp-ts-mode . lsp-deferred))
-
-(use-package lsp-ui :commands lsp-ui-mode
-  :custom
-  (lsp-ui-doc-enable t)
-  (lsp-ui-sideline-diagnostic-max-lines 4)
-  (lsp-ui-doc-show-with-mouse nil)
-  (lsp-ui-doc-position 'bottom)
-  (lsp-ui-doc-show-with-cursor t)
-  (lsp-eldoc-enable-hover nil)
-  )
-
-(use-package rust-mode
-:ensure t
-:init
-(setq rust-mode-treesitter-derive t))
-
-(use-package rustic
-  :ensure t
-  :after (rust-mode)
-  :config
-  (setq rustic-format-on-save nil)
-  :custom
-  (rustic-cargo-use-last-stored-arguments t))
-
-
-
 (use-package nixpkgs-fmt
   :custom
   (nixpkgs-fmt-command "nixfmt"))
-
-(use-package typescript-ts-mode
-  :custom
-  (lsp-javascript-preferences-import-module-specifier :relative)
-  (typescript-indent-level 2)
-  (typescript-ts-mode-indent-offset 2))
 
 (use-package eat
   :bind
   (("C-c e p" . eat-project)
    ("C-c e t" . eat)))
-(use-package hcl-mode)
-(use-package jinja2-mode)
+
 (use-package f :demand t)
 
 (use-package envrc
@@ -297,28 +285,43 @@
   :hook
   (after-init . envrc-global-mode))
 
-(use-package nix-mode
-  :hook (nix-mode . lsp-deferred))
-
-(use-package shell-pop
-  :custom
-  (shell-pop-universal-key "M-o"))
-
-(use-package copilot
-  :defines copilot-completion-map
-  :hook prog-mode
-  :bind
-  (:map copilot-completion-map
-        ("<tab>" . copilot-accept-completion)
-        ("M-n" . copilot-next-completion)
-        ("M-p" . copilot-previous-completion)
-        ("C-g" . copilot-clear-overlay)))
-
 (use-package gptel
   :commands gptel-make-anthropic f-read-text
   :config
   (gptel-make-anthropic "Claude"
     :stream t :key (f-read-text "/run/secrets/claude_key")))
+
+(use-package sideline-flymake)
+(use-package sideline-eglot)
+(use-package sideline
+  :custom
+  (sideline-backends-right '(sideline-flymake sideline-eglot))
+  :hook
+  (eglot-managed-mode . sideline-mode)
+  (flymake-mode . sideline-mode))
+
+(use-package eglot
+  :custom
+  (eglot-extend-to-xref t)
+  (eglot-ignored-server-capabilities '(:inlayHintProvider))
+  (jsonrpc-event-hook nil)
+  :hook
+  (eglot-managed-mode . eldoc-box-hover-mode)
+  (before-save . eldoc-format-buffer)
+  :bind
+  (:map eglot-mode-map
+        ("C-c l a" . eglot-code-actions)
+        ("C-c l r" . eglot-rename)
+        ("C-c l h" . eldoc)
+        ("C-c l g" . xref-find-references)
+        ("C-c l w" . eglot-reconnect)))
+
+(use-package proced
+  :custom
+  (proced-auto-update-flag t)
+  (proced-auto-update-interval 3)
+  (proced-enable-color-flag t)
+  (proced-show-remote-processes t))
 
 (use-package org
   :ensure t
@@ -333,14 +336,15 @@
   (defun my/org-capture-project-target-heading ()
     "Determine Org target headings from the current file's project path.
 
-  This function assumes a directory structure like '~/projects/COMPANY/PROJECT/'.
-  It extracts 'COMPANY' and 'PROJECT' to use as nested headlines
-  for an Org capture template.
+    This function assumes a directory structure like '~/projects/COMPANY/PROJECT/'.
+    It extracts 'COMPANY' and 'PROJECT' to use as nested headlines
+    for an Org capture template.
 
-  If the current buffer is not visiting a file within such a
-  project structure, it returns nil, causing capture to default to
-  the top of the file."
-    (when-let ((path (buffer-file-name))) ; Ensure we are in a file-visiting buffer
+    If the current buffer is not visi
+ting a file within such a
+    project structure, it returns nil, causing capture to default to
+    the top of the file."
+    (when-let* ((path (buffer-file-name))) ; Ensure we are in a file-visiting buffer
       (let ((path-parts (split-string path "/" t " ")))
         (when-let* ((projects-pos (cl-position "projects" path-parts :test #'string=))
                     (company      (nth (+ 1 projects-pos) path-parts))
@@ -380,17 +384,17 @@
   (add-hook 'org-mode-hook 'turn-on-font-lock)
   (add-hook 'org-mode-hook 'org-indent-mode))
 
-(use-package aider
+;; extras
+(use-package comp-run
+  :ensure nil
   :config
-  ;; For latest claude sonnet model
-  (setq aider-args '("--model" "sonnet" "--no-auto-accept-architect"))
-  (setenv "ANTHROPIC_API_KEY" (f-read-text "/run/secrets/claude_key"))
-  ;; Optional: Set a key binding for the transient menu
-  (global-set-key (kbd "C-c a") 'aider-transient-menu) ;; for wider screen
-  ;; or use aider-transient-menu-2cols / aider-transient-menu-1col, for narrow screen
-  (aider-magit-setup-transients))
+  (push "tramp-loaddefs.el.gz" native-comp-jit-compilation-deny-list)
+  (push "cl-loaddefs.el.gz" native-comp-jit-compilation-deny-list))
 
+(use-package rustic
+  :custom
+  (rustic-lsp-client 'eglot))
 
 (provide 'init)
 
-;;; init.el ends here
+  ;;; init.el ends here

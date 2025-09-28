@@ -21,5 +21,5 @@
   };
 
   virtualisation.docker.enable = true;    # enable docker
-  users.users.${user.username}.extraGroups = [ "docker" ];
+  users.users.${user.username}.extraGroups = [ "docker" ]; # add self to docker user group
 }

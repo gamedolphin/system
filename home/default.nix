@@ -9,7 +9,7 @@
     ./lock.nix
     ./unity.nix
     ./hyprland.nix
-    ./tofi.nix
+    ./walker.nix
     ./theme.nix
     ./terminal.nix
     ./dev.nix
@@ -24,7 +24,6 @@
     audacity                 # audio recording
     zoom-us                  # meetings
     handbrake                # video transcoding
-    sway-contrib.grimshot    # screenshot tool
     xdg-utils                # utils, for screensharing
     vlc                      # media player
     discord                  # other chat
@@ -33,8 +32,12 @@
     everdo                   # gtd tool
     spotify                  # music player
     simple-scan              # scanner software
+    pinta                    # image editor
+    mpv                      # media player
   ];
+
   services.dunst.enable = true;      # notifications daemon
+
   programs.obs-studio.enable = true; # screen recording tool
 
   programs.home-manager.enable =  true;

@@ -12,9 +12,20 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    emacs-overlay.url = "github:nix-community/emacs-overlay";
+    emacs-overlay = {
+      url = "github:nix-community/emacs-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
-    sops-nix.url = "github:Mic92/sops-nix";
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    catppuccin = {
+      url = "github:catppuccin/nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
@@ -22,6 +33,7 @@
     home-manager,
     emacs-overlay,
     sops-nix,
+    catppuccin,
     ...
   }:
     let
@@ -53,10 +65,14 @@
                   };
                   home-manager.backupFileExtension = "backup";
                   home-manager.users.${user.username} = {
-                    imports =  [./machines/${machine}/home.nix];
+                    imports =  [
+                      ./machines/${machine}/home.nix
+                      catppuccin.homeModules.catppuccin
+                    ];
                   };
                 }
-                sops-nix.nixosModules.sops  # sops
+                sops-nix.nixosModules.sops           # sops
+                catppuccin.nixosModules.catppuccin   # theme
               ];
               specialArgs = {
                 hostname = machine;

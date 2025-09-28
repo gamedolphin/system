@@ -10,7 +10,7 @@
     };
 
     extraModulePackages = [ ];                   # no extra packages on boot either
-    kernelPackages = pkgs.linuxPackages_latest; # latest greatest linux kernel
+    kernelPackages = pkgs.linuxPackages_latest;  # latest greatest linux kernel
     kernelParams = [ "silent" ];                 # quiet those logs
 
     consoleLogLevel = 0;                         # quiten more logs

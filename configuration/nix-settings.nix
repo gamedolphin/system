@@ -8,8 +8,10 @@
     experimental-features = ["nix-command" "flakes"];
 
     # add a cache that speed up new applications by downloading binaries
-    # from the trusted cache instead of compiling from source
-    substituters = [ "https://nix-community.cachix.org" ];
+    # from the trusted cache instead of compiling from sourcer
+    substituters = [
+      "https://nix-community.cachix.org"
+    ];
     # trust the cache public key
     trusted-public-keys = [
       "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="

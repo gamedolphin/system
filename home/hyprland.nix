@@ -49,8 +49,8 @@
       gaps_in = 2;
       gaps_out = 4;
       border_size = 2;
-      "col.active_border" = "rgba(33ccffee) rgba(00ff99ee) 45deg";
-      "col.inactive_border" = "rgba(595959aa)";
+      "col.active_border" = "$blue $green 45deg";
+      "col.inactive_border" = "$base";
 
       layout = "dwindle";
     };
@@ -91,13 +91,15 @@
 
     bind = [
       "$mainMod, Return, exec, uwsm app -- alacritty"
+      "$mainMod, i, exec, firefox"
+      "$mainMod, e, exec, emacs"
       "$mainMod_SHIFT, Q, killactive"
       "$mainMod_SHIFT, M, exit"
       "$mainMod, F, exec, thunar"
       "$mainMod_SHIFT, Space, togglefloating"
 
-      # use tofi to show exec menu
-      "$mainMod, Space, exec, uwsm app -- tofi-run | xargs hyprctl dispatch -- exec"
+      # use walker to show exec menu
+      "$mainMod, Space, exec, walker"
       "$mainMod, P, pseudo"
       "$mainMod, J, togglesplit"
 
@@ -117,6 +119,11 @@
       "$mainMod, mouse_down, workspace, e+1"
       "$mainMod, mouse_up, workspace, e-1"
 
+      "$mainMod_SHIFT, p, exec, grimblast -n -f copysave active"
+      "$mainMod_SHIFT, a, exec, grimblast -n -f copysave area"
+      "$mainMod_ALT, p, exec, grimblast -n -f copysave output"
+      "$mainMod_CTRL, p, exec, grimblast -n -f copysave screen"
+
       "$mainMod_SHIFT, S, exec, wlogout"
     ] ++ (
       # workspaces
@@ -135,117 +142,5 @@
       "$mainMod, mouse:272, movewindow"
       "$mainMod, mouse:273, resizewindow"
     ];
-  };
-
-  programs.hyprlock = {
-    enable = true;
-
-    # hyprlock.conf
-    settings = {
-      background = {
-        monitor = "";
-        path = "~/.background-image.png";
-        blur_passes = 2;
-        contrast = 1;
-        brightness = 0.5;
-        vibrancy = 0.2;
-        vibrancy_darkness = 0.2;
-      };
-
-      auth = {
-        fingerprint = {
-          enabled = true;
-        };
-      };
-
-      # GENERAL
-      general = {
-        hide_cursor = false;
-        grace = 0;
-      };
-
-      # INPUT FIELD
-      input-field = [
-        {
-          size = "250, 60";
-          outline_thickness = 2;
-          dots_size = 0.2;
-          dots_spacing = 0.35;
-          dots_center = true;
-          outer_color = "rgba(216,222,233,0.2)";
-          inner_color = "rgba(216,222,233,1)";
-          font_color = "rgba(41,46,57,1)";
-          fade_on_empty = false;
-          rounding = -1;
-          check_color = "rgb(163,190,140)";
-          placeholder_text = ''<i><span>Password</span></i>'';
-          hide_input = false;
-          position = "0, -400";
-          halign = "center";
-          valign = "center";
-        }
-      ];
-
-      # DATE
-      label = [
-        {
-          monitor = "";
-          text = ''cmd[update:1000] echo "$(date +"%A, %B %d")"'';
-          color = "rgba(242, 243, 244, 0.75)";
-          font_size = 22;
-          font_family = "Iosevka";
-          position = "0, 300";
-          halign = "center";
-          valign = "center";
-        }
-        # TIME
-        {
-          monitor = "";
-          text = ''cmd[update:1000] echo "$(date +"%-I:%M")"'';
-          color = "rgba(242, 243, 244, 0.75)";
-          font_size = 95;
-          font_family = "Iosevka";
-          position = "0, 200";
-          halign = "center";
-          valign = "center";
-        }
-        # USER
-        {
-          monitor = "";
-          text = ''cmd[update:1000] echo $USER'';
-          color = "rgba(242, 243, 244, 0.75)";
-          font_size = 30;
-          font_family = "Iosevka";
-          position = "0, -250";
-          halign = "center";
-          valign = "center";
-        }
-
-        # battery
-        {
-          monitor = "";
-          text = ''cmd[update:1000] echo "$(cat /sys/class/power_supply/BAT0/capacity) 󰁹"'';
-          color = "rgba(242, 243, 244, 0.75)";
-          font_size = 20;
-          font_family = "Iosevka";
-          position = "-20, -20";
-          halign = "right";
-          valign = "top";
-        }
-      ];
-
-      # Profile Picture
-      image = [
-        {
-          monitor = "";
-          path = "~/.me.jpg";
-          size = 200;
-          border_size = 2;
-          position = "0, -100";
-          halign = "center";
-          valign = "center";
-        }
-      ];
-    };
   };
 }

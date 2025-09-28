@@ -3,29 +3,28 @@
 
 #+HTML: <h1 align="center">
 #+HTML:    <div align="center">
-#+HTML:      <img src="./.github/images/nixos.svg  " width="100px" />
-#+HTML:      <img src="./.github/images/emacs.svg  " width="100px" />
+#+HTML:      <img src="./.github/images/nixos.svg" width="100px" />
+#+HTML:      <img src="./.github/images/emacs.svg" width="100px" />
 #+HTML:    </div>
 #+HTML:    <br>
 #+HTML:    <p>Sandeep's Literate System Configuration</p>
-#+HTML:       <img src="./.github/images/nord-palette.png" width="300px" /> <br>
 #+HTML:    <div align="center">
 #+HTML:       <p></p>
 #+HTML:       <div align="center">
 #+HTML:          <a href="https://orgmode.org/index.html">
-#+HTML:             <img src="https://img.shields.io/badge/org_mode-9.7-blue.svg?style=for-the-badge&labelColor=282828&logo=org&logoColor=a3be8c&color=ebcb8b">
+#+HTML:             <img src="https://img.shields.io/badge/org_mode-9.7-blue.svg?style=for-the-badge&labelColor=1e1e2e&logo=org&logoColor=a6e3a1&color=1e1e2e">
 #+HTML:          </a>
 #+HTML:          <a = href="https://nixos.org">
-#+HTML:             <img src="https://img.shields.io/badge/NixOS-unstable-blue.svg?style=for-the-badge&labelColor=282828&logo=NixOS&logoColor=458588&color=458588">
+#+HTML:             <img src="https://img.shields.io/badge/NixOS-unstable-blue.svg?style=for-the-badge&labelColor=1e1e2e&logo=NixOS&logoColor=89b4fa&color=1e1e2e">
 #+HTML:          </a>
 #+HTML:          <a = href="https://www.gnu.org/software/emacs/">
-#+HTML:             <img src="https://img.shields.io/badge/emacs-30-blue.svg?style=for-the-badge&labelColor=282828&logo=gnuemacs&logoColor=b48ead&color=5e81ac">
+#+HTML:             <img src="https://img.shields.io/badge/emacs-30-blue.svg?style=for-the-badge&labelColor=1e1e2e&logo=gnuemacs&logoColor=cba6f7&color=1e1e2e">
 #+HTML:          </a>
 #+HTML:          <a href="https://github.com/gamedolphin/system/blob/main/LICENSE">
-#+HTML:             <img src="https://img.shields.io/static/v1.svg?style=for-the-badge&label=License&message=GPL&colorA=282828&colorB=bf616a&logo=unlicense&logoColor=ebcb8b&%22"/>
+#+HTML:             <img src="https://img.shields.io/static/v1.svg?style=for-the-badge&label=License&message=GPL&colorA=1e1e2e&colorB=f38ba8&logo=unlicense&logoColor=f9e2af&%22"/>
 #+HTML:          </a>
 #+HTML:          <a href="https://github.com/gamedolphin/system/actions/workflows/tangle.yml">
-#+HTML:             <img src="https://img.shields.io/github/actions/workflow/status/gamedolphin/system/tangle.yml?style=for-the-badge&label=Tangle&colorA=282828&colorB=a3be8c&logo=github&logoColor=eceff4"/>
+#+HTML:             <img src="https://img.shields.io/github/actions/workflow/status/gamedolphin/system/tangle.yml?style=for-the-badge&label=Tangle&colorA=1e1e2e&colorB=a6e3a1&logo=github&logoColor=cdd6f4"/>
 #+HTML:          </a>
 #+HTML:       </div>
 #+HTML:       <br>
@@ -58,9 +57,10 @@ Once the nix files are ready, you can deploy using
 Other files in this repo are :-
 - ~flake.lock~ so as to keep my versions intact. More on that later.
 - ~assets/*~ contains images like the wallpaper that cannot be part of this.
-- ~secrets/secrets.yaml~ contains encrypted keys and is edited using ~sopsx~.
+- ~secrets/secrets.yaml~ contains encrypted keys and is edited using ~sops~.
 
-The other files in this repository are generated. They ideally shouldn't be edited directly.
+Everything else in this repository is generated. They ideally shouldn't be edited directly.
+There's also a github action that generates and commits these files if they do differ.
 
 ** Emacs + Org + Tangle
 - [[https://www.gnu.org/software/emacs/][Emacs]] is the text editor that I use. Some people might take offense at me calling it a [[https://karl-voit.at/2015/10/23/Emacs-is-not-just-an-editor/][text editor]].
@@ -94,17 +94,17 @@ The other files in this repository are generated. They ideally shouldn't be edit
 
 | Window Manager       | [[https://hyprland.org/][Hyprland]]           |
 | Bar                  | [[https://github.com/Alexays/Waybar][Waybar]]             |
-| Application Launcher | [[https://github.com/philj56/tofi][Tofi]]               |
+| Application Launcher | [[https://github.com/abenz1267/walker][Walker]]             |
 | Notification Daemon  | [[https://github.com/dunst-project/dunst][Dunst]]              |
 | Terminal Emulator    | [[https://alacritty.org/][Alacritty]]          |
-| Shell                | [[https://ohmyz.sh/][zsh + ohmyzsh]]      |
+| Shell                | [[https://ohmyz.sh/][Zsh]] and [[https://starship.rs/][Starship]]   |
 | Text Editor          | [[https://www.gnu.org/software/emacs/][Emacs]]              |
 | File Manager         | [[https://docs.xfce.org/xfce/thunar/start][Thunar]]             |
-| Fonts                | [[https://typeof.net/Iosevka/][Iosevka]]            |
-| Colors               | [[https://www.nordtheme.com/][Nord]]               |
-| Icons                | [[https://github.com/alvatip/Nordzy-icon][Nordzy]]             |
+| Fonts                | [[https://protesilaos.com/codelog/2025-02-12-aporetic-fonts-version-1-1-0/][Aporeti]]            |
+| Colors               | [[https://catppuccin.com/][Catppuccin]]         |
+| Icons                | [[https://nix.catppuccin.com/][Catppuccin Nix    ]] |
 | Lock Screen          | [[https://wiki.hyprland.org/Hypr-Ecosystem/hyprlock/][Hyprlock]]           |
-| Wallpapers           | [[https://github.com/linuxdotexe/nordic-wallpapers][Nordic]] + [[https://github.com/hyprwm/hyprpaper][Hyprpaper]] |
+| Wallpapers           | [[https://github.com/hyprwm/hyprpaper][Hyprpaper]]          |
 
 * Configuration Variables
 I have a bunch of constant strings that I would rather put in a file. Thats what ~user.nix~ is.
@@ -124,6 +124,8 @@ The inputs for my system's configuration are very simple
    Sometimes pinned to a specific commit because unstable broke something and the fix hasn't made it into the release yet.
 2. [[https://nix-community.github.io/home-manager/][home-manager]] - a nix module that helps keep track of user specific dotfiles and configurations as part of my nix config.
 3. [[https://github.com/nix-community/emacs-overlay][emacs-overlay]] - this has more configuration options and generally a newer emacs available provided by the community.
+4. [[https://github.com/getsops/sops][sops-nix]] - adds latest sops for secrets management.
+5. [[https://nix.catppuccin.com/][catppuccin]] - nix module that allows everything to be catppuccin themed.
 
 #+begin_src nix :tangle flake.nix :noweb tangle
   {
@@ -137,9 +139,20 @@ The inputs for my system's configuration are very simple
         inputs.nixpkgs.follows = "nixpkgs";
       };
 
-      emacs-overlay.url = "github:nix-community/emacs-overlay";
+      emacs-overlay = {
+        url = "github:nix-community/emacs-overlay";
+        inputs.nixpkgs.follows = "nixpkgs";
+      };
 
-      sops-nix.url = "github:Mic92/sops-nix";
+      sops-nix = {
+        url = "github:Mic92/sops-nix";
+        inputs.nixpkgs.follows = "nixpkgs";
+      };
+
+      catppuccin = {
+        url = "github:catppuccin/nix";
+        inputs.nixpkgs.follows = "nixpkgs";
+      };
     };
 
     <<flake-outputs>>
@@ -157,6 +170,7 @@ We also add a devshell that makes editing this repository easier in emacs.
     home-manager,
     emacs-overlay,
     sops-nix,
+    catppuccin,
     ...
   }:
     let
@@ -178,7 +192,8 @@ We also add a devshell that makes editing this repository easier in emacs.
                 <<flake-emacs-module>>
                 <<flake-config-module>>
                 <<flake-home-module>>
-                sops-nix.nixosModules.sops  # sops
+                sops-nix.nixosModules.sops           # sops
+                catppuccin.nixosModules.catppuccin   # theme
               ];
               specialArgs = {
                 hostname = machine;
@@ -209,7 +224,7 @@ Lets look at the individual modules
      })
    #+end_src
 
-2. Then the machine specific configuration
+2. Then the machine specific configuration, in this case, just "smallbox".
    #+name: flake-config-module
    #+begin_src nix
      ./machines/${machine}/configuration.nix
@@ -238,11 +253,14 @@ Lets look at the individual modules
        home-manager.backupFileExtension = "backup";
      #+end_src
 
-   - Finally I pull in the machine specific home configuration.
+   - Finally I pull in the machine specific home configuration. Along with the overrides from catppuccin.
      #+name: flake-home-config
      #+begin_src nix
        home-manager.users.${user.username} = {
-         imports =  [./machines/${machine}/home.nix];
+         imports =  [
+           ./machines/${machine}/home.nix
+           catppuccin.homeModules.catppuccin
+         ];
        };
      #+end_src
 
@@ -301,12 +319,6 @@ I'll let the code comments explain the file here.
 #+begin_src nix :tangle hardware/hardware.nix :noweb tangle :mkdirp yes
   { pkgs, lib, user, config, ...} :
   {
-    # allow automatic ip assignment when connecting to a network
-    networking.useDHCP = lib.mkDefault true;
-
-    # let wifi info be NOT declarative, allowing user to configure wifi.
-    networking.wireless.userControlled.enable = true;
-
     nixpkgs.hostPlatform = lib.mkDefault user.system;            # x86_64-linux
     powerManagement.cpuFreqGovernor = lib.mkDefault "powersave"; # enable power saving on the cpu
 
@@ -358,6 +370,11 @@ This section describes the main system configuration for the computers that I ha
 
     <<config-fonts>>
 
+    # enable the catppuccin theme for everything with mocha + blue accents
+    catppuccin.enable = true;
+    catppuccin.flavor = "mocha";
+    catppuccin.accent = "blue";
+
     system.stateVersion = user.stateVersion;
   }
 #+end_src
@@ -375,8 +392,10 @@ These are global nix settings that configure the settings for the actual tool.
       experimental-features = ["nix-command" "flakes"];
 
       # add a cache that speed up new applications by downloading binaries
-      # from the trusted cache instead of compiling from source
-      substituters = [ "https://nix-community.cachix.org" ];
+      # from the trusted cache instead of compiling from sourcer
+      substituters = [
+        "https://nix-community.cachix.org"
+      ];
       # trust the cache public key
       trusted-public-keys = [
         "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
@@ -419,7 +438,7 @@ This file has most of the settings the control how the computer boots up.
       };
 
       extraModulePackages = [ ];                   # no extra packages on boot either
-      kernelPackages = pkgs.linuxPackages_latest; # latest greatest linux kernel
+      kernelPackages = pkgs.linuxPackages_latest;  # latest greatest linux kernel
       kernelParams = [ "silent" ];                 # quiet those logs
 
       consoleLogLevel = 0;                         # quiten more logs
@@ -544,11 +563,21 @@ I live in Sweden and would like all my locale and timezone settings to match. Ex
 ** Networking
 Not much to see here. I want networking to be enabled. I want firewall as well.
 #+begin_src nix :tangle configuration/networking.nix :noweb tangle :mkdirp yes
-  {
+  { pkgs, ... } : {
     networking = {
+      # allow automatic ip assignment when connecting to a network
+      useDHCP = pkgs.lib.mkDefault true;
       networkmanager.enable = true;
       firewall.enable = true;
+
+      # let wifi info be NOT declarative, allowing user to configure wifi.
+      wireless.userControlled.enable = true;
+      wireless.iwd.enable = true;
+      networkmanager.wifi.backend = "iwd";
     };
+
+    # tui to manage wifi networks
+    environment.systemPackages = with pkgs; [ impala ];
   }
 #+end_src
 
@@ -579,10 +608,11 @@ The configuration is done in the home manager section.
 
     environment.systemPackages = with pkgs; [
       hyprland            # the actual package
-      tofi                # launcher
+      walker              # launcher
       uwsm                # wayland session manager
       hyprland-qtutils    # needed by hyprland
       hyprpolkitagent     # polkit agent
+      grimblast           # screenshot
     ];
 
     # we use uwsm to manage launching hyprland
@@ -627,11 +657,7 @@ The configuration is done in the home manager section.
       XDG_CURRENT_DESKTOP="Hyprland";
       XDG_SESSION_DESKTOP="Hyprland";
       NIXOS_OZONE_WL="1";
-      GTK_THEME="Nordic";
-      XCURSOR_THEME="Nordzy-cursors";
       XCURSOR_SIZE="24";
-      HYPRCURSOR_THEME="Nordzy-cursors";
-      HYPRCURSOR_SIZE="24";
     };
 
     # allow hyprlock (lockscreen) to lock user session
@@ -665,7 +691,7 @@ These are some of the services that I enable at the system level. Explanation in
     };
 
     virtualisation.docker.enable = true;    # enable docker
-    users.users.${user.username}.extraGroups = [ "docker" ];
+    users.users.${user.username}.extraGroups = [ "docker" ]; # add self to docker user group
   }
 #+end_src
 
@@ -674,9 +700,7 @@ This is still a work in progress, but it almost works. I enable all the audio re
 #+begin_src nix :tangle configuration/audio.nix :noweb tangle :mkdirp yes
   { pkgs, ...}:
   {
-    environment.systemPackages = with pkgs; [
-      pamixer
-    ];
+    environment.systemPackages = with pkgs; [ pamixer ];
     services.pipewire = {
       enable = true;
       alsa.enable = true;
@@ -749,8 +773,11 @@ creation_rules:
     python3    # nice to have this ready for quick things
     cacert     # certificate authority
     remmina    # remote desktop app
-    aider-chat # aider terminal package
   ];
+
+  # to enable icons with wlogout
+  # https://github.com/catppuccin/nix/issues/584
+  programs.gdk-pixbuf.modulePackages = [ pkgs.librsvg ];
 #+end_src
 
 #+name: config-programs
@@ -770,11 +797,11 @@ creation_rules:
 #+end_src
 
 ** Fonts
-Nothing much to see here. I love [[https://typeof.net/Iosevka/][iosevka]], and I use it everywhere.
+Nothing much to see here. I love [[https://protesilaos.com/codelog/2025-02-12-aporetic-fonts-version-1-1-0/][Aporetic]], and I use it everywhere.
 #+name: config-fonts
 #+begin_src nix
   fonts.packages = with pkgs; [
-    iosevka
+    aporetic
     nerd-fonts.iosevka
   ];
 #+end_src
@@ -809,7 +836,7 @@ I also use it to install programs that are okay with being installed at the user
       ./lock.nix
       ./unity.nix
       ./hyprland.nix
-      ./tofi.nix
+      ./walker.nix
       ./theme.nix
       ./terminal.nix
       ./dev.nix
@@ -836,7 +863,7 @@ Mostly styling and enabling modules in the [[https://github.com/Alexays/Waybar][
       settings = {
         mainBar = {
           layer = "top";
-          height = 24;
+          height = 34;
           modules-left = [ "hyprland/workspaces" "hyprland/window" ];
           modules-right = [
             "idle_inhibitor"
@@ -856,16 +883,16 @@ Mostly styling and enabling modules in the [[https://github.com/Alexays/Waybar][
               deactivated = " 󰒲  ";
             };
           };
-            "pulseaudio" = {
-              "format" =  "{volume}% {icon}";
-              "format-bluetooth" = "{volume}% {icon}";
-              "format-muted" = "";
-              "format-icons"= {
-                 "headphones"= "";
-                 "headset"= "";
-                "phone"= "";
+          "pulseaudio" = {
+            "format" =  "{volume}% {icon}";
+            "format-bluetooth" = "{volume}% {icon}";
+            "format-muted" = "";
+            "format-icons"= {
+              "headphones"= "";
+              "headset"= "";
+              "phone"= "";
               "portab  le"= "";
-                "default"= ["" ""];
+              "default"= ["" ""];
             };
             "on-click"= "pavucontrol";
           };
@@ -875,6 +902,7 @@ Mostly styling and enabling modules in the [[https://github.com/Alexays/Waybar][
             "format-disconnected" =  "Disconnected ⚠";
             "tooltip-format-wifi" = "{essid} ({signalStrength}%)";
             "tooltip-format-ethernet" = "{ifname}: {ipaddr}/{cidr}";
+            "on-click" = "impala";
           };
           "cpu".format = "{usage}%  ";
           "cpu".tooltip = false;
@@ -902,97 +930,98 @@ Mostly styling and enabling modules in the [[https://github.com/Alexays/Waybar][
         };
       };
       style = ''
-          ,* {
-            font-family: Iosevka Nerd Font, Roboto, Helvetica, Arial, sans-serif;
-            font-size: 13px;
+           ,* {
+             font-family: Aporetic Sans Mono, Iosevka Nerd Font, Roboto, Helvetica, Arial, sans-serif;
+             font-size: 13px;
+           }
+
+           window#waybar {
+             background-color: @base;
+             color: @text;
+             transition-property: background-color;
+             border-bottom: 0px solid rgba(0, 0, 0, 0);
+             transition-duration: .5s;
+           }
+
+           #workspaces button {
+             padding: 0 5px;
+             background-color: transparent;
+             border: none;
+             border-radius: 0;
+             color: @text;
+           }
+
+           #workspaces button:hover {
+             background: @surface1;
+             color: @text;
+           }
+
+           #workspaces button.active {
+             background-color: @green;
+             color: @base;
+             box-shadow: inset 0 -3px @subtext1;
+           }
+
+           #clock,
+           #idle_inhibitor
+           #battery,
+           #cpu,
+           #memory,
+           #temperature,
+           #network,
+           #pulseaudio,
+           #tray {
+             margin: 0 5px;
+             padding: 0 2px;
+           }
+
+           #idle_inhibitor.activated {
+             background-color: @green;
+           }
+
+           #battery.charging {
+              color: @green;
+           }
+
+           @keyframes blink {
+             to {
+                background-color: #ffffff;
+                color: black;
+             }
+           }
+
+           #battery.warning:not(.charging) {
+             color: white;
+             animation-name: blink;
+             animation-duration: 0.5s;
+             animation-timing-function: linear;
+             animation-iteration-count: infinite;
+             animation-direction: alternate;
           }
 
-          window#waybar {
-            background-color: #4c566a;
-            color: #ffffff;
-            transition-property: background-color;
-            border-bottom: 0px solid rgba(0, 0, 0, 0);
-            transition-duration: .5s;
-          }
+           #window,
+           #workspaces {
+             margin: 0 4px;
+           }
 
-          #workspaces button {
-            padding: 0 5px;
-            background-color: transparent;
-            border: none;
-            border-radius: 0;
-          }
+           .modules-left > widget:first-child > #workspaces {
+             margin-left: 0;
+           }
 
-          #workspaces button:hover {
-            background: #2e3440;
-            color: white;
-          }
+           .modules-right > widget:last-child > #workspaces {
+             margin-right: 0;
+           }
 
-          #workspaces button.active {
-            background-color: #5e81ac;
-            box-shadow: inset 0 -3px #ffffff;
-          }
+           #network.disconnected {
+             background-color: @red;
+           }
 
-          #clock,
-          #idle_inhibitor
-          #battery,
-          #cpu,
-          #memory,
-          #temperature,
-          #network,
-          #pulseaudio,
-          #tray {
-            margin: 0 5px;
-            padding: 0 2px;
-          }
-
-          #idle_inhibitor.activated {
-            background-color: #a3be8c;
-          }
-
-          #battery.charging {
-             color: #a3be8c;
-          }
-
-          @keyframes blink {
-            to {
-               background-color: #ffffff;
-               color: black;
-            }
-          }
-
-          #battery.warning:not(.charging) {
-            color: white;
-            animation-name: blink;
-            animation-duration: 0.5s;
-            animation-timing-function: linear;
-            animation-iteration-count: infinite;
-            animation-direction: alternate;
-         }
-
-          #window,
-          #workspaces {
-            margin: 0 4px;
-          }
-
-          .modules-left > widget:first-child > #workspaces {
-            margin-left: 0;
-          }
-
-          .modules-right > widget:last-child > #workspaces {
-            margin-right: 0;
-          }
-
-          #network.disconnected {
-            background-color: #f53c3c;
-          }
-
-          #temperature.critical {
-            background-color: #eb4d4b;
-          }
-          '';
+           #temperature.critical {
+             background-color: @red;
+           }
+           '';
     };
   }
-
 #+end_src
 
 ** Wallpaper
@@ -1091,6 +1120,8 @@ They are configured below.
       };
     };
 
+
+
     programs.wlogout = {
       enable = true;
       layout = [
@@ -1132,6 +1163,61 @@ They are configured below.
         }
       ];
     };
+
+    catppuccin.wlogout.iconStyle = "wleave";
+
+    programs.hyprlock = {
+      enable = true;
+      settings = {
+        auth = {
+          fingerprint = {
+            enabled = true;
+          };
+        };
+
+        background = {
+          path = "~/.lock.png";
+          color = "$base";
+        };
+
+        label = {
+          monitor = "";
+          text = "$TIME";
+          color = "$text";
+          font_size = 90;
+          position = "0, 0";
+          halign = "center";
+          valign = "top";
+        };
+
+        input-field = {
+          monitor = "";
+          size = "300, 60";
+          outline_thickness = 4;
+          dots_size = 0.2;
+          dots_spacing = 0.2;
+          dots_center = true;
+          outer_color = "$accent";
+          inner_color = "$surface0";
+          font_color = "$text";
+          fade_on_empty = true;
+          placeholder_text = ''<span foreground="##$textAlpha"><i>󰌾 Logged in as </i><span foreground="##$accentAlpha">$USER</span></span>'';
+          hide_input = false;
+          check_color = "$accent";
+          fail_color = "$red";
+          fail_text = ''<i>$FAIL <b>($ATTEMPTS)</b></i>'';
+          capslock_color = "$yellow";
+          position = "0, -47";
+          halign = "center";
+          valign = "center";
+        };
+      };
+    };
+
+    catppuccin.hyprlock.enable = true;
+    catppuccin.hyprlock.flavor = "mocha";
+    catppuccin.hyprlock.accent = "blue";
+    catppuccin.hyprlock.useDefaultConfig = false; # we use our own
   }
 
 #+end_src
@@ -1203,8 +1289,8 @@ This configures the desktop environment along with the peripherals. The comments
         gaps_in = 2;
         gaps_out = 4;
         border_size = 2;
-        "col.active_border" = "rgba(33ccffee) rgba(00ff99ee) 45deg";
-        "col.inactive_border" = "rgba(595959aa)";
+        "col.active_border" = "$blue $green 45deg";
+        "col.inactive_border" = "$base";
 
         layout = "dwindle";
       };
@@ -1245,13 +1331,15 @@ This configures the desktop environment along with the peripherals. The comments
 
       bind = [
         "$mainMod, Return, exec, uwsm app -- alacritty"
+        "$mainMod, i, exec, firefox"
+        "$mainMod, e, exec, emacs"
         "$mainMod_SHIFT, Q, killactive"
         "$mainMod_SHIFT, M, exit"
         "$mainMod, F, exec, thunar"
         "$mainMod_SHIFT, Space, togglefloating"
 
-        # use tofi to show exec menu
-        "$mainMod, Space, exec, uwsm app -- tofi-run | xargs hyprctl dispatch -- exec"
+        # use walker to show exec menu
+        "$mainMod, Space, exec, walker"
         "$mainMod, P, pseudo"
         "$mainMod, J, togglesplit"
 
@@ -1270,6 +1358,11 @@ This configures the desktop environment along with the peripherals. The comments
 
         "$mainMod, mouse_down, workspace, e+1"
         "$mainMod, mouse_up, workspace, e-1"
+
+        "$mainMod_SHIFT, p, exec, grimblast -n -f copysave active"
+        "$mainMod_SHIFT, a, exec, grimblast -n -f copysave area"
+        "$mainMod_ALT, p, exec, grimblast -n -f copysave output"
+        "$mainMod_CTRL, p, exec, grimblast -n -f copysave screen"
 
         "$mainMod_SHIFT, S, exec, wlogout"
       ] ++ (
@@ -1290,187 +1383,62 @@ This configures the desktop environment along with the peripherals. The comments
         "$mainMod, mouse:273, resizewindow"
       ];
     };
-
-    programs.hyprlock = {
-      enable = true;
-
-      # hyprlock.conf
-      settings = {
-        background = {
-          monitor = "";
-          path = "~/.background-image.png";
-          blur_passes = 2;
-          contrast = 1;
-          brightness = 0.5;
-          vibrancy = 0.2;
-          vibrancy_darkness = 0.2;
-        };
-
-        auth = {
-          fingerprint = {
-            enabled = true;
-          };
-        };
-
-        # GENERAL
-        general = {
-          hide_cursor = false;
-          grace = 0;
-        };
-
-        # INPUT FIELD
-        input-field = [
-          {
-            size = "250, 60";
-            outline_thickness = 2;
-            dots_size = 0.2;
-            dots_spacing = 0.35;
-            dots_center = true;
-            outer_color = "rgba(216,222,233,0.2)";
-            inner_color = "rgba(216,222,233,1)";
-            font_color = "rgba(41,46,57,1)";
-            fade_on_empty = false;
-            rounding = -1;
-            check_color = "rgb(163,190,140)";
-            placeholder_text = ''<i><span>Password</span></i>'';
-            hide_input = false;
-            position = "0, -400";
-            halign = "center";
-            valign = "center";
-          }
-        ];
-
-        # DATE
-        label = [
-          {
-            monitor = "";
-            text = ''cmd[update:1000] echo "$(date +"%A, %B %d")"'';
-            color = "rgba(242, 243, 244, 0.75)";
-            font_size = 22;
-            font_family = "Iosevka";
-            position = "0, 300";
-            halign = "center";
-            valign = "center";
-          }
-          # TIME
-          {
-            monitor = "";
-            text = ''cmd[update:1000] echo "$(date +"%-I:%M")"'';
-            color = "rgba(242, 243, 244, 0.75)";
-            font_size = 95;
-            font_family = "Iosevka";
-            position = "0, 200";
-            halign = "center";
-            valign = "center";
-          }
-          # USER
-          {
-            monitor = "";
-            text = ''cmd[update:1000] echo $USER'';
-            color = "rgba(242, 243, 244, 0.75)";
-            font_size = 30;
-            font_family = "Iosevka";
-            position = "0, -250";
-            halign = "center";
-            valign = "center";
-          }
-
-          # battery
-          {
-            monitor = "";
-            text = ''cmd[update:1000] echo "$(cat /sys/class/power_supply/BAT0/capacity) 󰁹"'';
-            color = "rgba(242, 243, 244, 0.75)";
-            font_size = 20;
-            font_family = "Iosevka";
-            position = "-20, -20";
-            halign = "right";
-            valign = "top";
-          }
-        ];
-
-        # Profile Picture
-        image = [
-          {
-            monitor = "";
-            path = "~/.me.jpg";
-            size = 200;
-            border_size = 2;
-            position = "0, -100";
-            halign = "center";
-            valign = "center";
-          }
-        ];
-      };
-    };
   }
 #+end_src
 
-** Tofi
-[[https://github.com/philj56/tofi][This]] is how I launch applications. It is bound to Win+Space in the hyprland config above.
-Configuration is mostly for visual things here.
-#+begin_src nix :tangle home/tofi.nix :noweb tangle :mkdirp yes.
+** Walker
+[[https://github.com/abenz1267/walker][This]] is how I launch applications. It is bound to Win+Space in the hyprland config above.
+#+begin_src nix :tangle home/walker.nix :noweb tangle :mkdirp yes.
   {
-    programs.tofi.enable = true;
-    programs.tofi.settings = {
-      font = "Iosevka";
-      font-size = 16;
-      selection-color = "#a3be8c";
-      prompt-text = ":";
-      width = 600;
-      height = 480;
-      background-color = "#2e3440";
-      outline-width = 0;
-      outline-color = "#080800";
-      border-width = 1;
-      border-color = "#8fbcbb";
-      corner-radius = 10;
-      padding-top = 4;
-      padding-bottom = 4;
-      padding-left = 4;
-      padding-right = 4;
-      matching-algorithm = "fuzzy";
+    services.walker.enable = true;
+    services.walker.settings = {
+      close = "ctrl g";
+      next = "ctrl n";
+      previous = "ctrl p";
+      quick_activate = ["1" "2" "3" "4"];
     };
   }
 #+end_src
 
 ** Theme
-I use the [[https://www.nordtheme.com/][Nord palette]] almost everywhere. I've heard that stylix is good for this, but for now, its manual.
+I use the [[https://catppuccin.com/][Catppuccin]] almost everywhere. The nix module integrates almost automatically everywhere (except gtk).
 You'll notice the color values in multiple places outside this as well.
 #+begin_src nix :tangle home/theme.nix :noweb tangle :mkdirp yes.
   { pkgs, ...}:
   {
-    home.packages = with pkgs; [
-      nordzy-cursor-theme
-      nordic
-    ];
-
     gtk = {
       enable = true;
-      iconTheme = {
-        name = "Nordic-bluish";
-        package = pkgs.nordic;
-      };
+      colorScheme = "dark";
       theme = {
-        name = "Nordic";
-        package = pkgs.nordic;
+        name = "Catppuccin-GTK-Grey-Dark-Compact";
+        package = (pkgs.magnetic-catppuccin-gtk.override {
+          accent = [ "grey" ];
+          shade = "dark";
+          tweaks = [ "black" ];
+          size = "compact";
+        });
       };
-      cursorTheme = {
-        name = "Nordzy-cursors";
-        package = pkgs.nordzy-cursor-theme;
-      };
+
+      iconTheme.name = "Papirus-Dark";
     };
+
+    catppuccin.enable = true;
+    catppuccin.flavor = "mocha";
+    catppuccin.accent = "blue";
+    catppuccin.gtk.icon.enable = true;
+    catppuccin.cursors.enable = true;
   }
-#+end_src
+ #+end_src
 
 ** Terminal
-[[https://alacritty.org/][Alacritty]] is my terminal program. The snippet below configures how it looks. Mostly nord palette things.
+[[https://alacritty.org/][Alacritty]] is my terminal program. The snippet below configures how it looks.
 #+begin_src nix :tangle home/terminal.nix :noweb tangle :mkdirp yes
   {
     programs = {
       alacritty = {
         enable = true;
         settings = {
-          font.normal.family = "Iosevka Nerd Font";
+          font.normal.family = "Aporetic Sans Mono";
           font.size = 12;
           terminal.shell.program = "zsh";
 
@@ -1478,31 +1446,12 @@ You'll notice the color values in multiple places outside this as well.
             padding.x = 4;
             padding.y = 4;
           };
-
-          colors = {
-            primary = {
-              background = "#1f222d";
-              foreground = "#d8dee9";
-              dim_foreground = "#a5abb6";
-            };
-            cursor = {
-              text = "#2e3440";
-              cursor = "#d8dee9";
-            };
-            normal = {
-              black = "#3b4252";
-              red = "#bf616a";
-              green = "#a3be8c";
-              yellow = "#ebcb8b";
-              blue = "#81a1c1";
-              magenta = "#b48ead";
-              cyan = "#88c0d0";
-              white = "#e5e9f0";
-            };
-          };
         };
       };
     };
+
+    catppuccin.alacritty.enable = true;
+    catppuccin.alacritty.flavor = "mocha";
   }
 
 #+end_src
@@ -1516,12 +1465,41 @@ All the miscellaneous dev tools on this computer.
       vscode.enable = true;   # yes, sometimes i like to dabble
       vim.enable = true;      # and this one too
       ripgrep.enable = true;  # fast text search across projects
-      htop.enable = true;     # task manager
+      btop.enable = true;     # even better task manager
+
+      # nicer terminal info
+      starship = {
+        enable = true;
+        enableZshIntegration = true;
+        enableBashIntegration = true;
+      };
+
+      # fuzzy finder
+      fzf = {
+        enable = true;
+        enableZshIntegration = true;
+        enableBashIntegration = true;
+      };
+
+      # better cd
+      zoxide = {
+        enable = true;
+        enableZshIntegration = true;
+        enableBashIntegration = true;
+      };
+
+      # better ls
+      eza = {
+        enable = true;
+        enableZshIntegration = true;
+        enableBashIntegration = true;
+      };
 
       # this is mainly for integration with nix flakes in individual projects
       direnv = {
         enable = true;
         enableZshIntegration = true;
+        enableBashIntegration = true;
         nix-direnv.enable = true;
       };
 
@@ -1534,6 +1512,11 @@ All the miscellaneous dev tools on this computer.
           theme = "robbyrussell";
         };
 
+        shellAliases = {
+          cd = "z";     # zoxide
+        };
+
+        # for emacs-eat package
         initContent = pkgs.lib.mkOrder 1200 ''
           [ -n "$EAT_SHELL_INTEGRATION_DIR" ] && \
           source "$EAT_SHELL_INTEGRATION_DIR/zsh"
@@ -1567,7 +1550,6 @@ A bunch of programs that I use.
     audacity                 # audio recording
     zoom-us                  # meetings
     handbrake                # video transcoding
-    sway-contrib.grimshot    # screenshot tool
     xdg-utils                # utils, for screensharing
     vlc                      # media player
     discord                  # other chat
@@ -1576,8 +1558,12 @@ A bunch of programs that I use.
     everdo                   # gtd tool
     spotify                  # music player
     simple-scan              # scanner software
+    pinta                    # image editor
+    mpv                      # media player
   ];
+
   services.dunst.enable = true;      # notifications daemon
+
   programs.obs-studio.enable = true; # screen recording tool
 #+end_src
 
@@ -1596,14 +1582,10 @@ Comments describe the emacs package and what it does.
       extraPackages = epkgs: [
         # also install all tree sitter grammars
         epkgs.manualPackages.treesit-grammars.with-all-grammars
-        pkgs.nodejs                    # some emacs deps need node installed
-        pkgs.omnisharp-roslyn          # c# lsp
         epkgs.nerd-icons               # nerd fonts support
         epkgs.doom-modeline            # model line
-        epkgs.doom-themes              # for doom-nord theme
         epkgs.diminish                 # hides modes from modeline
         epkgs.eldoc                    # doc support
-        epkgs.whitespace-cleanup-mode  # cleanup accidental whitespace
         epkgs.pulsar                   # pulses the cursor when jumping about
         epkgs.which-key                # help porcelain
         epkgs.expreg                   # expand region
@@ -1621,29 +1603,30 @@ Comments describe the emacs package and what it does.
         epkgs.orderless                # search paradigm
         epkgs.yasnippet                # snippets support
         epkgs.yasnippet-snippets       # commonly used snippets
-        epkgs.projectile               # project management
         epkgs.rg                       # ripgrep
         epkgs.exec-path-from-shell     # load env and path
-        epkgs.flycheck                 # error integration
-        epkgs.lsp-mode                 # lsp
-        epkgs.lsp-ui                   # ui for lsp
+        epkgs.eat                      # better shell
         epkgs.rust-mode                # rust mode (when rust-ts doesn't cut it)
         epkgs.rustic                   # more rust things
         epkgs.nix-mode                 # nix lang
-        epkgs.eat                      # better shell
         epkgs.hcl-mode                 # hashicorp file mode
         epkgs.shell-pop                # quick shell popup
-        epkgs.f                        # string + file utilities
-        epkgs.gptel                    # llm chat (mainly claude)
-        epkgs.copilot                  # emacs copilot plugin
         epkgs.envrc                    # support for loading .envrc
         epkgs.nixpkgs-fmt              # format nix files
-        epkgs.aider                    # aider for emacs
+        epkgs.f                        # string + file utilities
+        epkgs.gptel                    # llm chat (mainly claude)
+
+        epkgs.catppuccin-theme         # catppuccin theme
+        epkgs.eldoc-box                # docs in a box
+        epkgs.sideline                 # mainly for flymake errors on the side
+        epkgs.sideline-flymake         # mainly for flymake errors on the side
+        epkgs.sideline-eglot           # mainly for flymake errors on the side
       ];
     };
 
     home.sessionVariables = {
       EDITOR = "emacs";
+      XDG_SCREENSHOTS_DIR = "~/screenshots";
     };
 
     home.file = {
@@ -1680,9 +1663,9 @@ These are listed here.
 
   (setq-default
    default-frame-alist
-   '((background-color . "#3F3F3F")
+   '((background-color . "#1e1e2e")
      (bottom-divider-width . 1)            ; Thin horizontal window divider
-     (foreground-color . "#DCDCCC")        ; Default foreground color
+     (foreground-color . "#bac2de")        ; Default foreground color
      (fullscreen . maximized)              ; Maximize the window by default
      (horizontal-scroll-bars . nil)        ; No horizontal scroll-bars
      (left-fringe . 8)                     ; Thin left fringe
@@ -1696,7 +1679,7 @@ These are listed here.
    user-full-name "Sandeep Nambiar"                ; ME!
 
    ;; memory configuration
-   ;; Higher garbage collection threshold, prevents frequent gc locks
+   ;; Higher garbage collection threshold, prevents frequent gc locks, reset later
    gc-cons-threshold most-positive-fixnum
    ;; Ignore warnings for (obsolete) elisp compilations
    byte-compile-warnings '(not obsolete)
@@ -1704,6 +1687,13 @@ These are listed here.
    warning-suppress-log-types '((comp) (bytecomp))
    ;; Large files are okay in the new millenium.
    large-file-warning-threshold 100000000
+   ;; dont show garbage collection messages at startup, will reset later
+   garbage-collection-messages nil
+   ;; native compilation
+   package-native-compile t
+   native-comp-warning-on-missing-source nil
+   native-comp-async-report-warnings-errors 'silent
+
 
    ;; Read more based on system pipe capacity
    read-process-output-max (max (* 10240 10240) read-process-output-max)
@@ -1734,6 +1724,15 @@ These are listed here.
    inhibit-startup-message t                       ; I know I am ready
    inhibit-startup-echo-area-message t             ; Yep, still know it
    initial-scratch-message nil                     ; I know it is the scratch buffer!
+   initial-buffer-choice nil
+   inhibit-startup-buffer-menu t
+   inhibit-x-resources t
+   initial-major-mode 'fundamental-mode
+
+   pgtk-wait-for-event-timeout 0.001               ; faster child frames
+
+   ad-redefinition-action 'accept                  ; dont care about legacy things being redefined
+   inhibit-compacting-font-caches t
 
    ;; tabs
    tab-width 4                                     ; Always tab 4 spaces.
@@ -1745,12 +1744,31 @@ These are listed here.
    ;; packages
    use-package-always-defer t
 
-   ;; custom
-   custom-file (concat user-emacs-directory "custom.el")
-
    load-prefer-newer t
 
    default-input-method nil
+
+   use-dialog-box nil
+
+   use-file-dialog nil
+
+   use-package-expand-minimally t
+
+   package-enable-at-startup nil
+
+   use-package-enable-imenu-support t
+
+   auto-mode-case-fold nil  ; No second pass of case-insensitive search over auto-mode-alist.
+
+   package-archives '(("melpa"        . "https://melpa.org/packages/")
+                         ("gnu"          . "https://elpa.gnu.org/packages/")
+                         ("nongnu"       . "https://elpa.nongnu.org/nongnu/")
+                         ("melpa-stable" . "https://stable.melpa.org/packages/"))
+
+   package-archive-priorities '(("gnu"    . 99)
+                                   ("nongnu" . 80)
+                                   ("melpa"  . 70)
+                                   ("melpa-stable" . 50))
    )
    ;;; early-init.el ends here
 #+end_src
@@ -1759,46 +1777,128 @@ These are listed here.
 Now starts the main emacs configuration.
 
 #+begin_src emacs-lisp :tangle home/emacs/init.el :mkdirp yes
-  ;;; package --- Summary - My minimal Emacs init file -*- lexical-binding: t -*-
+    ;;; package --- Summary - My minimal Emacs init file -*- lexical-binding: t -*-
 
-  ;;; Commentary:
-  ;;; Simple Emacs setup I carry everywhere
+    ;;; Commentary:
+    ;;; Simple Emacs setup I carry everywhere
 
-  ;;; Code:
+    ;;; Code:
+  (setq custom-file (locate-user-emacs-file "custom.el"))
   (load custom-file 'noerror)            ;; no error on missing custom file
 
   (require 'package)
-  (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
-  (add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/") t)
   (package-initialize)
 
-  (use-package emacs
-    :init
-    (global-auto-revert-mode t)          ;; revert automatically on external file changes
-    (savehist-mode)                      ;; save minibuffer history
+  (defun reset-custom-vars ()
+    "Resets the custom variables that were set to crazy numbers"
+    (setopt gc-cons-threshold (* 1024 1024 100))
+    (setopt garbage-collection-messages t))
 
+  (use-package emacs
+    :custom
+    (native-comp-async-query-on-exit t)
+    (read-answer-short t)
+    (use-short-answers t)
+    (enable-recursive-minibuffers t)
+    (which-func-update-delay 1.0)
+    (visible-bell nil)
+    (custom-buffer-done-kill t)
+    (whitespace-line-column nil)
+    (x-underline-at-descent-line t)
+    (imenu-auto-rescan t)
+    (uniquify-buffer-name-style 'forward)
+    (confirm-nonexistent-file-or-buffer nil)
+    (create-lockfiles nil)
+    (make-backup-files nil)
+    (kill-do-not-save-duplicates t)
+    (sentence-end-double-space nil)
+    (treesit-enabled-modes t)
+    :init
     ;; base visual
     (menu-bar-mode -1)                   ;; no menu bar
     (toggle-scroll-bar -1)               ;; no scroll bar
     (tool-bar-mode -1)                   ;; no tool bar either
-    (global-hl-line-mode +1)             ;; always highlight current line
     (blink-cursor-mode -1)               ;; stop blinking
-    (global-display-line-numbers-mode 1) ;; always show line numbers
-    (column-number-mode t)               ;; column number in the mode line
-    (size-indication-mode t)             ;; file size in the mode line
-    (pixel-scroll-precision-mode)        ;; smooth mouse scroll
-    (fset 'yes-or-no-p 'y-or-n-p)        ;; y/n is good enough
-    (electric-pair-mode)                 ;; i mean ... parens should auto create
-    (recentf-mode)                       ;; keep track of recently opened files
 
     ;; font of the century
-    (set-frame-font "Iosevka Nerd Font 12" nil t)
+    (set-frame-font "Aporetic Sans Mono 12" nil t)
 
     :bind
     (("C-<wheel-up>"   . pixel-scroll-precision) ; dont zoom in please, just scroll
      ("C-<wheel-down>" . pixel-scroll-precision) ; dont zoom in either, just scroll
      ("C-x k"          . kill-current-buffer))   ; kill the buffer, dont ask
+    :hook
+    (text-mode . delete-trailing-whitespace-mode)
+    (prog-mode . delete-trailing-whitespace-mode)
+    (after-init . global-display-line-numbers-mode) ;; always show line numbers
+    (after-init . column-number-mode)               ;; column number in the mode line
+    (after-init . size-indication-mode)             ;; file size in the mode line
+    (after-init . pixel-scroll-precision-mode)      ;; smooth mouse scroll
+    (after-init . electric-pair-mode)               ;; i mean ... parens should auto create
+    (after-init . reset-custom-vars)
     )
+
+  (use-package autorevert
+    :ensure nil
+    :custom
+    (auto-revert-interval 3)
+    (auto-revert-remote-files nil)
+    (auto-revert-use-notify t)
+    (auto-revert-avoid-polling nil)
+    (auto-revert-verbose t)
+    :hook
+    (after-init . global-auto-revert-mode))
+
+  (use-package recentf
+    :ensure nil
+    :commands (recentf-mode recentf-cleanup)
+    :hook
+    (after-init . recentf-mode)
+    :custom
+    (recentf-auto-cleanup 'never)
+    (recentf-exclude
+     (list "\\.tar$" "\\.tbz2$" "\\.tbz$" "\\.tgz$" "\\.bz2$"
+           "\\.bz$" "\\.gz$" "\\.gzip$" "\\.xz$" "\\.zip$"
+           "\\.7z$" "\\.rar$"
+           "COMMIT_EDITMSG\\'"
+           "\\.\\(?:gz\\|gif\\|svg\\|png\\|jpe?g\\|bmp\\|xpm\\)$"
+           "-autoloads\\.el$" "autoload\\.el$"))
+
+    :config
+    ;; A cleanup depth of -90 ensures that `recentf-cleanup' runs before
+    ;; `recentf-save-list', allowing stale entries to be removed before the list
+    ;; is saved by `recentf-save-list', which is automatically added to
+    ;; `kill-emacs-hook' by `recentf-mode'.
+    (add-hook 'kill-emacs-hook #'recentf-cleanup -90))
+
+  (use-package savehist
+    :ensure nil
+    :commands (savehist-mode savehist-save)
+    :hook
+    (after-init . savehist-mode)
+    :custom
+    (savehist-autosave-interval 600)
+    (savehist-additional-variables
+     '(kill-ring                        ; clipboard
+       register-alist                   ; macros
+       mark-ring global-mark-ring       ; marks
+       search-ring regexp-search-ring)))
+
+  (use-package hl-line
+    :ensure nil
+    :custom
+    (hl-line-sticky-flag nil)
+    (global-hl-line-sticky-flag nil)
+    :hook
+    (after-init . global-hl-line-mode))
+
+  (use-package saveplace
+    :ensure nil
+    :commands (save-place-mode save-place-local-mode)
+    :hook
+    (after-init . save-place-mode)
+    :custom
+    (save-place-limit 400))
 
   (use-package nerd-icons
     :custom
@@ -1815,39 +1915,36 @@ Now starts the main emacs configuration.
     (doom-modeline-lsp nil)               ;; lsp state is too distracting, too often
     :hook (after-init . doom-modeline-mode))
 
-  (use-package doom-themes
-    :commands doom-themes-visual-bell-config
-    :custom
-    (doom-themes-enable-bold t)
-    (doom-themes-enable-italic t)
-    :init
-    (load-theme 'doom-nord t)
-    (doom-themes-visual-bell-config))
+  (load-theme 'catppuccin :no-confirm)
 
   (use-package diminish :demand t)         ;; declutter the modeline
-  (use-package eldoc :diminish eldoc-mode) ;; docs for everything
-
-  (use-package whitespace-cleanup-mode
-    :commands global-whitespace-cleanup-mode
+  (use-package eldoc
+    :diminish eldoc-mode
     :custom
-    (whitespace-cleanup-mode-only-if-initially-clean nil)
-    :hook
-    (after-init . global-whitespace-cleanup-mode))
+    (eldoc-echo-area-use-multiline-p nil)) ;; docs for everything
+
+  (use-package eldoc-box
+    :defer t
+    :config
+    (set-face-background 'eldoc-box-border (catppuccin-color 'green))
+    (set-face-background 'eldoc-box-body (catppuccin-color 'base))
+    :bind
+    (("M-h" . eldoc-box-help-at-point)))
 
   (use-package pulsar
     :commands pulsar-global-mode pulsar-recenter-top pulsar-reveal-entry
     :init
-    (defface pulsar-nord
-      '((default :extend t)
+    (defface pulsar-catppuccin
+      `((default :extend t)
         (((class color) (min-colors 88) (background light))
-         :background "#2e3440")
+         :background ,(catppuccin-color 'sapphire))
         (((class color) (min-colors 88) (background dark))
-         :background "#81a1c1")
+         :background ,(catppuccin-color 'sapphire))
         (t :inverse-video t))
       "Alternative nord face for `pulsar-face'."
       :group 'pulsar-faces)
     :custom
-    (pulsar-face 'pulsar-nord)
+    (pulsar-face 'pulsar-catppuccin)
     :hook
     (after-init . pulsar-global-mode))
 
@@ -1879,6 +1976,8 @@ Now starts the main emacs configuration.
     ("C-x b"   . consult-buffer)     ;; orig. switch-to-buffer
     ("M-y"     . consult-yank-pop)   ;; orig. yank-pop
     ("M-g M-g" . consult-goto-line)  ;; orig. goto-line
+    ("M-g i"   . consult-imenu)      ;; consult version is interactive
+    ("M-g r"   . consult-ripgrep)    ;; find in project also works
     :custom
     (consult-narrow-key "<"))
 
@@ -1889,11 +1988,9 @@ Now starts the main emacs configuration.
     (read-buffer-completion-ignore-case t)
     (completion-ignore-case t)
     (enable-recursive-minibuffers t)
+    (minibuffer-prompt-properties '(read-only t cursor-intangible t face minibuffer-prompt))
     :init
     (vertico-mode)
-    :config
-    (setq minibuffer-prompt-properties
-          '(read-only t cursor-intangible t face minibuffer-prompt))
     :hook
     (minibuffer-setup-hook . cursor-intangible-mode))
 
@@ -1905,6 +2002,7 @@ Now starts the main emacs configuration.
     :bind
     ("C-c M-e" . crux-find-user-init-file)
     ("C-c C-w" . crux-transpose-windows)
+    ("C-c M-d" . crux-find-current-directory-dir-locals-file)
     ("C-a"     . crux-move-beginning-of-line))
 
   (use-package magit
@@ -1943,15 +2041,6 @@ Now starts the main emacs configuration.
 
   (use-package yasnippet-snippets :after yasnippet)
 
-  (use-package projectile
-    :commands projectile-mode
-    :diminish projectile-mode
-    :custom
-    (projectile-globally-ignored-directories (append '("node_modules")))
-    :bind-keymap ("C-c p" . projectile-command-map)
-    :config
-    (projectile-mode +1))
-
   (use-package exec-path-from-shell
     :commands exec-path-from-shell-initialize
     :custom
@@ -1959,98 +2048,15 @@ Now starts the main emacs configuration.
     :hook
     (after-init . exec-path-from-shell-initialize))
 
-  (use-package flycheck
-    :commands global-flycheck-mode
-    :diminish
-    :hook
-    (after-init . global-flycheck-mode))
-
-  (use-package lsp-mode
-    :commands (lsp lsp-deferred lsp-format-buffer
-                   lsp-organize-imports
-                   orderless-dispatch-flex-first
-                   cape-capf-buster lsp-completion-at-point)
-    :defines lsp-file-watch-ignored-directories
-    :diminish lsp-lens-mode
-    :bind-keymap
-    ("C-c l" . lsp-command-map)
-    :custom
-    (lsp-lens-enable nil)
-    (lsp-idle-delay 0.500)
-    (lsp-modeline-code-actions-enable t)
-    (lsp-modeline-diagnostics-enable t)
-    (lsp-csharp-omnisharp-roslyn-binary-path "OmniSharp")
-    (lsp-completion-provider :none) ;; we use Corfu!
-    (lsp-eldoc-render-all t)
-    :init
-    (defun orderless-dispatch-flex-first (_pattern index _total)
-      (and (eq index 0) 'orderless-flex))
-
-    ;; Configure the first word as flex filtered.
-    (add-hook 'orderless-style-dispatchers #'orderless-dispatch-flex-first nil 'local)
-
-    (defun lsp-mode-setup-completion ()
-      (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
-            '(orderless)))
-
-    ;; Optionally configure the cape-capf-buster.
-    (setq-local completion-at-point-functions
-                (list (cape-capf-buster #'lsp-completion-at-point)))
-    :config
-    (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\Temp\\'")
-    (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\Logs\\'")
-    (defun lsp-cleanup ()
-      (lsp-format-buffer)
-      (lsp-organize-imports)
-      (whitespace-cleanup))
-    :hook
-    (lsp-completion-mode . lsp-mode-setup-completion)
-    (lsp-mode . lsp-enable-which-key-integration)
-    (before-save . lsp-cleanup)
-    (rust-mode . lsp-deferred)
-    (csharp-ts-mode . lsp-deferred))
-
-  (use-package lsp-ui :commands lsp-ui-mode
-    :custom
-    (lsp-ui-doc-enable t)
-    (lsp-ui-sideline-diagnostic-max-lines 4)
-    (lsp-ui-doc-show-with-mouse nil)
-    (lsp-ui-doc-position 'bottom)
-    (lsp-ui-doc-show-with-cursor t)
-    (lsp-eldoc-enable-hover nil)
-    )
-
-  (use-package rust-mode
-  :ensure t
-  :init
-  (setq rust-mode-treesitter-derive t))
-
-  (use-package rustic
-    :ensure t
-    :after (rust-mode)
-    :config
-    (setq rustic-format-on-save nil)
-    :custom
-    (rustic-cargo-use-last-stored-arguments t))
-
-
-
   (use-package nixpkgs-fmt
     :custom
     (nixpkgs-fmt-command "nixfmt"))
-
-  (use-package typescript-ts-mode
-    :custom
-    (lsp-javascript-preferences-import-module-specifier :relative)
-    (typescript-indent-level 2)
-    (typescript-ts-mode-indent-offset 2))
 
   (use-package eat
     :bind
     (("C-c e p" . eat-project)
      ("C-c e t" . eat)))
-  (use-package hcl-mode)
-  (use-package jinja2-mode)
+
   (use-package f :demand t)
 
   (use-package envrc
@@ -2058,28 +2064,43 @@ Now starts the main emacs configuration.
     :hook
     (after-init . envrc-global-mode))
 
-  (use-package nix-mode
-    :hook (nix-mode . lsp-deferred))
-
-  (use-package shell-pop
-    :custom
-    (shell-pop-universal-key "M-o"))
-
-  (use-package copilot
-    :defines copilot-completion-map
-    :hook prog-mode
-    :bind
-    (:map copilot-completion-map
-          ("<tab>" . copilot-accept-completion)
-          ("M-n" . copilot-next-completion)
-          ("M-p" . copilot-previous-completion)
-          ("C-g" . copilot-clear-overlay)))
-
   (use-package gptel
     :commands gptel-make-anthropic f-read-text
     :config
     (gptel-make-anthropic "Claude"
       :stream t :key (f-read-text "/run/secrets/claude_key")))
+
+  (use-package sideline-flymake)
+  (use-package sideline-eglot)
+  (use-package sideline
+    :custom
+    (sideline-backends-right '(sideline-flymake sideline-eglot))
+    :hook
+    (eglot-managed-mode . sideline-mode)
+    (flymake-mode . sideline-mode))
+
+  (use-package eglot
+    :custom
+    (eglot-extend-to-xref t)
+    (eglot-ignored-server-capabilities '(:inlayHintProvider))
+    (jsonrpc-event-hook nil)
+    :hook
+    (eglot-managed-mode . eldoc-box-hover-mode)
+    (before-save . eldoc-format-buffer)
+    :bind
+    (:map eglot-mode-map
+          ("C-c l a" . eglot-code-actions)
+          ("C-c l r" . eglot-rename)
+          ("C-c l h" . eldoc)
+          ("C-c l g" . xref-find-references)
+          ("C-c l w" . eglot-reconnect)))
+
+  (use-package proced
+    :custom
+    (proced-auto-update-flag t)
+    (proced-auto-update-interval 3)
+    (proced-enable-color-flag t)
+    (proced-show-remote-processes t))
 
   (use-package org
     :ensure t
@@ -2094,14 +2115,15 @@ Now starts the main emacs configuration.
     (defun my/org-capture-project-target-heading ()
       "Determine Org target headings from the current file's project path.
 
-    This function assumes a directory structure like '~/projects/COMPANY/PROJECT/'.
-    It extracts 'COMPANY' and 'PROJECT' to use as nested headlines
-    for an Org capture template.
+      This function assumes a directory structure like '~/projects/COMPANY/PROJECT/'.
+      It extracts 'COMPANY' and 'PROJECT' to use as nested headlines
+      for an Org capture template.
 
-    If the current buffer is not visiting a file within such a
-    project structure, it returns nil, causing capture to default to
-    the top of the file."
-      (when-let ((path (buffer-file-name))) ; Ensure we are in a file-visiting buffer
+      If the current buffer is not visi
+  ting a file within such a
+      project structure, it returns nil, causing capture to default to
+      the top of the file."
+      (when-let* ((path (buffer-file-name))) ; Ensure we are in a file-visiting buffer
         (let ((path-parts (split-string path "/" t " ")))
           (when-let* ((projects-pos (cl-position "projects" path-parts :test #'string=))
                       (company      (nth (+ 1 projects-pos) path-parts))
@@ -2141,20 +2163,20 @@ Now starts the main emacs configuration.
     (add-hook 'org-mode-hook 'turn-on-font-lock)
     (add-hook 'org-mode-hook 'org-indent-mode))
 
-  (use-package aider
+  ;; extras
+  (use-package comp-run
+    :ensure nil
     :config
-    ;; For latest claude sonnet model
-    (setq aider-args '("--model" "sonnet" "--no-auto-accept-architect"))
-    (setenv "ANTHROPIC_API_KEY" (f-read-text "/run/secrets/claude_key"))
-    ;; Optional: Set a key binding for the transient menu
-    (global-set-key (kbd "C-c a") 'aider-transient-menu) ;; for wider screen
-    ;; or use aider-transient-menu-2cols / aider-transient-menu-1col, for narrow screen
-    (aider-magit-setup-transients))
+    (push "tramp-loaddefs.el.gz" native-comp-jit-compilation-deny-list)
+    (push "cl-loaddefs.el.gz" native-comp-jit-compilation-deny-list))
 
+  (use-package rustic
+    :custom
+    (rustic-lsp-client 'eglot))
 
   (provide 'init)
 
-  ;;; init.el ends here
+    ;;; init.el ends here
   #+end_src
 
 * Machines
@@ -2337,6 +2359,12 @@ This is mostly about configuring the monitor and key bindings. And laptop specif
     owner = "${user.username}";
     mode = "644";
     path = "/home/${user.username}/.ssh/wavefunk_dev.pub";
+  };
+
+  programs._1password.enable = true;
+  programs._1password-gui = {
+    enable = true;
+    polkitPolicyOwners = [ "${user.username}" ];
   };
 #+end_src
 * README Utils

@@ -7,12 +7,41 @@
     vscode.enable = true;   # yes, sometimes i like to dabble
     vim.enable = true;      # and this one too
     ripgrep.enable = true;  # fast text search across projects
-    htop.enable = true;     # task manager
+    btop.enable = true;     # even better task manager
+
+    # nicer terminal info
+    starship = {
+      enable = true;
+      enableZshIntegration = true;
+      enableBashIntegration = true;
+    };
+
+    # fuzzy finder
+    fzf = {
+      enable = true;
+      enableZshIntegration = true;
+      enableBashIntegration = true;
+    };
+
+    # better cd
+    zoxide = {
+      enable = true;
+      enableZshIntegration = true;
+      enableBashIntegration = true;
+    };
+
+    # better ls
+    eza = {
+      enable = true;
+      enableZshIntegration = true;
+      enableBashIntegration = true;
+    };
 
     # this is mainly for integration with nix flakes in individual projects
     direnv = {
       enable = true;
       enableZshIntegration = true;
+      enableBashIntegration = true;
       nix-direnv.enable = true;
     };
 
@@ -25,6 +54,11 @@
         theme = "robbyrussell";
       };
 
+      shellAliases = {
+        cd = "z";     # zoxide
+      };
+
+      # for emacs-eat package
       initContent = pkgs.lib.mkOrder 1200 ''
         [ -n "$EAT_SHELL_INTEGRATION_DIR" ] && \
         source "$EAT_SHELL_INTEGRATION_DIR/zsh"

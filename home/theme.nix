@@ -3,24 +3,25 @@
 # Any changes made here will be overwritten.
 { pkgs, ...}:
 {
-  home.packages = with pkgs; [
-    nordzy-cursor-theme
-    nordic
-  ];
-
   gtk = {
     enable = true;
-    iconTheme = {
-      name = "Nordic-bluish";
-      package = pkgs.nordic;
-    };
+    colorScheme = "dark";
     theme = {
-      name = "Nordic";
-      package = pkgs.nordic;
+      name = "Catppuccin-GTK-Grey-Dark-Compact";
+      package = (pkgs.magnetic-catppuccin-gtk.override {
+        accent = [ "grey" ];
+        shade = "dark";
+        tweaks = [ "black" ];
+        size = "compact";
+      });
     };
-    cursorTheme = {
-      name = "Nordzy-cursors";
-      package = pkgs.nordzy-cursor-theme;
-    };
+
+    iconTheme.name = "Papirus-Dark";
   };
+
+  catppuccin.enable = true;
+  catppuccin.flavor = "mocha";
+  catppuccin.accent = "blue";
+  catppuccin.gtk.icon.enable = true;
+  catppuccin.cursors.enable = true;
 }

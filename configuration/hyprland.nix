@@ -24,10 +24,11 @@
 
   environment.systemPackages = with pkgs; [
     hyprland            # the actual package
-    tofi                # launcher
+    walker              # launcher
     uwsm                # wayland session manager
     hyprland-qtutils    # needed by hyprland
     hyprpolkitagent     # polkit agent
+    grimblast           # screenshot
   ];
 
   # we use uwsm to manage launching hyprland
@@ -72,11 +73,7 @@
     XDG_CURRENT_DESKTOP="Hyprland";
     XDG_SESSION_DESKTOP="Hyprland";
     NIXOS_OZONE_WL="1";
-    GTK_THEME="Nordic";
-    XCURSOR_THEME="Nordzy-cursors";
     XCURSOR_SIZE="24";
-    HYPRCURSOR_THEME="Nordzy-cursors";
-    HYPRCURSOR_SIZE="24";
   };
 
   # allow hyprlock (lockscreen) to lock user session

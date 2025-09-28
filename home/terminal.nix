@@ -6,7 +6,7 @@
     alacritty = {
       enable = true;
       settings = {
-        font.normal.family = "Iosevka Nerd Font";
+        font.normal.family = "Aporetic Sans Mono";
         font.size = 12;
         terminal.shell.program = "zsh";
 
@@ -14,29 +14,10 @@
           padding.x = 4;
           padding.y = 4;
         };
-
-        colors = {
-          primary = {
-            background = "#1f222d";
-            foreground = "#d8dee9";
-            dim_foreground = "#a5abb6";
-          };
-          cursor = {
-            text = "#2e3440";
-            cursor = "#d8dee9";
-          };
-          normal = {
-            black = "#3b4252";
-            red = "#bf616a";
-            green = "#a3be8c";
-            yellow = "#ebcb8b";
-            blue = "#81a1c1";
-            magenta = "#b48ead";
-            cyan = "#88c0d0";
-            white = "#e5e9f0";
-          };
-        };
       };
     };
   };
+
+  catppuccin.alacritty.enable = true;
+  catppuccin.alacritty.flavor = "mocha";
 }

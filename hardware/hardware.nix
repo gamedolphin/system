@@ -3,12 +3,6 @@
 # Any changes made here will be overwritten.
 { pkgs, lib, user, config, ...} :
 {
-  # allow automatic ip assignment when connecting to a network
-  networking.useDHCP = lib.mkDefault true;
-
-  # let wifi info be NOT declarative, allowing user to configure wifi.
-  networking.wireless.userControlled.enable = true;
-
   nixpkgs.hostPlatform = lib.mkDefault user.system;            # x86_64-linux
   powerManagement.cpuFreqGovernor = lib.mkDefault "powersave"; # enable power saving on the cpu
 

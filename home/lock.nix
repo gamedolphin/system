@@ -57,6 +57,8 @@
     };
   };
 
+
+
   programs.wlogout = {
     enable = true;
     layout = [
@@ -98,4 +100,59 @@
       }
     ];
   };
+
+  catppuccin.wlogout.iconStyle = "wleave";
+
+  programs.hyprlock = {
+    enable = true;
+    settings = {
+      auth = {
+        fingerprint = {
+          enabled = true;
+        };
+      };
+
+      background = {
+        path = "~/.lock.png";
+        color = "$base";
+      };
+
+      label = {
+        monitor = "";
+        text = "$TIME";
+        color = "$text";
+        font_size = 90;
+        position = "0, 0";
+        halign = "center";
+        valign = "top";
+      };
+
+      input-field = {
+        monitor = "";
+        size = "300, 60";
+        outline_thickness = 4;
+        dots_size = 0.2;
+        dots_spacing = 0.2;
+        dots_center = true;
+        outer_color = "$accent";
+        inner_color = "$surface0";
+        font_color = "$text";
+        fade_on_empty = true;
+        placeholder_text = ''<span foreground="##$textAlpha"><i>󰌾 Logged in as </i><span foreground="##$accentAlpha">$USER</span></span>'';
+        hide_input = false;
+        check_color = "$accent";
+        fail_color = "$red";
+        fail_text = ''<i>$FAIL <b>($ATTEMPTS)</b></i>'';
+        capslock_color = "$yellow";
+        position = "0, -47";
+        halign = "center";
+        valign = "center";
+      };
+    };
+  };
+
+  catppuccin.hyprlock.enable = true;
+  catppuccin.hyprlock.flavor = "mocha";
+  catppuccin.hyprlock.accent = "blue";
+  catppuccin.hyprlock.useDefaultConfig = false; # we use our own
 }

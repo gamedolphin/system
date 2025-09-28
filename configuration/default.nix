@@ -27,8 +27,11 @@
     python3    # nice to have this ready for quick things
     cacert     # certificate authority
     remmina    # remote desktop app
-    aider-chat # aider terminal package
   ];
+
+  # to enable icons with wlogout
+  # https://github.com/catppuccin/nix/issues/584
+  programs.gdk-pixbuf.modulePackages = [ pkgs.librsvg ];
 
   users.users.${user.username} = {
     isNormalUser = true;
@@ -55,9 +58,14 @@
   };
 
   fonts.packages = with pkgs; [
-    iosevka
+    aporetic
     nerd-fonts.iosevka
   ];
+
+  # enable the catppuccin theme for everything with mocha + blue accents
+  catppuccin.enable = true;
+  catppuccin.flavor = "mocha";
+  catppuccin.accent = "blue";
 
   system.stateVersion = user.stateVersion;
 }
