@@ -49,10 +49,11 @@
     options = [ "fmask=0077" "dmask=0077" ];
   };
 
-  # external disk
+  # external disk — automount on first access, don't block boot
   fileSystems."/home/${user.username}/external" = {
     device = "/dev/disk/by-uuid/18818348-1ee4-4fa5-9984-e4e01b9fa304";
     fsType = "ext4";
+    options = [ "noauto" "nofail" "x-systemd.automount" "x-systemd.idle-timeout=300" ];
   };
 
   swapDevices = [];

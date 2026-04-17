@@ -34,6 +34,8 @@
   (kill-do-not-save-duplicates t)
   (sentence-end-double-space nil)
   (treesit-enabled-modes t)
+  (display-buffer-base-action
+   '((display-buffer-reuse-window display-buffer-use-some-window)))
   :init
   ;; base visual
   (menu-bar-mode -1)                   ;; no menu bar
@@ -42,7 +44,8 @@
   (blink-cursor-mode -1)               ;; stop blinking
 
   ;; font of the century
-  (set-frame-font "Aporetic Sans Mono 12" nil t)
+  (add-to-list 'default-frame-alist
+               '(font . "Aporetic Sans Mono-12"))
 
   :bind
   (("C-<wheel-up>"   . pixel-scroll-precision) ; dont zoom in please, just scroll
@@ -368,6 +371,11 @@ ting a file within such a
   (org-hide-emphasis-markers t)
   (org-src-fontify-natively t)
   (org-src-tab-acts-natively t)
+  (org-refile-targets '((org-agenda-files :maxlevel . 3)))
+  (org-archive-save-context-info '(time category todo itags olpath))
+  (org-refile-use-outline-path 'file)
+  (org-todo-keywords
+   '((sequence "TODO" "NEXT" "WAITING" "PROJECT" "|" "DONE" "KILLED" "SOMEDAY")))
   (org-capture-templates '(("t" "Todo" entry (file org-inbox-file)
                             "* TODO %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n\n%a\n\n)")
                            ("j" "Journal" entry (file+olp+datetree org-journal-file)

@@ -4,6 +4,7 @@
 {
   system = "x86_64-linux";
   username = "nambiar";
-  stateVersion = "25.11";
+  stateVersion = "26.05";
   locale = "sv_SE.UTF-8";
+  sshPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPeSRZJzhHgam3p9UOuJfdRZSOWPZ991ksZIjqLl7WSo sandeep@wavefunk.io";
 }

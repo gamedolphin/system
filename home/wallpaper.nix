@@ -11,10 +11,11 @@
   services.hyprpaper.settings = {
     ipc = "on";
     splash = false;
-    splash_offset = 2.0;
 
-    preload = [ "~/.background-image.png" ];
-    wallpaper = [ ",~/.background-image.png" ];
+    wallpaper = {
+      monitor = "";
+      path = "~/.background-image.png";
+    };
   };
 
   home.file = {

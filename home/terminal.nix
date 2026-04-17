@@ -3,21 +3,27 @@
 # Any changes made here will be overwritten.
 {
   programs = {
-    alacritty = {
+    ghostty = {
       enable = true;
+      enableZshIntegration = true;
+      systemd.enable = true;
       settings = {
-        font.normal.family = "Aporetic Sans Mono";
-        font.size = 12;
-        terminal.shell.program = "zsh";
-
-        window = {
-          padding.x = 4;
-          padding.y = 4;
-        };
+        font-family = "Aporetic Sans Mono";
+        font-size = 12;
+        command = "zsh";
+        keybind = [
+          "ctrl+x>2=new_split:right"
+          "ctrl+x>3=new_split:down"
+          "ctrl+x>o=goto_split:next"
+          "ctrl+x>k=close_surface"
+        ];
+        window-padding-x = 4;
+        window-padding-y = 4;
+        cursor-style = "block";
       };
     };
   };
 
-  catppuccin.alacritty.enable = true;
-  catppuccin.alacritty.flavor = "mocha";
+  catppuccin.ghostty.enable = true;
+  catppuccin.ghostty.flavor = "mocha";
 }

@@ -26,24 +26,56 @@
       url = "github:catppuccin/nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    nix-darwin = {
+      url = "github:LnL7/nix-darwin";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    deploy-rs.url = "github:serokell/deploy-rs";
+
+    disko = {
+      url = "github:nix-community/disko";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
-    nixpkgs,
-    home-manager,
-    emacs-overlay,
-    sops-nix,
-    catppuccin,
-    ...
-  }:
+    self,
+      nixpkgs,
+      home-manager,
+      emacs-overlay,
+      sops-nix,
+      catppuccin,
+      nix-darwin,
+      deploy-rs,
+      disko,
+      ...
+  }@inputs:
     let
       user = import ./user.nix;
       lib = nixpkgs.lib;
       machines = [
         "smallbox"
+        "homelab"
       ];
+
       pkgs = import nixpkgs {
         inherit (user) system;
+      };
+
+      deployPkgs = import nixpkgs {
+        inherit (user) system;
+        overlays = [
+          deploy-rs.overlays.default
+          (self: super: { deploy-rs = { inherit (pkgs) deploy-rs; lib = super.deploy-rs.lib; }; })
+        ];
+      };
+
+      macSystem = "aarch64-darwin";
+
+      pkgsMac = import nixpkgs {
+        system = macSystem;
       };
     in
       {
@@ -71,6 +103,7 @@
                     ];
                   };
                 }
+                disko.nixosModules.disko             # disks
                 sops-nix.nixosModules.sops           # sops
                 catppuccin.nixosModules.catppuccin   # theme
               ];
@@ -81,10 +114,69 @@
             };
           }) machines
         );
+
+        darwinConfigurations.macbox = nix-darwin.lib.darwinSystem {
+          system = macSystem;
+          modules = [
+            ({ pkgs, ... }: {
+              nix.settings.trusted-users = [ "root" "nambiar" ];
+              environment.systemPackages = with pkgs; [ vim htop git emacs ];
+
+              system.defaults.SoftwareUpdate.AutomaticallyInstallMacOSUpdates = false;
+              nix.settings.experimental-features = "nix-command flakes";
+
+              system.configurationRevision = self.rev or self.dirtyRev or null;
+
+              nixpkgs.hostPlatform = macSystem;
+
+              networking.computerName = "macbox";
+              networking.hostName = "macbox";
+
+              system.primaryUser = "nambiar";
+
+              power.restartAfterFreeze = true;
+              power.restartAfterPowerFailure  = true;
+              power.sleep.computer = "never";
+              power.sleep.display = "never";
+              power.sleep.harddisk = "never";
+
+              system.activationScripts.postActivation.text = ''
+                  sudo pmset -a sleep 0 autorestart 1
+                '';
+
+              users.users.nambiar = {
+                name = "nambiar";
+                home = "/Users/nambiar";
+                openssh.authorizedKeys.keys = [ user.sshPublicKey ];
+              };
+
+              system.stateVersion = 6;
+            })
+          ];
+          specialArgs = { inherit inputs; pkgs = pkgsMac; };
+        };
+
+        deploy.nodes.macbox = {
+          hostname = "macbox";
+          profiles.system = {
+            user = "root";
+            path = deploy-rs.lib.aarch64-darwin.activate.darwin self.darwinConfigurations.macbox;
+          };
+        };
+
+        deploy.nodes.homelab = {
+          hostname = "homelab";
+          profiles.system = {
+            user = "root";
+            sshUser = "root";
+            path = deployPkgs.deploy-rs.lib.activate.nixos self.nixosConfigurations.homelab;
+          };
+        };
+
         devShells.${user.system}.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             nil               # nix lsp server
-            nixfmt-rfc-style  # nix formatter
+            nixfmt            # nix formatter
             sops              # used to edit secrets
           ];
         };

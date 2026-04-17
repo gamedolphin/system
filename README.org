@@ -41,6 +41,7 @@ Once the files are generated, they are converted into an immutable system config
 
 This repository consists of configuration for my main machine
 - =smallbox= -- my wfh computer and main laptop
+- =macbox= -- work computer for builds etc
 
 To generate the actual nix files, you need to open this file in emacs and then execute =M-x org-babel-tangle=.
 
@@ -52,6 +53,11 @@ Or run the following from the command line
 Once the nix files are ready, you can deploy using
 #+begin_src bash :tangle no
   nixos-rebuild switch --flake .#<machine>
+#+end_src
+
+To update the mac machine
+#+begin_src bash :tangle no
+  nix run github:serokell/deploy-rs -- .#macbox
 #+end_src
 
 Other files in this repo are :-
@@ -113,8 +119,9 @@ The values are imported at the beginning and are available to almost all the fun
   {
     system = "x86_64-linux";
     username = "nambiar";
-    stateVersion = "25.11";
+    stateVersion = "26.05";
     locale = "sv_SE.UTF-8";
+    sshPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPeSRZJzhHgam3p9UOuJfdRZSOWPZ991ksZIjqLl7WSo sandeep@wavefunk.io";
   }
 #+end_src
 
@@ -126,6 +133,8 @@ The inputs for my system's configuration are very simple
 3. [[https://github.com/nix-community/emacs-overlay][emacs-overlay]] - this has more configuration options and generally a newer emacs available provided by the community.
 4. [[https://github.com/getsops/sops][sops-nix]] - adds latest sops for secrets management.
 5. [[https://nix.catppuccin.com/][catppuccin]] - nix module that allows everything to be catppuccin themed.
+6. [[https://github.com/nix-darwin/nix-darwin][nix-darwin]] - nix module to deploy to macos
+7. [[https://github.com/serokell/deploy-rs][deploy-rs]] - tool that allows deploying to remote machines (like the mac)
 
 #+begin_src nix :tangle flake.nix :noweb tangle
   {
@@ -153,6 +162,18 @@ The inputs for my system's configuration are very simple
         url = "github:catppuccin/nix";
         inputs.nixpkgs.follows = "nixpkgs";
       };
+
+      nix-darwin = {
+        url = "github:LnL7/nix-darwin";
+        inputs.nixpkgs.follows = "nixpkgs";
+      };
+
+      deploy-rs.url = "github:serokell/deploy-rs";
+
+      disko = {
+        url = "github:nix-community/disko";
+        inputs.nixpkgs.follows = "nixpkgs";
+      };
     };
 
     <<flake-outputs>>
@@ -166,21 +187,41 @@ We also add a devshell that makes editing this repository easier in emacs.
 #+name: flake-outputs
 #+begin_src nix :noweb no-export
   outputs = {
-    nixpkgs,
-    home-manager,
-    emacs-overlay,
-    sops-nix,
-    catppuccin,
-    ...
-  }:
+    self,
+      nixpkgs,
+      home-manager,
+      emacs-overlay,
+      sops-nix,
+      catppuccin,
+      nix-darwin,
+      deploy-rs,
+      disko,
+      ...
+  }@inputs:
     let
       user = import ./user.nix;
       lib = nixpkgs.lib;
       machines = [
         "smallbox"
+        "homelab"
       ];
+
       pkgs = import nixpkgs {
         inherit (user) system;
+      };
+
+      deployPkgs = import nixpkgs {
+        inherit (user) system;
+        overlays = [
+          deploy-rs.overlays.default
+          (self: super: { deploy-rs = { inherit (pkgs) deploy-rs; lib = super.deploy-rs.lib; }; })
+        ];
+      };
+
+      macSystem = "aarch64-darwin";
+
+      pkgsMac = import nixpkgs {
+        system = macSystem;
       };
     in
       {
@@ -192,6 +233,7 @@ We also add a devshell that makes editing this repository easier in emacs.
                 <<flake-emacs-module>>
                 <<flake-config-module>>
                 <<flake-home-module>>
+                disko.nixosModules.disko             # disks
                 sops-nix.nixosModules.sops           # sops
                 catppuccin.nixosModules.catppuccin   # theme
               ];
@@ -202,10 +244,15 @@ We also add a devshell that makes editing this repository easier in emacs.
             };
           }) machines
         );
+
+        <<macbox-module>>
+
+        <<homelab-module>>
+
         devShells.${user.system}.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             nil               # nix lsp server
-            nixfmt-rfc-style  # nix formatter
+            nixfmt            # nix formatter
             sops              # used to edit secrets
           ];
         };
@@ -360,9 +407,12 @@ This section describes the main system configuration for the computers that I ha
       ./audio.nix
       ./steam.nix
       ./sops.nix
+      ./ai.nix
     ];
 
     <<config-system-packages>>
+
+    <<config-ai>>
 
     <<config-user>>
 
@@ -492,6 +542,7 @@ This is the initial system level configuration for the terminal that I use on th
 
     environment.shells = with pkgs; [ zsh ];
     programs.zsh.enable = true;
+
     environment.pathsToLink = [ "/share/zsh" ];
   }
 #+end_src
@@ -509,18 +560,18 @@ Along with that, a few other utilities like zip and enabling services to automou
       p7zip
       usbutils
       udiskie
+      file-roller
     ];
 
     programs.thunar = {
       enable = true;
-      plugins = with pkgs.xfce; [
+      plugins = with pkgs; [
         thunar-archive-plugin
         thunar-media-tags-plugin
         thunar-volman
       ];
     };
 
-    programs.file-roller.enable = true; # thunar zip support
     programs.xfconf.enable = true; # to save thunar settings
 
     services = {
@@ -571,13 +622,8 @@ Not much to see here. I want networking to be enabled. I want firewall as well.
       firewall.enable = true;
 
       # let wifi info be NOT declarative, allowing user to configure wifi.
-      wireless.userControlled.enable = true;
-      wireless.iwd.enable = true;
-      networkmanager.wifi.backend = "iwd";
+      wireless.userControlled = true;
     };
-
-    # tui to manage wifi networks
-    environment.systemPackages = with pkgs; [ impala ];
   }
 #+end_src
 
@@ -609,6 +655,7 @@ The configuration is done in the home manager section.
     environment.systemPackages = with pkgs; [
       hyprland            # the actual package
       walker              # launcher
+      elephant            # launcher dependency
       uwsm                # wayland session manager
       hyprland-qtutils    # needed by hyprland
       hyprpolkitagent     # polkit agent
@@ -634,6 +681,9 @@ The configuration is done in the home manager section.
       };
     };
 
+    # for walker to work
+    services.elephant.enable = true;
+
     # this is mainly for the lock screen
     # lock.png is provided elsewhere
     services.xserver = {
@@ -658,6 +708,7 @@ The configuration is done in the home manager section.
       XDG_SESSION_DESKTOP="Hyprland";
       NIXOS_OZONE_WL="1";
       XCURSOR_SIZE="24";
+      GDK_SCALE = "1.5";
     };
 
     # allow hyprlock (lockscreen) to lock user session
@@ -761,6 +812,95 @@ creation_rules:
         - *primary
 #+end_src
 
+** AI + LLMs
+The workstation is increasingly being automated with claude at this point. Adding it to the global packages makes it easier to launch in arbitrary locations. I am also using beads everywhere for tracking work between projects, pinned to a github version. [[https://github.com/wavefunk/youwhatknow][
+youwhatknow]] is a Claude Code hook server that injects file summaries before reads, installed from GitHub release binaries.
+To update claude-code, bump =version= and replace the =hash=:
+#+begin_src bash :tangle no
+nix-prefetch-url "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/<VERSION>/linux-x64/claude" | xargs nix hash convert --hash-algo sha256 --to sri
+#+end_src
+
+#+begin_src nix :tangle configuration/ai.nix :noweb tangle :mkdirp yes
+  { pkgs, lib, user, ... } :
+  let
+    claude-code = let
+      version = "2.1.112";
+      platform = "linux-x64";
+    in pkgs.stdenvNoCC.mkDerivation {
+      pname = "claude-code";
+      inherit version;
+
+      src = pkgs.fetchurl {
+        url = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/${version}/${platform}/claude";
+        hash = "sha256-V76UBtPlyuJZVSeQv3KI3WSWZ1Qw7JPb7XajOldYDT0=";
+      };
+
+      dontUnpack = true;
+      dontBuild = true;
+      dontStrip = true;
+
+      nativeBuildInputs = with pkgs; [ makeBinaryWrapper autoPatchelfHook ];
+
+      installPhase = ''
+        install -Dm755 $src $out/bin/claude
+        wrapProgram $out/bin/claude \
+          --set DISABLE_AUTOUPDATER 1 \
+          --set DISABLE_INSTALLATION_CHECKS 1 \
+          --prefix PATH : ${lib.makeBinPath (with pkgs; [ procps bubblewrap socat ripgrep ])}
+      '';
+    };
+
+    youwhatknow = let
+      version = "0.2.0";
+      target = "x86_64-unknown-linux-gnu";
+    in pkgs.stdenv.mkDerivation {
+      pname = "youwhatknow";
+      inherit version;
+
+      src = pkgs.fetchurl {
+        url = "https://github.com/wavefunk/youwhatknow/releases/download/v${version}/youwhatknow-${target}.tar.xz";
+        hash = "sha256-m7YELX3pfO3ZR9f2XKeTJ4dc2zzJLfIBkYWyHzbObQU=";
+      };
+
+      sourceRoot = "youwhatknow-${target}";
+      nativeBuildInputs = [ pkgs.makeWrapper ];
+
+      installPhase = ''
+        install -Dm755 youwhatknow $out/bin/youwhatknow
+        wrapProgram $out/bin/youwhatknow \
+          --prefix PATH : ${pkgs.lib.makeBinPath [ claude-code ]}
+      '';
+    };
+  in
+  {
+    nixpkgs.overlays = [
+      (final: prev: {
+        beads = (prev.beads.override {
+          buildGoModule = prev.buildGoModule.override { go = prev.go_1_26; };
+        }).overrideAttrs (old: rec {
+          version = "0.62.0";
+          src = prev.fetchFromGitHub {
+            owner = "steveyegge";
+            repo = "beads";
+            rev = "v${version}";
+            hash = "sha256-AqpdisbN6sFU2135/+B+FxJUUVknifzT7Gijc3dl2KQ=";
+          };
+          vendorHash = "sha256-XGksP4YO2M7nY7g1/ZIN/sprEZLk7i+cdow9uBBcsDo=";
+          doCheck = false;
+        });
+
+      })
+    ];
+
+    environment.systemPackages = with pkgs; [
+      claude-code
+      beads
+      dolt
+      youwhatknow
+    ];
+  }
+#+end_src
+
 ** Miscellaneous Packages and Programs
 #+name: config-system-packages
 #+begin_src nix
@@ -773,11 +913,29 @@ creation_rules:
     python3    # nice to have this ready for quick things
     cacert     # certificate authority
     remmina    # remote desktop app
+    jaq        # rust based jq alternative
+    element-desktop
   ];
 
   # to enable icons with wlogout
   # https://github.com/catppuccin/nix/issues/584
   programs.gdk-pixbuf.modulePackages = [ pkgs.librsvg ];
+
+  services.minidlna = {
+    enable = true;
+    openFirewall = true;
+    settings = {
+      media_dir = [
+        "V,/home/nambiar/videos"
+      ];
+      friendly_name = "smallbox";
+      inotify = "yes";
+    };
+  };
+
+  users.users.minidlna = {
+    extraGroups = [ "users" ];
+  };
 #+end_src
 
 #+name: config-programs
@@ -858,168 +1016,34 @@ Oof! Again with all the imports! We can go through them one at a time!
 Mostly styling and enabling modules in the [[https://github.com/Alexays/Waybar][top bar]].
 #+begin_src nix :tangle home/waybar.nix :noweb tangle :mkdirp yes
   {
-    programs.waybar = {
+    programs.ashell = {
       enable = true;
+      systemd.enable = true;
+      systemd.target = "hyprland-session.target";
       settings = {
-        mainBar = {
-          layer = "top";
-          height = 34;
-          modules-left = [ "hyprland/workspaces" "hyprland/window" ];
-          modules-right = [
-            "idle_inhibitor"
-            "pulseaudio"
-            "network"
-            "cpu"
-            "memory"
-            "temperature"
-            "battery"
-            "tray"
-            "clock"
-          ];
-          "idle_inhibitor" = {
-            format = "{icon}";
-            format-icons = {
-              activated = "  ";
-              deactivated = " 󰒲  ";
-            };
-          };
-          "pulseaudio" = {
-            "format" =  "{volume}% {icon}";
-            "format-bluetooth" = "{volume}% {icon}";
-            "format-muted" = "";
-            "format-icons"= {
-              "headphones"= "";
-              "headset"= "";
-              "phone"= "";
-              "portab  le"= "";
-              "default"= ["" ""];
-            };
-            "on-click"= "pavucontrol";
-          };
-          "network" = {
-            "format-wifi" = "  ({bandwidthDownBits})";
-            "format-ethernet" = "  ({bandwidthDownBits})";
-            "format-disconnected" =  "Disconnected ⚠";
-            "tooltip-format-wifi" = "{essid} ({signalStrength}%)";
-            "tooltip-format-ethernet" = "{ifname}: {ipaddr}/{cidr}";
-            "on-click" = "impala";
-          };
-          "cpu".format = "{usage}%  ";
-          "cpu".tooltip = false;
-          "temperature" = {
-            "format" = "{temperatureC}°C ";
-          };
-          "temperature".tooltip = false;
-          "tray".spacing = 10;
-          "tray".icon-size = 14;
-          "clock".format = "{:%a, %d %b %Y - %H:%M}";
-          "clock".tooltip = false;
-          "battery" = {
-            "bat" = "BAT0";
-            "states" = {
-              "good" = 95;
-              "warning" = 30;
-              "critical" = 15;
-            };
-            "format" = "{capacity}% {icon}";
-            "format-charging" =  "{capacity}% 󰂄";
-            "format-plugged" = "{capacity}%  ";
-            "format-icons" = ["󰁺" "󰁼" "󰁾" "󰂀" "󱈏 "];
-          };
-          "memory".format = "{percentage}%  ";
+        outputs = "All";
+        position = "Top";
+        enable_esc_key = true;
+        modules = {
+          left = ["Workspaces" "WindowTitle" ];
+          center = [ "Clock" ];
+          right = [ "SystemInfo" [ "Privacy" "Settings" "KeyboardLayout" "Tray" ] ];
+        };
+
+        system_info = {
+          indicators = [ "Cpu" "Memory" "Temperature" "DownloadSpeed"];
+        };
+
+        keyboard_layout = {
+          "English (US)" = "EN";
+          "Swedish" = "SE";
+        };
+
+        appearance = {
+          font_name = "Aporetic";
+          style = "Solid";
         };
       };
-      style = ''
-           ,* {
-             font-family: Aporetic Sans Mono, Iosevka Nerd Font, Roboto, Helvetica, Arial, sans-serif;
-             font-size: 13px;
-           }
-
-           window#waybar {
-             background-color: @base;
-             color: @text;
-             transition-property: background-color;
-             border-bottom: 0px solid rgba(0, 0, 0, 0);
-             transition-duration: .5s;
-           }
-
-           #workspaces button {
-             padding: 0 5px;
-             background-color: transparent;
-             border: none;
-             border-radius: 0;
-             color: @text;
-           }
-
-           #workspaces button:hover {
-             background: @surface1;
-             color: @text;
-           }
-
-           #workspaces button.active {
-             background-color: @green;
-             color: @base;
-             box-shadow: inset 0 -3px @subtext1;
-           }
-
-           #clock,
-           #idle_inhibitor
-           #battery,
-           #cpu,
-           #memory,
-           #temperature,
-           #network,
-           #pulseaudio,
-           #tray {
-             margin: 0 5px;
-             padding: 0 2px;
-           }
-
-           #idle_inhibitor.activated {
-             background-color: @green;
-           }
-
-           #battery.charging {
-              color: @green;
-           }
-
-           @keyframes blink {
-             to {
-                background-color: #ffffff;
-                color: black;
-             }
-           }
-
-           #battery.warning:not(.charging) {
-             color: white;
-             animation-name: blink;
-             animation-duration: 0.5s;
-             animation-timing-function: linear;
-             animation-iteration-count: infinite;
-             animation-direction: alternate;
-          }
-
-           #window,
-           #workspaces {
-             margin: 0 4px;
-           }
-
-           .modules-left > widget:first-child > #workspaces {
-             margin-left: 0;
-           }
-
-           .modules-right > widget:last-child > #workspaces {
-             margin-right: 0;
-           }
-
-           #network.disconnected {
-             background-color: @red;
-           }
-
-           #temperature.critical {
-             background-color: @red;
-           }
-           '';
     };
   }
 #+end_src
@@ -1039,10 +1063,11 @@ I use [[https://wiki.hyprland.org/Hypr-Ecosystem/hyprpaper/][hyprpaper]] for set
     services.hyprpaper.settings = {
       ipc = "on";
       splash = false;
-      splash_offset = 2.0;
 
-      preload = [ "~/.background-image.png" ];
-      wallpaper = [ ",~/.background-image.png" ];
+      wallpaper = {
+        monitor = "";
+        path = "~/.background-image.png";
+      };
     };
 
     home.file = {
@@ -1241,7 +1266,7 @@ Often I work with dotnet directly inside of unity and so we set that up too.
 ** Hyprland
 This configures the desktop environment along with the peripherals. The comments should explain whats happening.
 #+begin_src nix :tangle home/hyprland.nix :noweb tangle :mkdirp yes.
-  {
+  { pkgs, ... }: {
     # required for the default Hyprland config
     programs.kitty.enable = true;
 
@@ -1258,8 +1283,12 @@ This configures the desktop environment along with the peripherals. The comments
       exec-once = [
         # read in env vars
         "dbus-update-activation-environment --systemd --all"
-        # start waybar
-        "uwsm app -- waybar"
+        # start ashell
+        "uwsm app -- ashell"
+        # start wallpaper manager
+        "uwsm app -- hyprpaper"
+        # start elephant for walker
+        "uwsm app -- elephant"
       ];
 
       input = {
@@ -1275,7 +1304,7 @@ This configures the desktop environment along with the peripherals. The comments
         accel_profile =  "adaptive";
         sensitivity = -0.5; # -1.0 - 1.0, 0 means no modification.
 
-        kb_layout = "us";
+        kb_layout = "us,se";
 
         # very emacs specific, i use caps as an extra ctrl key
         kb_options = "ctrl:nocaps";
@@ -1299,6 +1328,10 @@ This configures the desktop environment along with the peripherals. The comments
         rounding = 5;
       };
 
+      xwayland = {
+        force_zero_scaling = "true";
+      };
+
       animations = {
         enabled = "yes";
         bezier = "myBezier, 0.05, 0.9, 0.1, 1.05";
@@ -1318,10 +1351,6 @@ This configures the desktop environment along with the peripherals. The comments
         preserve_split = "yes";
       };
 
-      gestures = {
-        workspace_swipe = "off";
-      };
-
       misc = {
         disable_hyprland_logo = true;
         focus_on_activate = true;
@@ -1329,14 +1358,19 @@ This configures the desktop environment along with the peripherals. The comments
 
       "$mainMod" = "SUPER";
 
+      gesture = [
+        "3, horizontal, workspace"
+      ];
+
       bind = [
-        "$mainMod, Return, exec, uwsm app -- alacritty"
+        "$mainMod, Return, exec, ghostty +new-window"
         "$mainMod, i, exec, firefox"
         "$mainMod, e, exec, emacs"
         "$mainMod_SHIFT, Q, killactive"
         "$mainMod_SHIFT, M, exit"
         "$mainMod, F, exec, thunar"
         "$mainMod_SHIFT, Space, togglefloating"
+        "$mainMod_SHIFT, K, exec, hyprctl switchxkblayout current next"
 
         # use walker to show exec menu
         "$mainMod, Space, exec, walker"
@@ -1365,6 +1399,7 @@ This configures the desktop environment along with the peripherals. The comments
         "$mainMod_CTRL, p, exec, grimblast -n -f copysave screen"
 
         "$mainMod_SHIFT, S, exec, wlogout"
+        "ALT, Tab, cyclenext"
       ] ++ (
         # workspaces
         # binds $mod + [shift +] {1..9} to [move to] workspace {1..9}
@@ -1435,23 +1470,29 @@ You'll notice the color values in multiple places outside this as well.
 #+begin_src nix :tangle home/terminal.nix :noweb tangle :mkdirp yes
   {
     programs = {
-      alacritty = {
+      ghostty = {
         enable = true;
+        enableZshIntegration = true;
+        systemd.enable = true;
         settings = {
-          font.normal.family = "Aporetic Sans Mono";
-          font.size = 12;
-          terminal.shell.program = "zsh";
-
-          window = {
-            padding.x = 4;
-            padding.y = 4;
-          };
+          font-family = "Aporetic Sans Mono";
+          font-size = 12;
+          command = "zsh";
+          keybind = [
+            "ctrl+x>3=new_split:right"
+            "ctrl+x>2=new_split:down"
+            "ctrl+x>o=goto_split:next"
+            "ctrl+x>k=close_surface"
+          ];
+          window-padding-x = 4;
+          window-padding-y = 4;
+          cursor-style = "block";
         };
       };
     };
 
-    catppuccin.alacritty.enable = true;
-    catppuccin.alacritty.flavor = "mocha";
+    catppuccin.ghostty.enable = true;
+    catppuccin.ghostty.flavor = "mocha";
   }
 
 #+end_src
@@ -1463,7 +1504,6 @@ All the miscellaneous dev tools on this computer.
   {
     programs = {
       vscode.enable = true;   # yes, sometimes i like to dabble
-      vim.enable = true;      # and this one too
       ripgrep.enable = true;  # fast text search across projects
       btop.enable = true;     # even better task manager
 
@@ -1514,12 +1554,20 @@ All the miscellaneous dev tools on this computer.
 
         shellAliases = {
           cd = "z";     # zoxide
+          jq = "jaq";
         };
 
         # for emacs-eat package
         initContent = pkgs.lib.mkOrder 1200 ''
           [ -n "$EAT_SHELL_INTEGRATION_DIR" ] && \
           source "$EAT_SHELL_INTEGRATION_DIR/zsh"
+
+          if command -v direnv >/dev/null 2>&1; then
+            if [ -n "$CLAUDECODE" ]; then
+              eval "$(direnv hook bash)"
+              eval "$(DIRENV_LOG_FORMAT= direnv export bash)"
+            fi
+          fi
         '';
       };
 
@@ -1555,11 +1603,11 @@ A bunch of programs that I use.
     discord                  # other chat
     slack                    # work chat
     pavucontrol              # audio control
-    everdo                   # gtd tool
     spotify                  # music player
     simple-scan              # scanner software
     pinta                    # image editor
     mpv                      # media player
+    claude-agent-acp         # acp server for agent-shell
   ];
 
   services.dunst.enable = true;      # notifications daemon
@@ -1615,7 +1663,7 @@ Comments describe the emacs package and what it does.
         epkgs.nixpkgs-fmt              # format nix files
         epkgs.f                        # string + file utilities
         epkgs.gptel                    # llm chat (mainly claude)
-
+        epkgs.agent-shell              # acp-powered agent shell (uses claude-agent-acp)
         epkgs.catppuccin-theme         # catppuccin theme
         epkgs.eldoc-box                # docs in a box
         epkgs.sideline                 # mainly for flymake errors on the side
@@ -1813,6 +1861,8 @@ Now starts the main emacs configuration.
     (kill-do-not-save-duplicates t)
     (sentence-end-double-space nil)
     (treesit-enabled-modes t)
+    (display-buffer-base-action
+     '((display-buffer-reuse-window display-buffer-use-some-window)))
     :init
     ;; base visual
     (menu-bar-mode -1)                   ;; no menu bar
@@ -1821,7 +1871,8 @@ Now starts the main emacs configuration.
     (blink-cursor-mode -1)               ;; stop blinking
 
     ;; font of the century
-    (set-frame-font "Aporetic Sans Mono 12" nil t)
+    (add-to-list 'default-frame-alist
+                 '(font . "Aporetic Sans Mono-12"))
 
     :bind
     (("C-<wheel-up>"   . pixel-scroll-precision) ; dont zoom in please, just scroll
@@ -2147,6 +2198,11 @@ Now starts the main emacs configuration.
     (org-hide-emphasis-markers t)
     (org-src-fontify-natively t)
     (org-src-tab-acts-natively t)
+    (org-refile-targets '((org-agenda-files :maxlevel . 3)))
+    (org-archive-save-context-info '(time category todo itags olpath))
+    (org-refile-use-outline-path 'file)
+    (org-todo-keywords
+     '((sequence "TODO" "NEXT" "WAITING" "PROJECT" "|" "DONE" "KILLED" "SOMEDAY")))
     (org-capture-templates '(("t" "Todo" entry (file org-inbox-file)
                               "* TODO %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n\n%a\n\n)")
                              ("j" "Journal" entry (file+olp+datetree org-journal-file)
@@ -2162,6 +2218,95 @@ Now starts the main emacs configuration.
     ;; Enable syntax highlighting in code blocks
     (add-hook 'org-mode-hook 'turn-on-font-lock)
     (add-hook 'org-mode-hook 'org-indent-mode))
+
+  ;;; wavefunk task tracking helpers
+
+  (defvar wavefunk/org-projects-dir "~/nextcloud/org/projects/"
+    "Directory containing canonical project org files.")
+
+  (defun wavefunk/org-get-active-tasks (file)
+    "Return the content under the first 'Active' heading in FILE as a string."
+    (with-current-buffer (find-file-noselect (expand-file-name file))
+      (save-excursion
+        (goto-char (point-min))
+        (when (re-search-forward "^\\* Active" nil t)
+          (let ((start (line-beginning-position)))
+            (org-end-of-subtree t t)
+            (buffer-substring-no-properties start (point)))))))
+
+  (defun wavefunk/org-set-todo-by-id (id state)
+    "Find heading with CUSTOM_ID matching ID and set its TODO state to STATE.
+  Searches all org files in `wavefunk/org-projects-dir'."
+    (let ((files (directory-files wavefunk/org-projects-dir t "\\.org$")))
+      (catch 'found
+        (dolist (file files)
+          (with-current-buffer (find-file-noselect file)
+            (org-with-wide-buffer
+             (goto-char (point-min))
+             (while (re-search-forward
+                     (format ":CUSTOM_ID:\\s-*%s" (regexp-quote id)) nil t)
+               (org-back-to-heading t)
+               (org-todo state)
+               (save-buffer)
+               (throw 'found (format "Set %s to %s in %s" id state (file-name-nondirectory file))))))
+        (format "ID %s not found" id))))
+
+  (defun wavefunk/org-next-id (file prefix)
+    "Return the next available PREFIX-NN id in FILE."
+    (let ((max-id 0))
+      (with-current-buffer (find-file-noselect (expand-file-name file))
+        (org-map-entries
+         (lambda ()
+           (when-let ((id (org-entry-get nil "CUSTOM_ID")))
+             (when (string-match (format "^%s\\([0-9]+\\)$" (regexp-quote prefix)) id)
+               (setq max-id (max max-id (string-to-number (match-string 1 id)))))))))
+      (format "%s%02d" prefix (1+ max-id))))
+
+  (defun wavefunk/org-add-task (file heading title prefix)
+    "Add a TODO task with TITLE under HEADING in FILE with auto-assigned ID.
+  HEADING is a top-level heading like \"Active\" or \"Backlog\".
+  PREFIX is the project prefix like \"aw-\"."
+    (let ((next-id (wavefunk/org-next-id file prefix)))
+      (with-current-buffer (find-file-noselect (expand-file-name file))
+        (goto-char (point-min))
+        (if (re-search-forward (format "^\\* %s" (regexp-quote heading)) nil t)
+            (progn
+              (org-end-of-subtree t nil)
+              (insert (format "\n** TODO %s\n:PROPERTIES:\n:CUSTOM_ID: %s\n:CREATED: %s\n:END:\n"
+                              title next-id (format-time-string "[%Y-%m-%d %a]")))
+              (save-buffer)
+              (format "Added %s: %s under %s" next-id title heading))
+          (format "Heading '%s' not found in %s" heading file)))))
+
+  (defun wavefunk/org-query-all (state)
+    "Return all tasks matching TODO STATE across all project org files."
+    (let ((files (directory-files wavefunk/org-projects-dir t "\\.org$"))
+          (results '()))
+      (dolist (file files)
+        (with-current-buffer (find-file-noselect file)
+          (org-map-entries
+           (lambda ()
+             (when (string= (org-get-todo-state) state)
+               (push (format "[%s] %s — %s"
+                             (or (org-entry-get nil "CUSTOM_ID") "no-id")
+                             (org-get-heading t t t t)
+                             (file-name-sans-extension (file-name-nondirectory file)))
+                     results))))))
+      (mapconcat #'identity (nreverse results) "\n")))
+
+  (defun wavefunk/org-backfill-ids (file prefix)
+    "Assign CUSTOM_IDs to all headings in FILE that lack one. Uses PREFIX."
+    (with-current-buffer (find-file-noselect (expand-file-name file))
+      (let ((count 0))
+        (org-map-entries
+         (lambda ()
+           (unless (org-entry-get nil "CUSTOM_ID")
+             (when (org-get-todo-state)  ; only assign IDs to TODO items
+               (let ((next-id (wavefunk/org-next-id file prefix)))
+                 (org-set-property "CUSTOM_ID" next-id)
+                 (setq count (1+ count)))))))
+        (when (> count 0) (save-buffer))
+        (format "Backfilled %d IDs in %s" count (file-name-nondirectory file)))))
 
   ;; extras
   (use-package comp-run
@@ -2187,14 +2332,62 @@ The configuration for the laptop does not change much. Most changes are because 
 Nothing specific for the laptop.
 
 #+begin_src nix :tangle machines/smallbox/configuration.nix :noweb tangle :mkdirp yes
-  { user, ... } : {
+  { user, config, ... } : {
     imports =
       [
         ./hardware-configuration.nix
+        ./network-configuration.nix
         ../../configuration
       ];
 
     <<smallbox-secrets>>
+    <<macbox-host>>
+  }
+#+end_src
+
+*** Wireguard
+Both smallbox and homelab use wireguard to connect to the VPN. The shared peer public key and common settings (mtu, dns, keepalive) are extracted into ~mkWireguard~ so each machine only specifies what differs.
+
+#+name: wireguard-config
+#+begin_src nix
+  mkWireguard = { address, privateKeyFile, peerPublicKeyFile, presharedKeyFile, endpointFile, allowedIPs, listenPort ? null }:
+    let
+      ips = builtins.concatStringsSep "," allowedIPs;
+      routes = builtins.concatStringsSep "\n" (map (ip: "ip route add ${ip} dev wg0 2>/dev/null || true") allowedIPs);
+    in
+    {
+      inherit address privateKeyFile;
+      mtu = 1300;
+      dns = [ "1.1.1.1" "8.8.8.8" ];
+      postUp = ''
+        wg set wg0 peer "$(cat ${peerPublicKeyFile})" \
+          preshared-key ${presharedKeyFile} \
+          endpoint "$(cat ${endpointFile})" \
+          allowed-ips ${ips} \
+          persistent-keepalive 15
+        ${routes}
+      '';
+      preDown = ''
+        wg set wg0 peer "$(cat ${peerPublicKeyFile})" remove 2>/dev/null || true
+      '';
+    } // (if listenPort != null then { inherit listenPort; } else {});
+#+end_src
+
+*** Network Configuration
+#+begin_src nix :tangle machines/smallbox/network-configuration.nix :noweb tangle :mkdirp yes
+  { config, ... }:
+  let
+    <<wireguard-config>>
+  in
+  {
+    networking.wg-quick.interfaces.wg0 = mkWireguard {
+      address = [ "172.30.0.2/32" "2a01:4f9:c014:e0de:ac1e::2/128" ];
+      privateKeyFile = config.sops.secrets.wg_private_key.path;
+      peerPublicKeyFile = config.sops.secrets.wg_peer_public_key.path;
+      presharedKeyFile = config.sops.secrets.wg_preshared_key.path;
+      endpointFile = config.sops.secrets.vpn_endpoint.path;
+      allowedIPs = [ "172.30.0.1/32" "172.30.0.4/32" ];
+    };
   }
 #+end_src
 
@@ -2251,10 +2444,11 @@ As you might notice, there are a lot more kernel modules. This device has thunde
       options = [ "fmask=0077" "dmask=0077" ];
     };
 
-    # external disk
+    # external disk — automount on first access, don't block boot
     fileSystems."/home/${user.username}/external" = {
       device = "/dev/disk/by-uuid/18818348-1ee4-4fa5-9984-e4e01b9fa304";
       fsType = "ext4";
+      options = [ "noauto" "nofail" "x-systemd.automount" "x-systemd.idle-timeout=300" ];
     };
 
     swapDevices = [];
@@ -2296,12 +2490,12 @@ This is mostly about configuring the monitor and key bindings. And laptop specif
 
       bindl = [
         '', switch:on:Lid Switch, exec, hyprctl keyword monitor "eDP-1, disable"''
-        '', switch:off:Lid Switch, exec, hyprctl keyword monitor "eDP-1, preferred, 2560x0, 2"''
+        '', switch:off:Lid Switch, exec, hyprctl keyword monitor "eDP-1, preferred, 2560x0, 1.5"''
       ];
 
       monitor = [
         "desc:AOC Q3279WG5B 0x00000161, preferred, 0x0, 1, vrr, 2"      # main monitor
-        "eDP-1, preferred, 2560x0, 2"  # laptop monitor
+        "eDP-1, preferred, 2560x0, 1.5"  # laptop monitor
       ];
 
       workspace = [
@@ -2310,12 +2504,6 @@ This is mostly about configuring the monitor and key bindings. And laptop specif
         "3,monitor:desc:AOC Q3279WG5B 0x00000161, default:true"
         "5,monitor:eDP-1, default:true"
         "6,monitor:eDP-1, default:true"
-      ];
-
-      windowrule = [
-        "workspace:1, class:firefox"
-        "workspace:2, class:emacs"
-        "workspace:5, class:Slack"
       ];
 
       exec-once = [
@@ -2328,37 +2516,55 @@ This is mostly about configuring the monitor and key bindings. And laptop specif
 #+end_src
 
 *** Secrets
+Helper to reduce boilerplate for SSH key pairs managed by sops. Each call to ~mkSshKeyPair~ declares both the private and public key secrets with correct ownership and permissions.
+
 #+name: smallbox-secrets
   #+begin_src nix
-  sops.secrets."ssh/smallbox/private" = { # ssh private key
+  sops.secrets = let
+    mkSshKeyPair = name: localName: {
+      "ssh/${name}/private" = {
+        owner = "${user.username}";
+        mode = "600";
+        path = "/home/${user.username}/.ssh/${localName}";
+      };
+      "ssh/${name}/public" = {
+        owner = "${user.username}";
+        mode = "644";
+        path = "/home/${user.username}/.ssh/${localName}.pub";
+      };
+    };
+  in
+    (mkSshKeyPair "smallbox" "id_ed25519")
+    // (mkSshKeyPair "wavefunk" "wavefunk")
+    // (mkSshKeyPair "wavefunk_dev" "wavefunk_dev")
+    // {
+      wg_private_key = { # wireguard private key
+        mode = "600";
+        path = "/home/${user.username}/.ssh/wg_private_key";
+      };
+      wg_preshared_key = { # wireguard preshared key
+        mode = "600";
+        path = "/home/${user.username}/.ssh/wg_preshared_key";
+      };
+      wg_peer_public_key = {};   # wireguard VPN server public key
+      vpn_endpoint = {};          # wireguard VPN server endpoint
+      homelab_domain = {};        # homelab base domain
+      macbox_ip = {};             # macbox local IP
+    };
+
+  sops.templates."ssh-hosts" = {
     owner = "${user.username}";
-    mode = "600";
-    path = "/home/${user.username}/.ssh/id_ed25519";
-  };
-  sops.secrets."ssh/smallbox/public" = { # ssh public key
-    owner = "${user.username}";
-    mode = "644";
-    path = "/home/${user.username}/.ssh/id_ed25519.pub";
-  };
-  sops.secrets."ssh/wavefunk/private" = { # ssh private key
-    owner = "${user.username}";
-    mode = "600";
-    path = "/home/${user.username}/.ssh/wavefunk";
-  };
-  sops.secrets."ssh/wavefunk/public" = { # ssh public key
-    owner = "${user.username}";
-    mode = "644";
-    path = "/home/${user.username}/.ssh/wavefunk.pub";
-  };
-  sops.secrets."ssh/wavefunk_dev/private" = { # ssh private key
-    owner = "${user.username}";
-    mode = "600";
-    path = "/home/${user.username}/.ssh/wavefunk_dev";
-  };
-  sops.secrets."ssh/wavefunk_dev/public" = { # ssh public key
-    owner = "${user.username}";
-    mode = "644";
-    path = "/home/${user.username}/.ssh/wavefunk_dev.pub";
+    content = ''
+      Host macbox
+        HostName ${config.sops.placeholder.macbox_ip}
+        User nambiar
+        IdentityFile ${config.sops.secrets."ssh/smallbox/private".path}
+
+      Host homelab
+        HostName ${config.sops.placeholder.homelab_domain}
+        User root
+        IdentityFile ${config.sops.secrets."ssh/smallbox/private".path}
+    '';
   };
 
   programs._1password.enable = true;
@@ -2366,6 +2572,513 @@ This is mostly about configuring the monitor and key bindings. And laptop specif
     enable = true;
     polkitPolicyOwners = [ "${user.username}" ];
   };
+#+end_src
+** Homelab
+*** System Level
+#+begin_src nix :tangle machines/homelab/configuration.nix :noweb tangle :mkdirp yes
+  { config, lib, pkgs, ... }:
+
+  {
+    imports =
+      [
+        ./hardware-configuration.nix
+        ./disko-config.nix
+        ./sops.nix
+        ./security.nix
+        ./networking.nix
+        ./caddy.nix
+        ./matrix.nix
+      ];
+
+    boot.loader.grub = {
+      efiSupport = true;
+      efiInstallAsRemovable = true;
+    };
+
+    services.openssh.enable = true;
+
+    users.users.root.openssh.authorizedKeys.keys = [ user.sshPublicKey ];
+
+    users.users.nambiar = {
+      isNormalUser = true;
+      description = "Sandeep Nambiar";
+      extraGroups = [
+        "wheel"          # can do sudo
+      ];
+    };
+
+    environment.systemPackages = map lib.lowPrio [
+      pkgs.curl
+      pkgs.gitMinimal
+    ];
+
+    system.stateVersion = "26.05";
+  }
+
+#+end_src
+
+*** Homelab Hardware
+#+begin_src nix :tangle machines/homelab/hardware-configuration.nix :noweb tangle :mkdirp yes
+
+  { config, lib, pkgs, modulesPath, ... }:
+
+  {
+    imports = [
+      (modulesPath + "/installer/scan/not-detected.nix")
+      (modulesPath + "/profiles/qemu-guest.nix")
+    ];
+
+    networking.useDHCP = lib.mkDefault true;
+    nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
+  }
+
+#+end_src
+
+*** Homelab Security
+#+begin_src nix :tangle machines/homelab/security.nix :noweb tangle :mkdirp yes
+  { config, pkgs, ... }:
+
+  {
+    services.fail2ban = {
+      enable = true;
+      # Ban IPs for 1 hour after 5 failures within 10 minutes
+      ignoreIP = [ "172.30.0.0/8" "192.168.0.0/16" ]; # Whitelist your local subnet
+      bantime = "1h";
+      bantime-increment.enable = true; # Increase ban time for repeat offenders
+
+      jails = {
+        sshd.settings = {
+          maxretry = 3;
+          findtime = "10m";
+        };
+      };
+    };
+
+    services.openssh.settings = {
+      PasswordAuthentication = false;
+      KbdInteractiveAuthentication = false; # Disables challenge-response
+      PermitRootLogin = "prohibit-password"; # Allow root only via key
+    };
+  }
+
+#+end_src
+*** Homelab Sops
+#+begin_src nix :tangle machines/homelab/sops.nix :noweb tangle :mkdirp yes
+  { config, pkgs, ... }:
+
+  {
+    sops = {
+      defaultSopsFile = ../../secrets/secrets.yaml;
+      age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
+    };
+
+    sops.secrets.wg_homelab_key = { # wireguard private key
+      mode = "600";
+      path = "/root/.ssh/wg_private_key";
+    };
+
+    sops.secrets.wg_homelab_preshared_key = { # wireguard preshared key
+      mode = "600";
+      path = "/root/.ssh/wg_preshared_key";
+    };
+
+    sops.secrets.wg_peer_public_key = {};       # wireguard VPN server public key
+    sops.secrets.homelab_peer_endpoint = {};     # wireguard peer endpoint for homelab
+    sops.secrets.homelab_domain = {};            # homelab base domain
+  }
+
+#+end_src
+
+*** Networking
+#+begin_src nix :tangle machines/homelab/networking.nix :noweb tangle :mkdirp yes
+  { config, ... }:
+  let
+    wg_port = 51821;
+    <<wireguard-config>>
+  in
+  {
+    networking.wg-quick.interfaces.wg0 = mkWireguard {
+      address = [ "2a01:4f9:c014:e0de:ac1e::3/128" "172.30.0.4/32" ];
+      privateKeyFile = config.sops.secrets.wg_homelab_key.path;
+      peerPublicKeyFile = config.sops.secrets.wg_peer_public_key.path;
+      presharedKeyFile = config.sops.secrets.wg_homelab_preshared_key.path;
+      endpointFile = config.sops.secrets.homelab_peer_endpoint.path;
+      allowedIPs = [ "172.30.0.1/32" "172.30.0.2/32" "172.30.0.3/32" ];
+      listenPort = wg_port;
+    };
+
+    boot.kernel.sysctl."net.ipv4.ip_forward" = true;
+    networking.firewall.allowedUDPPorts = [ wg_port ];
+  }
+
+#+end_src
+
+*** Caddy
+Caddy configuration uses ~sops.templates~ to generate the Caddyfile at activation time, keeping domains out of the public repo.
+
+#+begin_src nix :tangle machines/homelab/caddy.nix :noweb tangle :mkdirp yes
+  { config, pkgs, ... } :
+  let
+    domain = config.sops.placeholder.homelab_domain;
+  in
+  {
+    sops.secrets.cloudflare_token = {};
+
+    sops.templates."caddy.env".content = ''
+      CF_TOKEN=${config.sops.placeholder.cloudflare_token}
+    '';
+
+    sops.templates."Caddyfile" = {
+      owner = "caddy";
+      group = "caddy";
+      content = ''
+        {
+          email admin@${domain}
+        }
+
+        (hardening) {
+          header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+          header Referrer-Policy same-origin
+          header X-Content-Type-Options nosniff
+        }
+
+        (csp) {
+          header Content-Security-Policy "default-src 'self'; img-src 'self' https://*.${domain}/; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; frame-ancestors 'self'; frame-src 'self'; form-action 'self'; media-src 'self' https://*.${domain}/; sandbox allow-downloads allow-forms allow-same-origin allow-scripts"
+        }
+
+        *.${domain} {
+          tls {
+            dns cloudflare {$CF_TOKEN}
+          }
+        }
+
+        health.${domain} {
+          respond "Hi!"
+        }
+
+        <<caddy-matrix-host>>
+      '';
+    };
+
+    services.caddy = {
+      enable = true;
+
+      package = pkgs.caddy.withPlugins {
+        plugins = [ "github.com/mholt/caddy-ratelimit@v0.1.0" "github.com/caddy-dns/cloudflare@v0.2.2" ];
+        hash = "sha256-SdgeHilPgV9dNDnjuz8ULQ1CexbyToSbZONvJkrzUWg=";
+      };
+
+      environmentFile = "${config.sops.templates."caddy.env".path}";
+      configFile = config.sops.templates."Caddyfile".path;
+    };
+
+    networking.firewall.allowedTCPPorts = [ 443 80 ];
+  }
+#+end_src
+
+*** Matrix
+The matrix domain is derived from the homelab domain sops secret. The synapse ~server_name~ and ~public_baseurl~ are injected via a sops template extra config file since NixOS module options are evaluated at build time.
+
+The caddy reverse proxy block is a noweb reference (~caddy-matrix-host~) included in the Caddyfile sops template in the caddy section above.
+
+#+name: caddy-matrix-host
+#+begin_src nix
+  chat.${domain} {
+    reverse_proxy /_matrix/* localhost:8008
+    reverse_proxy /_synapse/client/* localhost:8008
+
+    reverse_proxy localhost:8008
+
+    respond /.well-known/matrix/server "{\"m.server\": \"chat.${domain}:443\"}" 200
+
+    respond /.well-known/matrix/client "{\"m.homeserver\": {\"base_url\": \"chat.${domain}\"}, \"m.identity_server\": {\"base_url\": \"https://vector.im\"}}" 200
+  }
+#+end_src
+
+#+begin_src nix :tangle machines/homelab/matrix.nix :noweb tangle :mkdirp yes
+  { config, pkgs, ... }:
+  let
+    domain = config.sops.placeholder.homelab_domain;
+    chatDomain = "chat.${domain}";
+  in
+  {
+    services.postgresql.enable = true;
+    services.postgresql.initialScript = pkgs.writeText "synapse-init.sql" ''
+      CREATE DATABASE "matrix-synapse" WITH OWNER "matrix-synapse"
+        TEMPLATE template0
+        LC_COLLATE = "C"
+        LC_CTYPE = "C";
+    '';
+
+    sops.secrets.matrix_shared_secret = {
+      owner = config.systemd.services.matrix-synapse.serviceConfig.User;
+      mode = "644";
+    };
+
+    sops.templates."synapse-domain.yaml" = {
+      owner = config.systemd.services.matrix-synapse.serviceConfig.User;
+      content = ''
+        server_name: "${chatDomain}"
+        public_baseurl: "https://${chatDomain}"
+      '';
+    };
+
+    services.matrix-synapse = {
+      enable = true;
+      settings = {
+        listeners = [{
+          port = 8008;
+          bind_addresses = [ "0.0.0.0" ];
+          type = "http";
+          tls = false;
+          x_forwarded = true;
+          resources = [{ names = [ "client" "federation" ]; compress = false; }];
+        }];
+
+        database = {
+          name = "psycopg2";
+          args = {
+            user = "matrix-synapse";
+            database = "matrix-synapse";
+            host = "/run/postgresql";
+          };
+        };
+
+        experimental_features = {
+          msc3202_device_masquerading = true;
+          msc3202_transaction_extensions = true;
+          msc2409_to_device_messages_enabled = true;
+        };
+      };
+
+      extraConfigFiles = [
+        "/run/secrets/matrix_shared_secret"
+        config.sops.templates."synapse-domain.yaml".path
+      ];
+
+      enableRegistrationScript = true;
+    };
+  }
+
+#+end_src
+
+*** Homelab Disks
+
+#+begin_src nix :tangle machines/homelab/disko-config.nix :noweb tangle :mkdirp yes
+  {
+    disko.devices = {
+      disk = {
+        main = {
+          type = "disk";
+          device = "/dev/sda";
+          content = {
+            type = "gpt";
+            partitions = {
+              boot = {
+                size = "1M";
+                type = "EF02";
+                priority = 1;
+              };
+              ESP = {
+                size = "512M";
+                type = "EF00";
+                content = {
+                  type = "filesystem";
+                  format = "vfat";
+                  mountpoint = "/boot";
+                };
+              };
+              root = {
+                size = "100%";
+                content = {
+                  type = "filesystem";
+                  format = "ext4";
+                  mountpoint = "/";
+                };
+              };
+            };
+          };
+        };
+      };
+    };
+  }
+#+end_src
+*** Homelab Home
+#+begin_src nix :tangle machines/homelab/home.nix :noweb tangle :mkdirp yes
+  { pkgs, user, ...} : {
+    home.username = "${user.username}";
+    home.homeDirectory = pkgs.lib.mkDefault "/home/${user.username}";
+    home.stateVersion = user.stateVersion;
+
+    programs.home-manager.enable =  true;
+  }
+#+end_src
+
+*** Homelab deploy-rs module
+#+name: homelab-module
+#+begin_src nix
+  deploy.nodes.homelab = {
+    hostname = "homelab";
+    profiles.system = {
+      user = "root";
+      sshUser = "root";
+      path = deployPkgs.deploy-rs.lib.activate.nixos self.nixosConfigurations.homelab;
+    };
+  };
+#+end_src
+** Macbox
+#+name: macbox-host
+#+begin_src nix
+  programs.ssh.extraConfig = ''
+    Include ${config.sops.templates."ssh-hosts".path}
+  '';
+#+end_src
+
+#+name: macbox-module
+#+begin_src nix
+  darwinConfigurations.macbox = nix-darwin.lib.darwinSystem {
+    system = macSystem;
+    modules = [
+      ({ pkgs, ... }: {
+        nix.settings.trusted-users = [ "root" "nambiar" ];
+        environment.systemPackages = with pkgs; [ vim htop git emacs ];
+
+        system.defaults.SoftwareUpdate.AutomaticallyInstallMacOSUpdates = false;
+        nix.settings.experimental-features = "nix-command flakes";
+
+        system.configurationRevision = self.rev or self.dirtyRev or null;
+
+        nixpkgs.hostPlatform = macSystem;
+
+        networking.computerName = "macbox";
+        networking.hostName = "macbox";
+
+        system.primaryUser = "nambiar";
+
+        power.restartAfterFreeze = true;
+        power.restartAfterPowerFailure  = true;
+        power.sleep.computer = "never";
+        power.sleep.display = "never";
+        power.sleep.harddisk = "never";
+
+        system.activationScripts.postActivation.text = ''
+            sudo pmset -a sleep 0 autorestart 1
+          '';
+
+        users.users.nambiar = {
+          name = "nambiar";
+          home = "/Users/nambiar";
+          openssh.authorizedKeys.keys = [ user.sshPublicKey ];
+        };
+
+        system.stateVersion = 6;
+      })
+    ];
+    specialArgs = { inherit inputs; pkgs = pkgsMac; };
+  };
+
+  deploy.nodes.macbox = {
+    hostname = "macbox";
+    profiles.system = {
+      user = "root";
+      path = deploy-rs.lib.aarch64-darwin.activate.darwin self.darwinConfigurations.macbox;
+    };
+  };
+#+end_src
+* Extras
+#+begin_src markdown :tangle CLAUDE.md :noweb tangle :mkdirp yes
+  # CLAUDE.md
+
+  This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+  ## Critical Rule
+
+  ,**Never read or edit `.nix` files directly.** All `.nix` files are generated from `README.org` via org-babel-tangle. `README.org` is the single source of truth — every change must be made there. Edits to `.nix` files will be silently overwritten on next tangle.
+
+  ## Commands
+
+  ```bash
+  # Tangle README.org into nix files (the CI workflow runs a more complete version with a startup block)
+  emacs README.org --batch -f org-babel-tangle
+
+  # Deploy to local machine
+  nixos-rebuild switch --flake .#smallbox
+
+  # Deploy to remote machines
+  nix run github:serokell/deploy-rs -- .#macbox
+  nix run github:serokell/deploy-rs -- .#homelab
+
+  # Edit encrypted secrets
+  sops secrets/secrets.yaml
+
+  # Update flake inputs
+  nix flake update
+
+  # Format nix code
+  nixfmt <file>
+
+  # Enter dev shell (provides nil, nixfmt, sops)
+  nix develop
+  # or: direnv is configured via .envrc
+  ```
+
+  There are no tests or linters — validation happens at `nixos-rebuild` time.
+
+  ## Architecture
+
+  This is a literate NixOS configuration. `README.org` contains org-mode source blocks that tangle into all `.nix` files. Noweb references (`<<name>>`) compose fragments across blocks — understand how they assemble before changing structure.
+
+  ### Machines
+
+  - **smallbox** — primary workstation (x86_64-linux, NixOS, deployed locally)
+  - **macbox** — work Mac (aarch64-darwin, nix-darwin, deployed via deploy-rs)
+  - **homelab** — home server (NixOS, deployed via deploy-rs)
+
+  ### Flake structure
+
+  `flake.nix` dynamically generates `nixosConfigurations` by mapping over a machines list. Each machine imports `machines/<name>/configuration.nix` and `machines/<name>/home.nix`. Shared modules live in `configuration/` (system-level) and `home/` (home-manager).
+
+  Key inputs: nixpkgs-unstable, home-manager, emacs-overlay, sops-nix, catppuccin, nix-darwin, deploy-rs, disko.
+
+  ### Secrets
+
+  Managed with sops-nix using age encryption. Key defined in `.sops.yaml`. Edit with `sops secrets/secrets.yaml`.
+
+  ### CI
+
+  GitHub Actions workflow (`.github/workflows/tangle.yml`) auto-tangles on push to `README.org` and commits the generated files.
+
+  ### Others
+  Also read AGENTS.md for more instructions.
+
+#+end_src
+
+#+begin_src markdown :tangle AGENTS.md :noweb tangle :mkdirp yes
+  <!-- BEGIN YOUWHATKNOW INTEGRATION -->
+  ## File Summaries (youwhatknow)
+
+  This project uses **youwhatknow** for automatic file summaries during Claude Code sessions.
+  It works via hooks — no manual action needed.
+
+  ,**How it works:**
+  - Large files show a summary (description, symbols, line ranges) on first read
+  - Read again for full content, or use offset/limit to target sections
+  - Project structure is injected at session start
+
+  ,**Useful commands:**
+  ```bash
+  youwhatknow status              # Check daemon health
+  youwhatknow status --json       # Machine-readable status
+  youwhatknow reindex             # Refresh index after major changes
+  youwhatknow reindex --full      # Full reindex (ignore change detection)
+  youwhatknow summary <path>      # Preview a file summary
+  youwhatknow reset <path>        # Reset read count for a file
+  youwhatknow restart             # Restart daemon
+  youwhatknow logs                # View daemon logs
+  youwhatknow prime               # Full agent workflow context
+  ```
+
+  <!-- END YOUWHATKNOW INTEGRATION -->
 #+end_src
 * README Utils
 *** Headers

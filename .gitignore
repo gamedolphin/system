@@ -2,3 +2,5 @@
 *.md
 /.envrc-private
 /.envrc.private
+/.agent-shell/
+/.claude/

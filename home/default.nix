@@ -29,11 +29,11 @@
     discord                  # other chat
     slack                    # work chat
     pavucontrol              # audio control
-    everdo                   # gtd tool
     spotify                  # music player
     simple-scan              # scanner software
     pinta                    # image editor
     mpv                      # media player
+    claude-agent-acp         # acp server for agent-shell
   ];
   
   services.dunst.enable = true;      # notifications daemon

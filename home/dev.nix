@@ -5,7 +5,6 @@
 {
   programs = {
     vscode.enable = true;   # yes, sometimes i like to dabble
-    vim.enable = true;      # and this one too
     ripgrep.enable = true;  # fast text search across projects
     btop.enable = true;     # even better task manager
 
@@ -62,6 +61,13 @@
       initContent = pkgs.lib.mkOrder 1200 ''
         [ -n "$EAT_SHELL_INTEGRATION_DIR" ] && \
         source "$EAT_SHELL_INTEGRATION_DIR/zsh"
+
+        if command -v direnv >/dev/null 2>&1; then
+          if [ -n "$CLAUDECODE" ]; then
+            eval "$(direnv hook bash)"
+            eval "$(DIRENV_LOG_FORMAT= direnv export bash)"
+          fi
+        fi
       '';
     };
 

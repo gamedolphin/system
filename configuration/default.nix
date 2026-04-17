@@ -16,6 +16,7 @@
     ./audio.nix
     ./steam.nix
     ./sops.nix
+    ./ai.nix
   ];
 
   environment.systemPackages = with pkgs; [
@@ -27,11 +28,30 @@
     python3    # nice to have this ready for quick things
     cacert     # certificate authority
     remmina    # remote desktop app
+    element-desktop
   ];
   
   # to enable icons with wlogout
   # https://github.com/catppuccin/nix/issues/584
   programs.gdk-pixbuf.modulePackages = [ pkgs.librsvg ];
+
+  services.minidlna = {
+    enable = true;
+    openFirewall = true;
+    settings = {
+      media_dir = [
+        "V,/home/nambiar/videos"
+      ];
+      friendly_name = "smallbox";
+      inotify = "yes";
+    };
+  };
+
+  users.users.minidlna = {
+    extraGroups = [ "users" ];
+  };
+
+
 
   users.users.${user.username} = {
     isNormalUser = true;

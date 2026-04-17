@@ -22,12 +22,12 @@
 
     bindl = [
       '', switch:on:Lid Switch, exec, hyprctl keyword monitor "eDP-1, disable"''
-      '', switch:off:Lid Switch, exec, hyprctl keyword monitor "eDP-1, preferred, 2560x0, 2"''
+      '', switch:off:Lid Switch, exec, hyprctl keyword monitor "eDP-1, preferred, 2560x0, 1.5"''
     ];
 
     monitor = [
       "desc:AOC Q3279WG5B 0x00000161, preferred, 0x0, 1, vrr, 2"      # main monitor
-      "eDP-1, preferred, 2560x0, 2"  # laptop monitor
+      "eDP-1, preferred, 2560x0, 1.5"  # laptop monitor
     ];
 
     workspace = [
@@ -36,12 +36,6 @@
       "3,monitor:desc:AOC Q3279WG5B 0x00000161, default:true"
       "5,monitor:eDP-1, default:true"
       "6,monitor:eDP-1, default:true"
-    ];
-
-    windowrule = [
-      "workspace:1, class:firefox"
-      "workspace:2, class:emacs"
-      "workspace:5, class:Slack"
     ];
 
     exec-once = [

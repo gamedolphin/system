@@ -9,18 +9,18 @@
     p7zip
     usbutils
     udiskie
+    file-roller
   ];
 
   programs.thunar = {
     enable = true;
-    plugins = with pkgs.xfce; [
+    plugins = with pkgs; [
       thunar-archive-plugin
       thunar-media-tags-plugin
       thunar-volman
     ];
   };
 
-  programs.file-roller.enable = true; # thunar zip support
   programs.xfconf.enable = true; # to save thunar settings
 
   services = {

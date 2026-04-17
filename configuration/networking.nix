@@ -9,11 +9,6 @@
     firewall.enable = true;
 
     # let wifi info be NOT declarative, allowing user to configure wifi.
-    wireless.userControlled.enable = true;
-    wireless.iwd.enable = true;
-    networkmanager.wifi.backend = "iwd";
+    wireless.userControlled = true;
   };
-
-  # tui to manage wifi networks
-  environment.systemPackages = with pkgs; [ impala ];
 }

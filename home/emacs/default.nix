@@ -43,7 +43,7 @@
       epkgs.nixpkgs-fmt              # format nix files
       epkgs.f                        # string + file utilities
       epkgs.gptel                    # llm chat (mainly claude)
-
+      epkgs.agent-shell              # acp-powered agent shell (uses claude-agent-acp)
       epkgs.catppuccin-theme         # catppuccin theme
       epkgs.eldoc-box                # docs in a box
       epkgs.sideline                 # mainly for flymake errors on the side

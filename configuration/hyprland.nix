@@ -25,6 +25,7 @@
   environment.systemPackages = with pkgs; [
     hyprland            # the actual package
     walker              # launcher
+    elephant            # launcher dependency
     uwsm                # wayland session manager
     hyprland-qtutils    # needed by hyprland
     hyprpolkitagent     # polkit agent
@@ -50,6 +51,9 @@
     };
   };
 
+  # for walker to work
+  services.elephant.enable = true;
+
   # this is mainly for the lock screen
   # lock.png is provided elsewhere
   services.xserver = {
@@ -74,6 +78,7 @@
     XDG_SESSION_DESKTOP="Hyprland";
     NIXOS_OZONE_WL="1";
     XCURSOR_SIZE="24";
+    GDK_SCALE = "1.5";
   };
 
   # allow hyprlock (lockscreen) to lock user session
