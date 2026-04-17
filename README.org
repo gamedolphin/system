@@ -2189,7 +2189,9 @@ Now starts the main emacs configuration.
      ("C-c t" . org-toggle-inline-images)
      ("C-c l" . org-toggle-link-display))
     :custom
-    (org-agenda-files (list org-inbox-file org-journal-file))
+    (org-agenda-files (list org-inbox-file org-journal-file
+                             "~/nextcloud/org/wavefunk.org"
+                             "~/nextcloud/org/projects/"))
     (org-directory "~/nextcloud/org")
     (org-default-notes-file org-inbox-file)
     (org-archive-location (concat org-archive-file "::* From %s"))
@@ -2198,7 +2200,7 @@ Now starts the main emacs configuration.
     (org-hide-emphasis-markers t)
     (org-src-fontify-natively t)
     (org-src-tab-acts-natively t)
-    (org-refile-targets '((org-agenda-files :maxlevel . 3)))
+    (org-refile-targets '((org-agenda-files :maxlevel . 4)))
     (org-archive-save-context-info '(time category todo itags olpath))
     (org-refile-use-outline-path 'file)
     (org-todo-keywords
