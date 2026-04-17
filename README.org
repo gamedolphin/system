@@ -2259,7 +2259,7 @@ Now starts the main emacs configuration.
       (with-current-buffer (find-file-noselect (expand-file-name file))
         (org-map-entries
          (lambda ()
-           (when-let ((id (org-entry-get nil "CUSTOM_ID")))
+           (when-let* ((id (org-entry-get nil "CUSTOM_ID")))
              (when (string-match (format "^%s\\([0-9]+\\)$" (regexp-quote prefix)) id)
                (setq max-id (max max-id (string-to-number (match-string 1 id)))))))))
       (format "%s%02d" prefix (1+ max-id))))
