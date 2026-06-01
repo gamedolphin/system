@@ -16,7 +16,6 @@
     portal = {
       enable = true;
       extraPortals = [
-        pkgs.xdg-desktop-portal-wlr
         pkgs.xdg-desktop-portal-gtk
       ];
     };
@@ -24,16 +23,14 @@
 
   environment.systemPackages = with pkgs; [
     hyprland            # the actual package
-    walker              # launcher
-    elephant            # launcher dependency
     uwsm                # wayland session manager
     hyprland-qtutils    # needed by hyprland
     hyprpolkitagent     # polkit agent
     grimblast           # screenshot
   ];
 
-  # we use uwsm to manage launching hyprland
-  # uswm will add hyprland to the login sessions with tuigreet.
+  # we use uwsm to manage launching hyprland.
+  # tuigreet is configured above to launch the uwsm-managed session by default.
   programs = {
     uwsm.enable = true;
     uwsm.waylandCompositors = {
@@ -50,9 +47,6 @@
       xwayland.enable = true;
     };
   };
-
-  # for walker to work
-  services.elephant.enable = true;
 
   # this is mainly for the lock screen
   # lock.png is provided elsewhere
@@ -79,6 +73,7 @@
     NIXOS_OZONE_WL="1";
     XCURSOR_SIZE="24";
     GDK_SCALE = "1.5";
+    RUSTICL_ENABLE = "radeonsi"; # for davinci resolve
   };
 
   # allow hyprlock (lockscreen) to lock user session

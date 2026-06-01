@@ -55,6 +55,8 @@
 
       shellAliases = {
         cd = "z";     # zoxide
+        jq = "jaq";
+        bd = "br"; # beads
       };
 
       # for emacs-eat package

@@ -174,6 +174,15 @@ The inputs for my system's configuration are very simple
         url = "github:nix-community/disko";
         inputs.nixpkgs.follows = "nixpkgs";
       };
+
+      llm-agents.url = "github:numtide/llm-agents.nix";
+
+      elephant.url = "github:abenz1267/elephant";
+
+      walker = {
+        url = "github:abenz1267/walker";
+        inputs.elephant.follows = "elephant";
+      };
     };
 
     <<flake-outputs>>
@@ -196,6 +205,8 @@ We also add a devshell that makes editing this repository easier in emacs.
       nix-darwin,
       deploy-rs,
       disko,
+      llm-agents,
+      walker,
       ...
   }@inputs:
     let
@@ -239,7 +250,7 @@ We also add a devshell that makes editing this repository easier in emacs.
               ];
               specialArgs = {
                 hostname = machine;
-                inherit user;
+                inherit user llm-agents;
               };
             };
           }) machines
@@ -307,6 +318,7 @@ Lets look at the individual modules
          imports =  [
            ./machines/${machine}/home.nix
            catppuccin.homeModules.catppuccin
+           walker.homeManagerModules.default
          ];
        };
      #+end_src
@@ -422,6 +434,7 @@ This section describes the main system configuration for the computers that I ha
 
     # enable the catppuccin theme for everything with mocha + blue accents
     catppuccin.enable = true;
+    catppuccin.autoEnable = true;
     catppuccin.flavor = "mocha";
     catppuccin.accent = "blue";
 
@@ -445,17 +458,19 @@ These are global nix settings that configure the settings for the actual tool.
       # from the trusted cache instead of compiling from sourcer
       substituters = [
         "https://nix-community.cachix.org"
+        "https://walker.cachix.org"
+        "https://walker-git.cachix.org"
       ];
       # trust the cache public key
       trusted-public-keys = [
         "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+        "walker.cachix.org-1:fG8q+uAaMqhsMxWjwvk0IMb4mFPFLqHjuvfwQxE4oJM="
+        "walker-git.cachix.org-1:vmC0ocfPWh0S/vRAQGtChuiZBTAe4wiKDeyyXM0/7pM="
       ];
     };
 
     # allow proprietary software on this machine. I'm not a purist.
     nixpkgs.config.allowUnfree = true;
-    # unityhub depends on this... for now
-    nixpkgs.config.permittedInsecurePackages = [ "libxml2-2.13.8" ];
 
     # this declares how often old configurations are cleared up.
     # i cleanup anything older than a week, every week.
@@ -511,6 +526,7 @@ This file has most of the settings the control how the computer boots up.
 ** Login
 Here we control what the login screen would look like. I'm using greetd's [[https://github.com/apognu/tuigreet][tuigreet]] for the ui.
 Doesn't match the rest of the aesthetic of the system (with hyprland), but I like its simplicity.
+The default session command starts the UWSM-managed Hyprland session explicitly. That keeps ~graphical-session.target~ active, which is what Home Manager graphical services such as Walker and Elephant attach to.
 
 #+begin_src nix :tangle configuration/login.nix :noweb tangle :mkdirp yes
   { pkgs, user, ... } :
@@ -523,7 +539,7 @@ Doesn't match the rest of the aesthetic of the system (with hyprland), but I lik
       enable = true;
       settings = {
         default_session = {
-          command = pkgs.lib.mkForce "${pkgs.tuigreet}/bin/tuigreet --remember --time --time-format '%I:%M %p | %a • %h | %F'";
+          command = pkgs.lib.mkForce "${pkgs.tuigreet}/bin/tuigreet --remember --time --time-format '%I:%M %p | %a • %h | %F' --cmd '${pkgs.uwsm}/bin/uwsm start -e -D Hyprland hyprland.desktop'";
         };
       };
     };
@@ -646,7 +662,6 @@ The configuration is done in the home manager section.
       portal = {
         enable = true;
         extraPortals = [
-          pkgs.xdg-desktop-portal-wlr
           pkgs.xdg-desktop-portal-gtk
         ];
       };
@@ -654,16 +669,13 @@ The configuration is done in the home manager section.
 
     environment.systemPackages = with pkgs; [
       hyprland            # the actual package
-      walker              # launcher
-      elephant            # launcher dependency
       uwsm                # wayland session manager
       hyprland-qtutils    # needed by hyprland
       hyprpolkitagent     # polkit agent
       grimblast           # screenshot
     ];
 
-    # we use uwsm to manage launching hyprland
-    # uswm will add hyprland to the login sessions with tuigreet.
+    # tuigreet is configured above to launch the uwsm-managed session by default.
     programs = {
       uwsm.enable = true;
       uwsm.waylandCompositors = {
@@ -680,9 +692,6 @@ The configuration is done in the home manager section.
         xwayland.enable = true;
       };
     };
-
-    # for walker to work
-    services.elephant.enable = true;
 
     # this is mainly for the lock screen
     # lock.png is provided elsewhere
@@ -709,6 +718,7 @@ The configuration is done in the home manager section.
       NIXOS_OZONE_WL="1";
       XCURSOR_SIZE="24";
       GDK_SCALE = "1.5";
+      RUSTICL_ENABLE = "radeonsi"; # for davinci resolve
     };
 
     # allow hyprlock (lockscreen) to lock user session
@@ -741,8 +751,16 @@ These are some of the services that I enable at the system level. Explanation in
       };
     };
 
-    virtualisation.docker.enable = true;    # enable docker
-    users.users.${user.username}.extraGroups = [ "docker" ]; # add self to docker user group
+    virtualisation = {
+      containers.enable = true;
+      docker.enable = true;
+      podman = {
+        enable = true;
+        defaultNetwork.settings.dns_enabled = true; # Required for containers under podman-compose to be able to talk to each other.
+      };
+    };
+
+    users.users.${user.username}.extraGroups = [ "podman" "docker" ]; # add self to docker and podman user group
   }
 #+end_src
 
@@ -796,6 +814,10 @@ We use [[https://github.com/Mic92/sops-nix][sops]] to manage secrets on this mac
     sops.secrets.claude_key = { # anthropic claude api key, used in emacs
       owner = "${user.username}";
     };
+
+    sops.secrets.deepseek_key = { # deepseek api key, used by claude-teammate wrapper
+      owner = "${user.username}";
+    };
   }
 #+end_src
 
@@ -815,43 +837,24 @@ creation_rules:
 ** AI + LLMs
 The workstation is increasingly being automated with claude at this point. Adding it to the global packages makes it easier to launch in arbitrary locations. I am also using beads everywhere for tracking work between projects, pinned to a github version. [[https://github.com/wavefunk/youwhatknow][
 youwhatknow]] is a Claude Code hook server that injects file summaries before reads, installed from GitHub release binaries.
-To update claude-code, bump =version= and replace the =hash=:
-#+begin_src bash :tangle no
-nix-prefetch-url "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/<VERSION>/linux-x64/claude" | xargs nix hash convert --hash-algo sha256 --to sri
-#+end_src
+
+*** Agent Teams + DeepSeek Routing
+Claude Code supports agent teams -- the lead session (Opus) spawns teammates in tmux panes. Each teammate is a full Claude Code process making its own API calls. By default they all hit Anthropic's API.
+
+~CLAUDE_CODE_TEAMMATE_COMMAND~ overrides the binary used to spawn teammates. We use a wrapper script that reroutes teammate API calls to DeepSeek's Anthropic-compatible endpoint instead. The lead session stays on Anthropic (Opus), while teammates run on DeepSeek (cheaper, still capable for sub-tasks).
+
+The wrapper:
+1. Clears OAuth tokens (the lead uses OAuth, but DeepSeek needs an API key)
+2. Sets ~ANTHROPIC_BASE_URL~ to DeepSeek's Anthropic-compatible endpoint
+3. Sets ~ANTHROPIC_API_KEY~ from the sops-managed secret at ~/run/secrets/deepseek_key~
+4. Rewrites ~--model~ to the DeepSeek model name
+5. Execs the real ~claude~ binary
 
 #+begin_src nix :tangle configuration/ai.nix :noweb tangle :mkdirp yes
-  { pkgs, lib, user, ... } :
+  { pkgs, lib, config, user, llm-agents, ... } :
   let
-    claude-code = let
-      version = "2.1.112";
-      platform = "linux-x64";
-    in pkgs.stdenvNoCC.mkDerivation {
-      pname = "claude-code";
-      inherit version;
-
-      src = pkgs.fetchurl {
-        url = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/${version}/${platform}/claude";
-        hash = "sha256-V76UBtPlyuJZVSeQv3KI3WSWZ1Qw7JPb7XajOldYDT0=";
-      };
-
-      dontUnpack = true;
-      dontBuild = true;
-      dontStrip = true;
-
-      nativeBuildInputs = with pkgs; [ makeBinaryWrapper autoPatchelfHook ];
-
-      installPhase = ''
-        install -Dm755 $src $out/bin/claude
-        wrapProgram $out/bin/claude \
-          --set DISABLE_AUTOUPDATER 1 \
-          --set DISABLE_INSTALLATION_CHECKS 1 \
-          --prefix PATH : ${lib.makeBinPath (with pkgs; [ procps bubblewrap socat ripgrep ])}
-      '';
-    };
-
     youwhatknow = let
-      version = "0.2.0";
+      version = "0.2.1";
       target = "x86_64-unknown-linux-gnu";
     in pkgs.stdenv.mkDerivation {
       pname = "youwhatknow";
@@ -859,45 +862,87 @@ nix-prefetch-url "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-
 
       src = pkgs.fetchurl {
         url = "https://github.com/wavefunk/youwhatknow/releases/download/v${version}/youwhatknow-${target}.tar.xz";
-        hash = "sha256-m7YELX3pfO3ZR9f2XKeTJ4dc2zzJLfIBkYWyHzbObQU=";
+        hash = "sha256-zsXWAzWqi30yqfeaOECL3MBYvRBdtMqUN3W27yS24sc=";
       };
 
       sourceRoot = "youwhatknow-${target}";
       nativeBuildInputs = [ pkgs.makeWrapper ];
 
       installPhase = ''
-        install -Dm755 youwhatknow $out/bin/youwhatknow
-        wrapProgram $out/bin/youwhatknow \
-          --prefix PATH : ${pkgs.lib.makeBinPath [ claude-code ]}
-      '';
+          install -Dm755 youwhatknow $out/bin/youwhatknow
+          wrapProgram $out/bin/youwhatknow
+        '';
     };
+
+    claude-teammate = let
+      claude-bin = llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.claude-code;
+      deepseek-model = "deepseek-v4-pro[1m]";
+      deepseek-base-url = "https://api.deepseek.com/anthropic";
+      secrets-path = config.sops.secrets.deepseek_key.path;
+      teammate-prompt = ''
+        CRITICAL: You are a teammate in an agent team. Your plain text output is NOT visible to anyone.
+        You MUST use the SendMessage tool to communicate ALL results, findings, and status updates to the team lead.
+        After completing your work, ALWAYS call SendMessage with to="team-lead" and your results as the message.
+        If you do not call SendMessage, your work will be lost and nobody will see your output.
+      '';
+    in pkgs.writeShellScriptBin "claude-teammate" ''
+      set -euo pipefail
+
+      DEEPSEEK_API_KEY="$(cat ${secrets-path})"
+      if [ -z "$DEEPSEEK_API_KEY" ]; then
+        echo "[claude-teammate] Failed to read DeepSeek API key from ${secrets-path}" >&2
+        exit 1
+      fi
+
+      unset CLAUDE_CODE_OAUTH_TOKEN
+      unset ANTHROPIC_AUTH_TOKEN
+      unset CLAUDE_CODE_SESSION_ACCESS_TOKEN
+
+      export ANTHROPIC_BASE_URL="${deepseek-base-url}"
+      export ANTHROPIC_API_KEY="$DEEPSEEK_API_KEY"
+
+      args=()
+      skip_next=false
+      for arg in "$@"; do
+        if $skip_next; then
+          skip_next=false
+          continue
+        fi
+        if [ "$arg" = "--model" ]; then
+          skip_next=true
+          continue
+        fi
+        case "$arg" in
+          --model=*) continue ;;
+        esac
+        args+=("$arg")
+      done
+
+      args+=(--model "${deepseek-model}")
+      args+=(--append-system-prompt "${teammate-prompt}")
+
+      exec ${claude-bin}/bin/claude "''${args[@]}"
+    '';
   in
   {
-    nixpkgs.overlays = [
-      (final: prev: {
-        beads = (prev.beads.override {
-          buildGoModule = prev.buildGoModule.override { go = prev.go_1_26; };
-        }).overrideAttrs (old: rec {
-          version = "0.62.0";
-          src = prev.fetchFromGitHub {
-            owner = "steveyegge";
-            repo = "beads";
-            rev = "v${version}";
-            hash = "sha256-AqpdisbN6sFU2135/+B+FxJUUVknifzT7Gijc3dl2KQ=";
-          };
-          vendorHash = "sha256-XGksP4YO2M7nY7g1/ZIN/sprEZLk7i+cdow9uBBcsDo=";
-          doCheck = false;
-        });
-
-      })
-    ];
-
-    environment.systemPackages = with pkgs; [
+    environment.systemPackages = (with llm-agents.packages.${pkgs.stdenv.hostPlatform.system}; [
       claude-code
-      beads
-      dolt
-      youwhatknow
-    ];
+      beads-rust
+      gnhf
+      pi
+      agent-browser
+      codex
+    ]) ++ [ youwhatknow ];
+
+    environment.sessionVariables.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = "1";
+    environment.sessionVariables.CLAUDE_CODE_TEAMMATE_COMMAND = "${claude-teammate}/bin/claude-teammate";
+
+    nix.settings = {
+      substituters = [ "https://cache.numtide.com" ];
+      trusted-public-keys = [
+        "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
+      ];
+    };
   }
 #+end_src
 
@@ -914,6 +959,8 @@ nix-prefetch-url "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-
     cacert     # certificate authority
     remmina    # remote desktop app
     jaq        # rust based jq alternative
+    comma      # nix-run helper
+    tmux       # seems useful for a bunch of things
     element-desktop
   ];
 
@@ -1015,11 +1062,11 @@ Oof! Again with all the imports! We can go through them one at a time!
 
 Mostly styling and enabling modules in the [[https://github.com/Alexays/Waybar][top bar]].
 #+begin_src nix :tangle home/waybar.nix :noweb tangle :mkdirp yes
-  {
+  { lib, ... }: {
     programs.ashell = {
       enable = true;
       systemd.enable = true;
-      systemd.target = "hyprland-session.target";
+      systemd.target = "graphical-session.target";
       settings = {
         outputs = "All";
         position = "Top";
@@ -1043,6 +1090,14 @@ Mostly styling and enabling modules in the [[https://github.com/Alexays/Waybar][
           font_name = "Aporetic";
           style = "Solid";
         };
+      };
+    };
+
+    systemd.user.services.ashell = {
+      Unit.PartOf = [ "graphical-session.target" ];
+      Service = {
+        Restart = lib.mkForce "always";
+        RestartSec = "2s";
       };
     };
   }
@@ -1252,13 +1307,13 @@ Often I work with dotnet directly inside of unity and so we set that up too.
 #+begin_src nix :tangle home/unity.nix :noweb tangle :mkdirp yes.
   { pkgs, ... }:
   {
-     home.packages = with pkgs; [
-       (pkgs.unityhub.override {
-         extraPkgs = pkgs: with pkgs; [
-           dotnet-sdk
-         ];
-       })
-     ];
+    home.packages = with pkgs; [
+      (pkgs.unityhub.override {
+        extraPkgs = pkgs: with pkgs; [
+          dotnet-sdk
+        ];
+      })
+    ];
 
   }
 #+end_src
@@ -1266,7 +1321,29 @@ Often I work with dotnet directly inside of unity and so we set that up too.
 ** Hyprland
 This configures the desktop environment along with the peripherals. The comments should explain whats happening.
 #+begin_src nix :tangle home/hyprland.nix :noweb tangle :mkdirp yes.
-  { pkgs, ... }: {
+  { lib, pkgs, ... }:
+  let
+    inherit (lib.generators) mkLuaInline;
+    luaString = builtins.toJSON;
+    bind = key: dispatcher: {
+      _args = [
+        (mkLuaInline key)
+        (mkLuaInline dispatcher)
+      ];
+    };
+    bindWith = key: dispatcher: flags: {
+      _args = [
+        (mkLuaInline key)
+        (mkLuaInline dispatcher)
+        flags
+      ];
+    };
+    exec = command: "hl.dsp.exec_cmd(${luaString command})";
+    mod = key: ''mod .. " + ${key}"'';
+    modShift = key: ''mod .. " + SHIFT + ${key}"'';
+    modCtrl = key: ''mod .. " + CTRL + ${key}"'';
+    modAlt = key: ''mod .. " + ALT + ${key}"'';
+  in {
     # required for the default Hyprland config
     programs.kitty.enable = true;
 
@@ -1278,159 +1355,194 @@ This configures the desktop environment along with the peripherals. The comments
     # we start hyprland using uwsm
     wayland.windowManager.hyprland.systemd.enable = false;
 
-    # hyprland.conf
+    # hyprland.lua
+    wayland.windowManager.hyprland.configType = "lua";
     wayland.windowManager.hyprland.settings = {
-      exec-once = [
-        # read in env vars
-        "dbus-update-activation-environment --systemd --all"
-        # start ashell
-        "uwsm app -- ashell"
-        # start wallpaper manager
-        "uwsm app -- hyprpaper"
-        # start elephant for walker
-        "uwsm app -- elephant"
-      ];
+      mod = {
+        _var = "SUPER";
+      };
 
-      input = {
-        follow_mouse = "1";
+      config = {
+        input = {
+          follow_mouse = 1;
 
-        touchpad = {
-          natural_scroll = "no";
+          touchpad = {
+            natural_scroll = false;
+            scroll_factor = 0.5;
+          };
+
           scroll_factor = 0.5;
+
+          accel_profile =  "adaptive";
+          sensitivity = -0.5; # -1.0 - 1.0, 0 means no modification.
+
+          kb_layout = "us,se";
+
+          # very emacs specific, i use caps as an extra ctrl key
+          kb_options = "ctrl:nocaps";
         };
 
-        scroll_factor = 0.5;
+        cursor = {
+          no_hardware_cursors = 1;
+        };
 
-        accel_profile =  "adaptive";
-        sensitivity = -0.5; # -1.0 - 1.0, 0 means no modification.
+        general = {
+          gaps_in = 2;
+          gaps_out = 4;
+          border_size = 2;
+          col = {
+            active_border = {
+              colors = [
+                (mkLuaInline "colors.blue")
+                (mkLuaInline "colors.green")
+              ];
+              angle = 45;
+            };
+            inactive_border = mkLuaInline "colors.base";
+          };
 
-        kb_layout = "us,se";
+          layout = "dwindle";
+        };
 
-        # very emacs specific, i use caps as an extra ctrl key
-        kb_options = "ctrl:nocaps";
+        decoration = {
+          rounding = 5;
+        };
+
+        xwayland = {
+          force_zero_scaling = true;
+        };
+
+        animations = {
+          enabled = true;
+        };
+
+        dwindle = {
+          preserve_split = true;
+        };
+
+        misc = {
+          disable_hyprland_logo = true;
+          focus_on_activate = true;
+        };
       };
 
-      cursor = {
-        no_hardware_cursors = "true";
-      };
-
-      general = {
-        gaps_in = 2;
-        gaps_out = 4;
-        border_size = 2;
-        "col.active_border" = "$blue $green 45deg";
-        "col.inactive_border" = "$base";
-
-        layout = "dwindle";
-      };
-
-      decoration = {
-        rounding = 5;
-      };
-
-      xwayland = {
-        force_zero_scaling = "true";
-      };
-
-      animations = {
-        enabled = "yes";
-        bezier = "myBezier, 0.05, 0.9, 0.1, 1.05";
-
-        animation =  [
-          "windows, 1, 7, myBezier"
-          "windowsOut, 1, 7, default, popin 80%"
-          "border, 1, 10, default"
-          "borderangle, 1, 8, default"
-          "fade, 1, 7, default"
-          "workspaces, 1, 6, default"
+      curve = {
+        _args = [
+          "myBezier"
+          {
+            type = "bezier";
+            points = [
+              [ 0.05 0.9 ]
+              [ 0.1 1.05 ]
+            ];
+          }
         ];
       };
 
-      dwindle = {
-        pseudotile = "yes";
-        preserve_split = "yes";
+      animation =  [
+        { leaf = "windows"; enabled = true; speed = 7; bezier = "myBezier"; }
+        { leaf = "windowsOut"; enabled = true; speed = 7; bezier = "default"; style = "popin 80%"; }
+        { leaf = "border"; enabled = true; speed = 10; bezier = "default"; }
+        { leaf = "borderangle"; enabled = true; speed = 8; bezier = "default"; }
+        { leaf = "fade"; enabled = true; speed = 7; bezier = "default"; }
+        { leaf = "workspaces"; enabled = true; speed = 6; bezier = "default"; }
+      ];
+
+      device = {
+        name = "surface-arc-mouse";
+        scroll_factor = 0.3;
+        sensitivity = -0.5;
       };
 
-      misc = {
-        disable_hyprland_logo = true;
-        focus_on_activate = true;
+      gesture = {
+        fingers = 3;
+        direction = "horizontal";
+        action = "workspace";
       };
 
-      "$mainMod" = "SUPER";
-
-      gesture = [
-        "3, horizontal, workspace"
+      on = [
+        {
+          _args = [
+            "hyprland.start"
+            (mkLuaInline ''
+              function()
+                hl.exec_cmd("dbus-update-activation-environment --systemd --all")
+                hl.exec_cmd("uwsm app -- hyprpaper")
+              end
+            '')
+          ];
+        }
       ];
 
       bind = [
-        "$mainMod, Return, exec, ghostty +new-window"
-        "$mainMod, i, exec, firefox"
-        "$mainMod, e, exec, emacs"
-        "$mainMod_SHIFT, Q, killactive"
-        "$mainMod_SHIFT, M, exit"
-        "$mainMod, F, exec, thunar"
-        "$mainMod_SHIFT, Space, togglefloating"
-        "$mainMod_SHIFT, K, exec, hyprctl switchxkblayout current next"
+        (bind (mod "Return") (exec "ghostty +new-window"))
+        (bind (mod "i") (exec "firefox"))
+        (bind (mod "e") (exec "emacs"))
+        (bind (modShift "Q") "hl.dsp.window.close()")
+        (bind (modShift "M") (exec "uwsm stop"))
+        (bind (mod "F") (exec "thunar"))
+        (bind (modShift "Space") ''hl.dsp.window.float({ action = "toggle" })'')
+        (bind (modShift "K") (exec "hyprctl switchxkblayout current next"))
 
         # use walker to show exec menu
-        "$mainMod, Space, exec, walker"
-        "$mainMod, P, pseudo"
-        "$mainMod, J, togglesplit"
+        (bind (mod "Space") (exec "walker"))
 
-        "$mainMod_SHIFT, left, movewindow, l"
-        "$mainMod_SHIFT, right, movewindow, r"
-        "$mainMod_SHIFT, up, movewindow, u"
-        "$mainMod_SHIFT, down, movewindow, d"
+        (bind (modShift "right") ''hl.dsp.window.move({ direction = "r" })'')
+        (bind (modShift "up") ''hl.dsp.window.move({ direction = "u" })'')
+        (bind (modShift "down") ''hl.dsp.window.move({ direction = "d" })'')
 
-        "$mainMod_CTRL, left, movecurrentworkspacetomonitor, l"
-        "$mainMod_CTRL, right, movecurrentworkspacetomonitor, r"
+        (bind (modCtrl "left") ''hl.dsp.workspace.move({ monitor = "l" })'')
+        (bind (modCtrl "right") ''hl.dsp.workspace.move({ monitor = "r" })'')
 
-        "$mainMod, left, movefocus, l"
-        "$mainMod, right, movefocus, r"
-        "$mainMod, up, movefocus, u"
-        "$mainMod, down, movefocus, d"
+        (bind (mod "left") ''hl.dsp.focus({ direction = "l" })'')
+        (bind (mod "right") ''hl.dsp.focus({ direction = "r" })'')
+        (bind (mod "up") ''hl.dsp.focus({ direction = "u" })'')
+        (bind (mod "down") ''hl.dsp.focus({ direction = "d" })'')
 
-        "$mainMod, mouse_down, workspace, e+1"
-        "$mainMod, mouse_up, workspace, e-1"
+        (bind (mod "mouse_down") ''hl.dsp.focus({ workspace = "e+1" })'')
+        (bind (mod "mouse_up") ''hl.dsp.focus({ workspace = "e-1" })'')
 
-        "$mainMod_SHIFT, p, exec, grimblast -n -f copysave active"
-        "$mainMod_SHIFT, a, exec, grimblast -n -f copysave area"
-        "$mainMod_ALT, p, exec, grimblast -n -f copysave output"
-        "$mainMod_CTRL, p, exec, grimblast -n -f copysave screen"
+        (bind (modShift "p") (exec "grimblast -n -f copysave active"))
+        (bind (modShift "a") (exec "grimblast -n -f copysave area"))
+        (bind (modAlt "p") (exec "grimblast -n -f copysave output"))
+        (bind (modCtrl "p") (exec "grimblast -n -f copysave screen"))
 
-        "$mainMod_SHIFT, S, exec, wlogout"
-        "ALT, Tab, cyclenext"
+        (bind (modShift "S") (exec "wlogout"))
+        (bind (luaString "ALT + Tab") "hl.dsp.window.cycle_next({})")
+
+        (bindWith (mod "mouse:272") "hl.dsp.window.drag()" { mouse = true; })
+        (bindWith (mod "mouse:273") "hl.dsp.window.resize()" { mouse = true; })
       ] ++ (
         # workspaces
         # binds $mod + [shift +] {1..9} to [move to] workspace {1..9}
         builtins.concatLists (builtins.genList (i:
           let ws = i + 1;
           in [
-            "$mainMod, ${toString ws}, workspace, ${toString ws}"
-            "$mainMod SHIFT, ${toString ws}, movetoworkspace, ${toString ws}"
+            (bind (mod (toString ws)) "hl.dsp.focus({ workspace = ${toString ws} })")
+            (bind (modShift (toString ws)) "hl.dsp.window.move({ workspace = ${toString ws} })")
           ]
         )
           9)
       );
-
-      bindm = [
-        "$mainMod, mouse:272, movewindow"
-        "$mainMod, mouse:273, resizewindow"
-      ];
     };
   }
 #+end_src
 
 ** Walker
 [[https://github.com/abenz1267/walker][This]] is how I launch applications. It is bound to Win+Space in the hyprland config above.
+Installed as a home-manager module from the walker flake with ~runAsService~ for instant launches.
+The Walker module imports and enables Elephant through Home Manager. Both services are tied to the user ~graphical-session.target~, so Hyprland must be launched through UWSM rather than the plain ~hyprland.desktop~ session.
 #+begin_src nix :tangle home/walker.nix :noweb tangle :mkdirp yes.
   {
-    services.walker.enable = true;
-    services.walker.settings = {
-      close = "ctrl g";
-      next = "ctrl n";
-      previous = "ctrl p";
-      quick_activate = ["1" "2" "3" "4"];
+    programs.walker = {
+      enable = true;
+      runAsService = true;
+      config = {
+        close = "ctrl g";
+        next = "ctrl n";
+        previous = "ctrl p";
+        quick_activate = ["1" "2" "3" "4"];
+      };
     };
   }
 #+end_src
@@ -1455,15 +1567,17 @@ You'll notice the color values in multiple places outside this as well.
       };
 
       iconTheme.name = "Papirus-Dark";
+      gtk4.extraConfig.gtk-interface-color-scheme = "dark";
     };
 
     catppuccin.enable = true;
+    catppuccin.autoEnable = true;
     catppuccin.flavor = "mocha";
     catppuccin.accent = "blue";
     catppuccin.gtk.icon.enable = true;
     catppuccin.cursors.enable = true;
   }
- #+end_src
+#+end_src
 
 ** Terminal
 [[https://alacritty.org/][Alacritty]] is my terminal program. The snippet below configures how it looks.
@@ -1555,6 +1669,7 @@ All the miscellaneous dev tools on this computer.
         shellAliases = {
           cd = "z";     # zoxide
           jq = "jaq";
+          bd = "br"; # beads
         };
 
         # for emacs-eat package
@@ -1662,13 +1777,12 @@ Comments describe the emacs package and what it does.
         epkgs.envrc                    # support for loading .envrc
         epkgs.nixpkgs-fmt              # format nix files
         epkgs.f                        # string + file utilities
-        epkgs.gptel                    # llm chat (mainly claude)
+        epkgs.gptel
         epkgs.agent-shell              # acp-powered agent shell (uses claude-agent-acp)
         epkgs.catppuccin-theme         # catppuccin theme
         epkgs.eldoc-box                # docs in a box
         epkgs.sideline                 # mainly for flymake errors on the side
         epkgs.sideline-flymake         # mainly for flymake errors on the side
-        epkgs.sideline-eglot           # mainly for flymake errors on the side
       ];
     };
 
@@ -1809,14 +1923,14 @@ These are listed here.
    auto-mode-case-fold nil  ; No second pass of case-insensitive search over auto-mode-alist.
 
    package-archives '(("melpa"        . "https://melpa.org/packages/")
-                         ("gnu"          . "https://elpa.gnu.org/packages/")
-                         ("nongnu"       . "https://elpa.nongnu.org/nongnu/")
-                         ("melpa-stable" . "https://stable.melpa.org/packages/"))
+                      ("gnu"          . "https://elpa.gnu.org/packages/")
+                      ("nongnu"       . "https://elpa.nongnu.org/nongnu/")
+                      ("melpa-stable" . "https://stable.melpa.org/packages/"))
 
    package-archive-priorities '(("gnu"    . 99)
-                                   ("nongnu" . 80)
-                                   ("melpa"  . 70)
-                                   ("melpa-stable" . 50))
+                                ("nongnu" . 80)
+                                ("melpa"  . 70)
+                                ("melpa-stable" . 50))
    )
    ;;; early-init.el ends here
 #+end_src
@@ -2122,12 +2236,10 @@ Now starts the main emacs configuration.
       :stream t :key (f-read-text "/run/secrets/claude_key")))
 
   (use-package sideline-flymake)
-  (use-package sideline-eglot)
   (use-package sideline
     :custom
-    (sideline-backends-right '(sideline-flymake sideline-eglot))
+    (sideline-backends-right '(sideline-flymake))
     :hook
-    (eglot-managed-mode . sideline-mode)
     (flymake-mode . sideline-mode))
 
   (use-package eglot
@@ -2190,8 +2302,8 @@ Now starts the main emacs configuration.
      ("C-c l" . org-toggle-link-display))
     :custom
     (org-agenda-files (list org-inbox-file org-journal-file
-                             "~/nextcloud/org/wavefunk.org"
-                             "~/nextcloud/org/projects/"))
+                            "~/nextcloud/org/wavefunk.org"
+                            "~/nextcloud/org/projects/"))
     (org-directory "~/nextcloud/org")
     (org-default-notes-file org-inbox-file)
     (org-archive-location (concat org-archive-file "::* From %s"))
@@ -2238,7 +2350,7 @@ Now starts the main emacs configuration.
 
   (defun wavefunk/org-set-todo-by-id (id state)
     "Find heading with CUSTOM_ID matching ID and set its TODO state to STATE.
-  Searches all org files in `wavefunk/org-projects-dir'."
+     Searches all org files in `wavefunk/org-projects-dir'."
     (let ((files (directory-files wavefunk/org-projects-dir t "\\.org$")))
       (catch 'found
         (dolist (file files)
@@ -2251,7 +2363,7 @@ Now starts the main emacs configuration.
                (org-todo state)
                (save-buffer)
                (throw 'found (format "Set %s to %s in %s" id state (file-name-nondirectory file))))))
-        (format "ID %s not found" id))))
+          (format "ID %s not found" id)))))
 
   (defun wavefunk/org-next-id (file prefix)
     "Return the next available PREFIX-NN id in FILE."
@@ -2324,7 +2436,7 @@ Now starts the main emacs configuration.
   (provide 'init)
 
     ;;; init.el ends here
-  #+end_src
+#+end_src
 
 * Machines
 Only a few more things left. Specifically the machine level extra settings.
@@ -2357,11 +2469,11 @@ Both smallbox and homelab use wireguard to connect to the VPN. The shared peer p
       ips = builtins.concatStringsSep "," allowedIPs;
       routes = builtins.concatStringsSep "\n" (map (ip: "ip route add ${ip} dev wg0 2>/dev/null || true") allowedIPs);
     in
-    {
-      inherit address privateKeyFile;
-      mtu = 1300;
-      dns = [ "1.1.1.1" "8.8.8.8" ];
-      postUp = ''
+      {
+        inherit address privateKeyFile;
+        mtu = 1300;
+        dns = [ "1.1.1.1" "8.8.8.8" ];
+        postUp = ''
         wg set wg0 peer "$(cat ${peerPublicKeyFile})" \
           preshared-key ${presharedKeyFile} \
           endpoint "$(cat ${endpointFile})" \
@@ -2369,10 +2481,10 @@ Both smallbox and homelab use wireguard to connect to the VPN. The shared peer p
           persistent-keepalive 15
         ${routes}
       '';
-      preDown = ''
+        preDown = ''
         wg set wg0 peer "$(cat ${peerPublicKeyFile})" remove 2>/dev/null || true
       '';
-    } // (if listenPort != null then { inherit listenPort; } else {});
+      } // (if listenPort != null then { inherit listenPort; } else {});
 #+end_src
 
 *** Network Configuration
@@ -2389,6 +2501,56 @@ Both smallbox and homelab use wireguard to connect to the VPN. The shared peer p
       presharedKeyFile = config.sops.secrets.wg_preshared_key.path;
       endpointFile = config.sops.secrets.vpn_endpoint.path;
       allowedIPs = [ "172.30.0.1/32" "172.30.0.4/32" ];
+    };
+
+    networking.wg-quick.interfaces.wg1 = {
+      address = [ "10.0.1.10/32" ];
+      privateKeyFile = config.sops.secrets.wg_wavefunk_private_key.path;
+      peers = [
+        {
+          publicKey = "a2wrqGLi/aw3mODD0Yal3V2ha6c6isN6HfDI1RLF83M=";
+          endpoint = "vpn.wavefunk.io:51820";
+          allowedIPs = [ "10.0.1.0/24" ];
+          persistentKeepalive = 25;
+        }
+      ];
+    };
+
+    networking.wg-quick.interfaces."wg-id8nxt" = {
+      address = [ "10.42.0.1/32" ];
+      privateKeyFile = config.sops.secrets.wg_id8nxt_private_key.path;
+      peers = [
+        {
+          publicKey = "f+Y69bLw3Lnvyi39TjNYaOieu4GQtfF9MV/1Wpcg6Tg=";
+          endpoint = "204.168.131.4:51820";
+          allowedIPs = [ "10.42.0.2/32" ];
+          persistentKeepalive = 25;
+        }
+        {
+          publicKey = "a5xFiL5DZKQOCfuprSMw9ccIpjBEZHAbdnsgyqGEIG8=";
+          endpoint = "77.42.121.26:51820";
+          allowedIPs = [ "10.42.0.3/32" ];
+          persistentKeepalive = 25;
+        }
+        {
+          publicKey = "ggaD3hGGyf/ICi7MOx2r5+NwlNUltXEpaB7rWREPc1E=";
+          endpoint = "65.109.238.249:51820";
+          allowedIPs = [ "10.42.0.4/32" ];
+          persistentKeepalive = 25;
+        }
+        {
+          publicKey = "TI1eNNrrA+F/lrxGCbnV9CxjwZf85NlFZ54bmVk2Yx0=";
+          endpoint = "65.109.114.187:51820";
+          allowedIPs = [ "10.42.0.5/32" ];
+          persistentKeepalive = 25;
+        }
+        {
+          publicKey = "XXLxstN7/2F9rxXUKGHpMYYRNSeIB7Bvm+GO1oOVuB0=";
+          endpoint = "65.109.230.233:51820";
+          allowedIPs = [ "10.42.0.6/32" ];
+          persistentKeepalive = 25;
+        }
+      ];
     };
   }
 #+end_src
@@ -2458,6 +2620,11 @@ As you might notice, there are a lot more kernel modules. This device has thunde
     hardware.graphics = {
       enable = lib.mkDefault true;
       enable32Bit = lib.mkDefault true;
+
+      extraPackages = with pkgs; [
+        mesa.opencl # Enables Rusticl (OpenCL) support
+        rocmPackages.clr.icd
+      ];
     };
 
     hardware.amdgpu.initrd.enable = lib.mkDefault true;
@@ -2471,47 +2638,75 @@ As you might notice, there are a lot more kernel modules. This device has thunde
 *** Home
 This is mostly about configuring the monitor and key bindings. And laptop specific utilities.
 #+begin_src nix :tangle machines/smallbox/home.nix :noweb tangle :mkdirp yes
-  { pkgs, ... } : {
+  { lib, pkgs, ... } :
+  let
+    inherit (lib.generators) mkLuaInline;
+    luaString = builtins.toJSON;
+    bind = key: dispatcher: {
+      _args = [
+        (mkLuaInline key)
+        (mkLuaInline dispatcher)
+      ];
+    };
+    bindWith = key: dispatcher: flags: {
+      _args = [
+        (mkLuaInline key)
+        (mkLuaInline dispatcher)
+        flags
+      ];
+    };
+    exec = command: "hl.dsp.exec_cmd(${luaString command})";
+    startOn = workspace: command: ''
+      hl.exec_cmd(${luaString command}, { workspace = ${luaString "${workspace} silent"} })
+    '';
+  in {
     imports = [
       ../../home
     ];
 
     home.packages = with pkgs; [
       brightnessctl
+      davinci-resolve
     ];
 
     wayland.windowManager.hyprland.settings = {
       bind = [
-        ", XF86MonBrightnessUp, exec, brightnessctl set 5%+"
-        ", XF86MonBrightnessDown, exec, brightnessctl set 5%-"
-        ", XF86AudioRaiseVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"
-        ", XF86AudioLowerVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"
-        ", XF86AudioMute, exec, wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
-        ", XF86AudioMicMute, exec, wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"
-      ];
-
-      bindl = [
-        '', switch:on:Lid Switch, exec, hyprctl keyword monitor "eDP-1, disable"''
-        '', switch:off:Lid Switch, exec, hyprctl keyword monitor "eDP-1, preferred, 2560x0, 1.5"''
+        (bindWith (luaString "XF86MonBrightnessUp") (exec "brightnessctl set 5%+") { repeating = true; })
+        (bindWith (luaString "XF86MonBrightnessDown") (exec "brightnessctl set 5%-") { repeating = true; })
+        (bindWith (luaString "XF86AudioRaiseVolume") (exec "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+") { repeating = true; })
+        (bindWith (luaString "XF86AudioLowerVolume") (exec "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-") { repeating = true; })
+        (bindWith (luaString "XF86AudioMute") (exec "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle") { locked = true; })
+        (bindWith (luaString "XF86AudioMicMute") (exec "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle") { locked = true; })
+        (bindWith (luaString "switch:on:Lid Switch") (exec ''hyprctl keyword monitor "eDP-1, disable"'') { locked = true; })
+        (bindWith (luaString "switch:off:Lid Switch") (exec ''hyprctl keyword monitor "eDP-1, preferred, 2560x0, 1.5"'') { locked = true; })
       ];
 
       monitor = [
-        "desc:AOC Q3279WG5B 0x00000161, preferred, 0x0, 1, vrr, 2"      # main monitor
-        "eDP-1, preferred, 2560x0, 1.5"  # laptop monitor
+        { output = "desc:AOC Q3279WG5B 0x00000161"; mode = "preferred"; position = "0x0"; scale = 1; }      # main monitor
+        { output = "eDP-1"; mode = "preferred"; position = "2560x0"; scale = 1.5; }  # laptop monitor
       ];
 
-      workspace = [
-        "1,monitor:desc:AOC Q3279WG5B 0x00000161, default:true"
-        "2,monitor:desc:AOC Q3279WG5B 0x00000161, default:true"
-        "3,monitor:desc:AOC Q3279WG5B 0x00000161, default:true"
-        "5,monitor:eDP-1, default:true"
-        "6,monitor:eDP-1, default:true"
+      workspace_rule = [
+        { workspace = "1"; monitor = "desc:AOC Q3279WG5B 0x00000161"; default = true; }
+        { workspace = "2"; monitor = "desc:AOC Q3279WG5B 0x00000161"; default = true; }
+        { workspace = "3"; monitor = "desc:AOC Q3279WG5B 0x00000161"; default = true; }
+        { workspace = "5"; monitor = "eDP-1"; default = true; }
+        { workspace = "6"; monitor = "eDP-1"; default = true; }
       ];
 
-      exec-once = [
-        "[workspace 1 silent] firefox"
-        "[workspace 2 silent] emacs"
-        "[workspace 5 silent] slack"
+      on = [
+        {
+          _args = [
+            "hyprland.start"
+            (mkLuaInline ''
+              function()
+                ${startOn "1" "firefox"}
+                ${startOn "2" "emacs"}
+                ${startOn "5" "slack"}
+              end
+            '')
+          ];
+        }
       ];
     };
   }
@@ -2521,7 +2716,7 @@ This is mostly about configuring the monitor and key bindings. And laptop specif
 Helper to reduce boilerplate for SSH key pairs managed by sops. Each call to ~mkSshKeyPair~ declares both the private and public key secrets with correct ownership and permissions.
 
 #+name: smallbox-secrets
-  #+begin_src nix
+#+begin_src nix
   sops.secrets = let
     mkSshKeyPair = name: localName: {
       "ssh/${name}/private" = {
@@ -2552,6 +2747,14 @@ Helper to reduce boilerplate for SSH key pairs managed by sops. Each call to ~mk
       vpn_endpoint = {};          # wireguard VPN server endpoint
       homelab_domain = {};        # homelab base domain
       macbox_ip = {};             # macbox local IP
+      wg_wavefunk_private_key = {
+        mode = "600";
+        path = "/home/${user.username}/.ssh/wg_wavefunk_private_key";
+      };
+      wg_id8nxt_private_key = {
+        mode = "600";
+        path = "/home/${user.username}/.ssh/wg_id8nxt_private_key";
+      };
     };
 
   sops.templates."ssh-hosts" = {
@@ -2748,7 +2951,7 @@ Caddy configuration uses ~sops.templates~ to generate the Caddyfile at activatio
           header Content-Security-Policy "default-src 'self'; img-src 'self' https://*.${domain}/; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; frame-ancestors 'self'; frame-src 'self'; form-action 'self'; media-src 'self' https://*.${domain}/; sandbox allow-downloads allow-forms allow-same-origin allow-scripts"
         }
 
-        *.${domain} {
+        ,*.${domain} {
           tls {
             dns cloudflare {$CF_TOKEN}
           }
@@ -2933,7 +3136,7 @@ The caddy reverse proxy block is a noweb reference (~caddy-matrix-host~) include
 #+begin_src nix
   programs.ssh.extraConfig = ''
     Include ${config.sops.templates."ssh-hosts".path}
-  '';
+    '';
 #+end_src
 
 #+name: macbox-module
@@ -3053,6 +3256,75 @@ The caddy reverse proxy block is a noweb reference (~caddy-matrix-host~) include
   ### Others
   Also read AGENTS.md for more instructions.
 
+#+end_src
+
+*** Claude Code Settings
+Global Claude Code settings tangled to =~/.claude/settings.json=. This configures the model, plugins, permissions, teammate mode, and other preferences.
+
+#+begin_src json :tangle ~/.claude/settings.json :mkdirp yes
+  {
+    "env": {
+      "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+    },
+    "permissions": {
+      "defaultMode": "auto"
+    },
+    "model": "claude-opus-4-6[1M]",
+    "statusLine": {
+      "type": "command",
+      "command": "bash /home/nambiar/.claude/statusline-command.sh"
+    },
+    "enabledPlugins": {
+      "frontend-design@claude-plugins-official": true,
+      "superpowers@claude-plugins-official": true,
+      "feature-dev@claude-plugins-official": true,
+      "code-simplifier@claude-plugins-official": true,
+      "commit-commands@claude-plugins-official": true,
+      "security-guidance@claude-plugins-official": true,
+      "claude-md-management@claude-plugins-official": true,
+      "pr-review-toolkit@claude-plugins-official": true,
+      "claude-code-setup@claude-plugins-official": true,
+      "rust-analyzer-lsp@claude-plugins-official": true,
+      "ralph-loop@claude-plugins-official": true,
+      "figma@claude-plugins-official": true,
+      "hegel-skill@hegel-skill-marketplace": true,
+      "emacs-skills@xenodium-emacs-skills": true,
+      "csharp-lsp@claude-plugins-official": true,
+      "product-tracking-skills@claude-plugins-official": true,
+      "frontend-design@claude-code-plugins": true,
+      "atomic-agents@claude-plugins-official": true,
+      "impeccable@impeccable": true
+    },
+    "extraKnownMarketplaces": {
+      "claude-code-plugins": {
+        "source": {
+          "source": "github",
+          "repo": "anthropics/claude-code"
+        }
+      },
+      "hegel-skill-marketplace": {
+        "source": {
+          "source": "github",
+          "repo": "hegeldev/hegel-skill"
+        }
+      },
+      "impeccable": {
+        "source": {
+          "source": "github",
+          "repo": "pbakaus/impeccable"
+        }
+      }
+    },
+    "effortLevel": "high",
+    "advisorModel": "opus",
+    "awaySummaryEnabled": false,
+    "skipDangerousModePermissionPrompt": true,
+    "preferredNotifChannel": "ghostty",
+    "teammateMode": "tmux",
+    "remoteControlAtStartup": false,
+    "agentPushNotifEnabled": true,
+    "skipAutoPermissionPrompt": true
+  }
 #+end_src
 
 #+begin_src markdown :tangle AGENTS.md :noweb tangle :mkdirp yes

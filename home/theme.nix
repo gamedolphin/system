@@ -17,9 +17,11 @@
     };
 
     iconTheme.name = "Papirus-Dark";
+    gtk4.extraConfig.gtk-interface-color-scheme = "dark";
   };
 
   catppuccin.enable = true;
+  catppuccin.autoEnable = true;
   catppuccin.flavor = "mocha";
   catppuccin.accent = "blue";
   catppuccin.gtk.icon.enable = true;

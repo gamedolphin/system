@@ -28,13 +28,16 @@
     python3    # nice to have this ready for quick things
     cacert     # certificate authority
     remmina    # remote desktop app
+    jaq        # rust based jq alternative
+    comma      # nix-run helper
+    tmux       # seems useful for a bunch of things
     element-desktop
   ];
   
   # to enable icons with wlogout
   # https://github.com/catppuccin/nix/issues/584
   programs.gdk-pixbuf.modulePackages = [ pkgs.librsvg ];
-
+  
   services.minidlna = {
     enable = true;
     openFirewall = true;
@@ -46,12 +49,12 @@
       inotify = "yes";
     };
   };
-
+  
   users.users.minidlna = {
     extraGroups = [ "users" ];
   };
 
-
+  
 
   users.users.${user.username} = {
     isNormalUser = true;
@@ -84,6 +87,7 @@
 
   # enable the catppuccin theme for everything with mocha + blue accents
   catppuccin.enable = true;
+  catppuccin.autoEnable = true;
   catppuccin.flavor = "mocha";
   catppuccin.accent = "blue";
 

@@ -11,17 +11,19 @@
     # from the trusted cache instead of compiling from sourcer
     substituters = [
       "https://nix-community.cachix.org"
+      "https://walker.cachix.org"
+      "https://walker-git.cachix.org"
     ];
     # trust the cache public key
     trusted-public-keys = [
       "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+      "walker.cachix.org-1:fG8q+uAaMqhsMxWjwvk0IMb4mFPFLqHjuvfwQxE4oJM="
+      "walker-git.cachix.org-1:vmC0ocfPWh0S/vRAQGtChuiZBTAe4wiKDeyyXM0/7pM="
     ];
   };
 
   # allow proprietary software on this machine. I'm not a purist.
   nixpkgs.config.allowUnfree = true;
-  # unityhub depends on this... for now
-  nixpkgs.config.permittedInsecurePackages = [ "libxml2-2.13.8" ];
 
   # this declares how often old configurations are cleared up.
   # i cleanup anything older than a week, every week.

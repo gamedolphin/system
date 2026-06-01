@@ -2,11 +2,14 @@
 # DO NOT MODIFY THIS FILE!
 # Any changes made here will be overwritten.
 {
-  services.walker.enable = true;
-  services.walker.settings = {
-    close = "ctrl g";
-    next = "ctrl n";
-    previous = "ctrl p";
-    quick_activate = ["1" "2" "3" "4"];
+  programs.walker = {
+    enable = true;
+    runAsService = true;
+    config = {
+      close = "ctrl g";
+      next = "ctrl n";
+      previous = "ctrl p";
+      quick_activate = ["1" "2" "3" "4"];
+    };
   };
 }

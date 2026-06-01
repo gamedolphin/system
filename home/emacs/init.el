@@ -295,12 +295,10 @@
     :stream t :key (f-read-text "/run/secrets/claude_key")))
 
 (use-package sideline-flymake)
-(use-package sideline-eglot)
 (use-package sideline
   :custom
-  (sideline-backends-right '(sideline-flymake sideline-eglot))
+  (sideline-backends-right '(sideline-flymake))
   :hook
-  (eglot-managed-mode . sideline-mode)
   (flymake-mode . sideline-mode))
 
 (use-package eglot
@@ -362,7 +360,9 @@ ting a file within such a
    ("C-c t" . org-toggle-inline-images)
    ("C-c l" . org-toggle-link-display))
   :custom
-  (org-agenda-files (list org-inbox-file org-journal-file))
+  (org-agenda-files (list org-inbox-file org-journal-file
+                          "~/nextcloud/org/wavefunk.org"
+                          "~/nextcloud/org/projects/"))
   (org-directory "~/nextcloud/org")
   (org-default-notes-file org-inbox-file)
   (org-archive-location (concat org-archive-file "::* From %s"))
@@ -371,7 +371,7 @@ ting a file within such a
   (org-hide-emphasis-markers t)
   (org-src-fontify-natively t)
   (org-src-tab-acts-natively t)
-  (org-refile-targets '((org-agenda-files :maxlevel . 3)))
+  (org-refile-targets '((org-agenda-files :maxlevel . 4)))
   (org-archive-save-context-info '(time category todo itags olpath))
   (org-refile-use-outline-path 'file)
   (org-todo-keywords
@@ -391,6 +391,95 @@ ting a file within such a
   ;; Enable syntax highlighting in code blocks
   (add-hook 'org-mode-hook 'turn-on-font-lock)
   (add-hook 'org-mode-hook 'org-indent-mode))
+
+;;; wavefunk task tracking helpers
+
+(defvar wavefunk/org-projects-dir "~/nextcloud/org/projects/"
+  "Directory containing canonical project org files.")
+
+(defun wavefunk/org-get-active-tasks (file)
+  "Return the content under the first 'Active' heading in FILE as a string."
+  (with-current-buffer (find-file-noselect (expand-file-name file))
+    (save-excursion
+      (goto-char (point-min))
+      (when (re-search-forward "^\\* Active" nil t)
+        (let ((start (line-beginning-position)))
+          (org-end-of-subtree t t)
+          (buffer-substring-no-properties start (point)))))))
+
+(defun wavefunk/org-set-todo-by-id (id state)
+  "Find heading with CUSTOM_ID matching ID and set its TODO state to STATE.
+   Searches all org files in `wavefunk/org-projects-dir'."
+  (let ((files (directory-files wavefunk/org-projects-dir t "\\.org$")))
+    (catch 'found
+      (dolist (file files)
+        (with-current-buffer (find-file-noselect file)
+          (org-with-wide-buffer
+           (goto-char (point-min))
+           (while (re-search-forward
+                   (format ":CUSTOM_ID:\\s-*%s" (regexp-quote id)) nil t)
+             (org-back-to-heading t)
+             (org-todo state)
+             (save-buffer)
+             (throw 'found (format "Set %s to %s in %s" id state (file-name-nondirectory file))))))
+        (format "ID %s not found" id)))))
+
+(defun wavefunk/org-next-id (file prefix)
+  "Return the next available PREFIX-NN id in FILE."
+  (let ((max-id 0))
+    (with-current-buffer (find-file-noselect (expand-file-name file))
+      (org-map-entries
+       (lambda ()
+         (when-let* ((id (org-entry-get nil "CUSTOM_ID")))
+           (when (string-match (format "^%s\\([0-9]+\\)$" (regexp-quote prefix)) id)
+             (setq max-id (max max-id (string-to-number (match-string 1 id)))))))))
+    (format "%s%02d" prefix (1+ max-id))))
+
+(defun wavefunk/org-add-task (file heading title prefix)
+  "Add a TODO task with TITLE under HEADING in FILE with auto-assigned ID.
+HEADING is a top-level heading like \"Active\" or \"Backlog\".
+PREFIX is the project prefix like \"aw-\"."
+  (let ((next-id (wavefunk/org-next-id file prefix)))
+    (with-current-buffer (find-file-noselect (expand-file-name file))
+      (goto-char (point-min))
+      (if (re-search-forward (format "^\\* %s" (regexp-quote heading)) nil t)
+          (progn
+            (org-end-of-subtree t nil)
+            (insert (format "\n** TODO %s\n:PROPERTIES:\n:CUSTOM_ID: %s\n:CREATED: %s\n:END:\n"
+                            title next-id (format-time-string "[%Y-%m-%d %a]")))
+            (save-buffer)
+            (format "Added %s: %s under %s" next-id title heading))
+        (format "Heading '%s' not found in %s" heading file)))))
+
+(defun wavefunk/org-query-all (state)
+  "Return all tasks matching TODO STATE across all project org files."
+  (let ((files (directory-files wavefunk/org-projects-dir t "\\.org$"))
+        (results '()))
+    (dolist (file files)
+      (with-current-buffer (find-file-noselect file)
+        (org-map-entries
+         (lambda ()
+           (when (string= (org-get-todo-state) state)
+             (push (format "[%s] %s — %s"
+                           (or (org-entry-get nil "CUSTOM_ID") "no-id")
+                           (org-get-heading t t t t)
+                           (file-name-sans-extension (file-name-nondirectory file)))
+                   results))))))
+    (mapconcat #'identity (nreverse results) "\n")))
+
+(defun wavefunk/org-backfill-ids (file prefix)
+  "Assign CUSTOM_IDs to all headings in FILE that lack one. Uses PREFIX."
+  (with-current-buffer (find-file-noselect (expand-file-name file))
+    (let ((count 0))
+      (org-map-entries
+       (lambda ()
+         (unless (org-entry-get nil "CUSTOM_ID")
+           (when (org-get-todo-state)  ; only assign IDs to TODO items
+             (let ((next-id (wavefunk/org-next-id file prefix)))
+               (org-set-property "CUSTOM_ID" next-id)
+               (setq count (1+ count)))))))
+      (when (> count 0) (save-buffer))
+      (format "Backfilled %d IDs in %s" count (file-name-nondirectory file)))))
 
 ;; extras
 (use-package comp-run

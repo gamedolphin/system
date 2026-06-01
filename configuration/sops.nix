@@ -10,4 +10,8 @@
   sops.secrets.claude_key = { # anthropic claude api key, used in emacs
     owner = "${user.username}";
   };
+
+  sops.secrets.deepseek_key = { # deepseek api key, used by claude-teammate wrapper
+    owner = "${user.username}";
+  };
 }

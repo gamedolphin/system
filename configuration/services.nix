@@ -20,6 +20,14 @@
     };
   };
 
-  virtualisation.docker.enable = true;    # enable docker
-  users.users.${user.username}.extraGroups = [ "docker" ]; # add self to docker user group
+  virtualisation = {
+    containers.enable = true;
+    docker.enable = true;
+    podman = {
+      enable = true;
+      defaultNetwork.settings.dns_enabled = true; # Required for containers under podman-compose to be able to talk to each other.
+    };
+  };
+
+  users.users.${user.username}.extraGroups = [ "podman" "docker" ]; # add self to docker and podman user group
 }

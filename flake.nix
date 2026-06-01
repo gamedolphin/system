@@ -8,7 +8,7 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
     home-manager = {
-      url = "github:nix-community/home-manager";
+      url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -38,6 +38,15 @@
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    llm-agents.url = "github:numtide/llm-agents.nix";
+
+    elephant.url = "github:abenz1267/elephant";
+
+    walker = {
+      url = "github:abenz1267/walker";
+      inputs.elephant.follows = "elephant";
+    };
   };
 
   outputs = {
@@ -50,6 +59,8 @@
       nix-darwin,
       deploy-rs,
       disko,
+      llm-agents,
+      walker,
       ...
   }@inputs:
     let
@@ -59,11 +70,11 @@
         "smallbox"
         "homelab"
       ];
-
+  
       pkgs = import nixpkgs {
         inherit (user) system;
       };
-
+  
       deployPkgs = import nixpkgs {
         inherit (user) system;
         overlays = [
@@ -71,9 +82,9 @@
           (self: super: { deploy-rs = { inherit (pkgs) deploy-rs; lib = super.deploy-rs.lib; }; })
         ];
       };
-
+  
       macSystem = "aarch64-darwin";
-
+  
       pkgsMac = import nixpkgs {
         system = macSystem;
       };
@@ -89,73 +100,74 @@
                 })
                 ./machines/${machine}/configuration.nix
                 home-manager.nixosModules.home-manager
-                {
-                  home-manager.useGlobalPkgs = true;
-                  home-manager.useUserPackages = true;
-                  home-manager.extraSpecialArgs = {
-                    inherit user;
-                  };
-                  home-manager.backupFileExtension = "backup";
-                  home-manager.users.${user.username} = {
-                    imports =  [
-                      ./machines/${machine}/home.nix
-                      catppuccin.homeModules.catppuccin
-                    ];
-                  };
-                }
+                  {
+                    home-manager.useGlobalPkgs = true;
+                    home-manager.useUserPackages = true;
+                    home-manager.extraSpecialArgs = {
+                      inherit user;
+                    };
+                    home-manager.backupFileExtension = "backup";
+                    home-manager.users.${user.username} = {
+                      imports =  [
+                        ./machines/${machine}/home.nix
+                        catppuccin.homeModules.catppuccin
+                        walker.homeManagerModules.default
+                      ];
+                    };
+                  }
                 disko.nixosModules.disko             # disks
                 sops-nix.nixosModules.sops           # sops
                 catppuccin.nixosModules.catppuccin   # theme
               ];
               specialArgs = {
                 hostname = machine;
-                inherit user;
+                inherit user llm-agents;
               };
             };
           }) machines
         );
-
+  
         darwinConfigurations.macbox = nix-darwin.lib.darwinSystem {
           system = macSystem;
           modules = [
             ({ pkgs, ... }: {
               nix.settings.trusted-users = [ "root" "nambiar" ];
               environment.systemPackages = with pkgs; [ vim htop git emacs ];
-
+        
               system.defaults.SoftwareUpdate.AutomaticallyInstallMacOSUpdates = false;
               nix.settings.experimental-features = "nix-command flakes";
-
+        
               system.configurationRevision = self.rev or self.dirtyRev or null;
-
+        
               nixpkgs.hostPlatform = macSystem;
-
+        
               networking.computerName = "macbox";
               networking.hostName = "macbox";
-
+        
               system.primaryUser = "nambiar";
-
+        
               power.restartAfterFreeze = true;
               power.restartAfterPowerFailure  = true;
               power.sleep.computer = "never";
               power.sleep.display = "never";
               power.sleep.harddisk = "never";
-
+        
               system.activationScripts.postActivation.text = ''
                   sudo pmset -a sleep 0 autorestart 1
                 '';
-
+        
               users.users.nambiar = {
                 name = "nambiar";
                 home = "/Users/nambiar";
                 openssh.authorizedKeys.keys = [ user.sshPublicKey ];
               };
-
+        
               system.stateVersion = 6;
             })
           ];
           specialArgs = { inherit inputs; pkgs = pkgsMac; };
         };
-
+        
         deploy.nodes.macbox = {
           hostname = "macbox";
           profiles.system = {
@@ -163,7 +175,7 @@
             path = deploy-rs.lib.aarch64-darwin.activate.darwin self.darwinConfigurations.macbox;
           };
         };
-
+  
         deploy.nodes.homelab = {
           hostname = "homelab";
           profiles.system = {
@@ -172,7 +184,7 @@
             path = deployPkgs.deploy-rs.lib.activate.nixos self.nixosConfigurations.homelab;
           };
         };
-
+  
         devShells.${user.system}.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             nil               # nix lsp server

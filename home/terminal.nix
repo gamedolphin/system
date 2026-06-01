@@ -12,8 +12,8 @@
         font-size = 12;
         command = "zsh";
         keybind = [
-          "ctrl+x>2=new_split:right"
-          "ctrl+x>3=new_split:down"
+          "ctrl+x>3=new_split:right"
+          "ctrl+x>2=new_split:down"
           "ctrl+x>o=goto_split:next"
           "ctrl+x>k=close_surface"
         ];

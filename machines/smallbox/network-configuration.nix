@@ -8,11 +8,11 @@ let
       ips = builtins.concatStringsSep "," allowedIPs;
       routes = builtins.concatStringsSep "\n" (map (ip: "ip route add ${ip} dev wg0 2>/dev/null || true") allowedIPs);
     in
-    {
-      inherit address privateKeyFile;
-      mtu = 1300;
-      dns = [ "1.1.1.1" "8.8.8.8" ];
-      postUp = ''
+      {
+        inherit address privateKeyFile;
+        mtu = 1300;
+        dns = [ "1.1.1.1" "8.8.8.8" ];
+        postUp = ''
         wg set wg0 peer "$(cat ${peerPublicKeyFile})" \
           preshared-key ${presharedKeyFile} \
           endpoint "$(cat ${endpointFile})" \
@@ -20,10 +20,10 @@ let
           persistent-keepalive 15
         ${routes}
       '';
-      preDown = ''
+        preDown = ''
         wg set wg0 peer "$(cat ${peerPublicKeyFile})" remove 2>/dev/null || true
       '';
-    } // (if listenPort != null then { inherit listenPort; } else {});
+      } // (if listenPort != null then { inherit listenPort; } else {});
 in
 {
   networking.wg-quick.interfaces.wg0 = mkWireguard {
@@ -33,5 +33,55 @@ in
     presharedKeyFile = config.sops.secrets.wg_preshared_key.path;
     endpointFile = config.sops.secrets.vpn_endpoint.path;
     allowedIPs = [ "172.30.0.1/32" "172.30.0.4/32" ];
+  };
+
+  networking.wg-quick.interfaces.wg1 = {
+    address = [ "10.0.1.10/32" ];
+    privateKeyFile = config.sops.secrets.wg_wavefunk_private_key.path;
+    peers = [
+      {
+        publicKey = "a2wrqGLi/aw3mODD0Yal3V2ha6c6isN6HfDI1RLF83M=";
+        endpoint = "vpn.wavefunk.io:51820";
+        allowedIPs = [ "10.0.1.0/24" ];
+        persistentKeepalive = 25;
+      }
+    ];
+  };
+
+  networking.wg-quick.interfaces."wg-id8nxt" = {
+    address = [ "10.42.0.1/32" ];
+    privateKeyFile = config.sops.secrets.wg_id8nxt_private_key.path;
+    peers = [
+      {
+        publicKey = "f+Y69bLw3Lnvyi39TjNYaOieu4GQtfF9MV/1Wpcg6Tg=";
+        endpoint = "204.168.131.4:51820";
+        allowedIPs = [ "10.42.0.2/32" ];
+        persistentKeepalive = 25;
+      }
+      {
+        publicKey = "a5xFiL5DZKQOCfuprSMw9ccIpjBEZHAbdnsgyqGEIG8=";
+        endpoint = "77.42.121.26:51820";
+        allowedIPs = [ "10.42.0.3/32" ];
+        persistentKeepalive = 25;
+      }
+      {
+        publicKey = "ggaD3hGGyf/ICi7MOx2r5+NwlNUltXEpaB7rWREPc1E=";
+        endpoint = "65.109.238.249:51820";
+        allowedIPs = [ "10.42.0.4/32" ];
+        persistentKeepalive = 25;
+      }
+      {
+        publicKey = "TI1eNNrrA+F/lrxGCbnV9CxjwZf85NlFZ54bmVk2Yx0=";
+        endpoint = "65.109.114.187:51820";
+        allowedIPs = [ "10.42.0.5/32" ];
+        persistentKeepalive = 25;
+      }
+      {
+        publicKey = "XXLxstN7/2F9rxXUKGHpMYYRNSeIB7Bvm+GO1oOVuB0=";
+        endpoint = "65.109.230.233:51820";
+        allowedIPs = [ "10.42.0.6/32" ];
+        persistentKeepalive = 25;
+      }
+    ];
   };
 }

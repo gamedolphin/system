@@ -9,11 +9,11 @@ let
       ips = builtins.concatStringsSep "," allowedIPs;
       routes = builtins.concatStringsSep "\n" (map (ip: "ip route add ${ip} dev wg0 2>/dev/null || true") allowedIPs);
     in
-    {
-      inherit address privateKeyFile;
-      mtu = 1300;
-      dns = [ "1.1.1.1" "8.8.8.8" ];
-      postUp = ''
+      {
+        inherit address privateKeyFile;
+        mtu = 1300;
+        dns = [ "1.1.1.1" "8.8.8.8" ];
+        postUp = ''
         wg set wg0 peer "$(cat ${peerPublicKeyFile})" \
           preshared-key ${presharedKeyFile} \
           endpoint "$(cat ${endpointFile})" \
@@ -21,10 +21,10 @@ let
           persistent-keepalive 15
         ${routes}
       '';
-      preDown = ''
+        preDown = ''
         wg set wg0 peer "$(cat ${peerPublicKeyFile})" remove 2>/dev/null || true
       '';
-    } // (if listenPort != null then { inherit listenPort; } else {});
+      } // (if listenPort != null then { inherit listenPort; } else {});
 in
 {
   networking.wg-quick.interfaces.wg0 = mkWireguard {

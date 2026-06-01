@@ -106,13 +106,13 @@
  auto-mode-case-fold nil  ; No second pass of case-insensitive search over auto-mode-alist.
 
  package-archives '(("melpa"        . "https://melpa.org/packages/")
-                       ("gnu"          . "https://elpa.gnu.org/packages/")
-                       ("nongnu"       . "https://elpa.nongnu.org/nongnu/")
-                       ("melpa-stable" . "https://stable.melpa.org/packages/"))
+                    ("gnu"          . "https://elpa.gnu.org/packages/")
+                    ("nongnu"       . "https://elpa.nongnu.org/nongnu/")
+                    ("melpa-stable" . "https://stable.melpa.org/packages/"))
 
  package-archive-priorities '(("gnu"    . 99)
-                                 ("nongnu" . 80)
-                                 ("melpa"  . 70)
-                                 ("melpa-stable" . 50))
+                              ("nongnu" . 80)
+                              ("melpa"  . 70)
+                              ("melpa-stable" . 50))
  )
  ;;; early-init.el ends here
