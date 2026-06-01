@@ -48,7 +48,7 @@
         path = "/home/${user.username}/.ssh/wg_id8nxt_private_key";
       };
     };
-  
+
   sops.templates."ssh-hosts" = {
     owner = "${user.username}";
     content = ''
@@ -56,14 +56,14 @@
         HostName ${config.sops.placeholder.macbox_ip}
         User nambiar
         IdentityFile ${config.sops.secrets."ssh/smallbox/private".path}
-  
+
       Host homelab
         HostName ${config.sops.placeholder.homelab_domain}
         User root
         IdentityFile ${config.sops.secrets."ssh/smallbox/private".path}
     '';
   };
-  
+
   programs._1password.enable = true;
   programs._1password-gui = {
     enable = true;

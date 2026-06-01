@@ -98,7 +98,7 @@ There's also a github action that generates and commits these files if they do d
 
 * TLDR App List
 
-| Window Manager       | [[https://hyprland.org/][Hyprland]]           |
+| Window Manager       | [[https://github.com/YaLTeR/niri][Niri]]               |
 | Bar                  | [[https://github.com/Alexays/Waybar][Waybar]]             |
 | Application Launcher | [[https://github.com/abenz1267/walker][Walker]]             |
 | Notification Daemon  | [[https://github.com/dunst-project/dunst][Dunst]]              |
@@ -109,8 +109,8 @@ There's also a github action that generates and commits these files if they do d
 | Fonts                | [[https://protesilaos.com/codelog/2025-02-12-aporetic-fonts-version-1-1-0/][Aporeti]]            |
 | Colors               | [[https://catppuccin.com/][Catppuccin]]         |
 | Icons                | [[https://nix.catppuccin.com/][Catppuccin Nix    ]] |
-| Lock Screen          | [[https://wiki.hyprland.org/Hypr-Ecosystem/hyprlock/][Hyprlock]]           |
-| Wallpapers           | [[https://github.com/hyprwm/hyprpaper][Hyprpaper]]          |
+| Lock Screen          | [[https://github.com/mortie/swaylock-effects][swaylock-effects]]   |
+| Wallpapers           | [[https://github.com/swaywm/swaybg][swaybg]]             |
 
 * Configuration Variables
 I have a bunch of constant strings that I would rather put in a file. Thats what ~user.nix~ is.
@@ -414,7 +414,7 @@ This section describes the main system configuration for the computers that I ha
       ./locale.nix
       ./nix-settings.nix
       ./networking.nix
-      ./hyprland.nix
+      ./niri.nix
       ./services.nix
       ./audio.nix
       ./steam.nix
@@ -513,7 +513,7 @@ This file has most of the settings the control how the computer boots up.
 
       loader = {
         systemd-boot.enable = true;                # systemd-boot
-        systemd-boot.configurationLimit = 2;
+        systemd-boot.configurationLimit = 5;
         efi.canTouchEfiVariables = true;           # allow editing efi to edit the boot loader
 
 
@@ -525,8 +525,8 @@ This file has most of the settings the control how the computer boots up.
 
 ** Login
 Here we control what the login screen would look like. I'm using greetd's [[https://github.com/apognu/tuigreet][tuigreet]] for the ui.
-Doesn't match the rest of the aesthetic of the system (with hyprland), but I like its simplicity.
-The default session command starts the UWSM-managed Hyprland session explicitly. That keeps ~graphical-session.target~ active, which is what Home Manager graphical services such as Walker and Elephant attach to.
+Doesn't match the rest of the aesthetic of the system (with niri), but I like its simplicity.
+The default session command starts the systemd-managed Niri session explicitly. That keeps ~graphical-session.target~ active, which is what Home Manager graphical services such as Walker and Elephant attach to.
 
 #+begin_src nix :tangle configuration/login.nix :noweb tangle :mkdirp yes
   { pkgs, user, ... } :
@@ -539,7 +539,7 @@ The default session command starts the UWSM-managed Hyprland session explicitly.
       enable = true;
       settings = {
         default_session = {
-          command = pkgs.lib.mkForce "${pkgs.tuigreet}/bin/tuigreet --remember --time --time-format '%I:%M %p | %a • %h | %F' --cmd '${pkgs.uwsm}/bin/uwsm start -e -D Hyprland hyprland.desktop'";
+          command = pkgs.lib.mkForce "${pkgs.tuigreet}/bin/tuigreet --remember --time --time-format '%I:%M %p | %a • %h | %F' --cmd '${pkgs.niri}/bin/niri-session'";
         };
       };
     };
@@ -643,86 +643,32 @@ Not much to see here. I want networking to be enabled. I want firewall as well.
   }
 #+end_src
 
-** Hyprland
-This is a big one because the DE needs so much configuration. This section mostly installs [[https://hyprland.org/][Hyprland]].
-The configuration is done in the home manager section.
-#+begin_src nix :tangle configuration/hyprland.nix :noweb tangle :mkdirp yes
+** Niri
+This is a big one because the DE needs so much configuration. This section mostly installs [[https://github.com/YaLTeR/niri][Niri]].
+The key bindings and monitor configuration are done in the home manager section.
+#+begin_src nix :tangle configuration/niri.nix :noweb tangle :mkdirp yes
   { pkgs, ... }:
   {
-    nix.settings = {
-      # add the hyprland cache so that we dont build hyprland from source
-      substituters = [ "https://hyprland.cachix.org" ];
-      trusted-public-keys = [
-        "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
-      ];
-    };
-
-    # these extra portals allow for things like screen sharing
-    xdg = {
-      portal = {
-        enable = true;
-        extraPortals = [
-          pkgs.xdg-desktop-portal-gtk
-        ];
-      };
-    };
-
     environment.systemPackages = with pkgs; [
-      hyprland            # the actual package
-      uwsm                # wayland session manager
-      hyprland-qtutils    # needed by hyprland
-      hyprpolkitagent     # polkit agent
-      grimblast           # screenshot
+      niri
+      xwayland-satellite # X11 app support for niri
     ];
 
-    # tuigreet is configured above to launch the uwsm-managed session by default.
-    programs = {
-      uwsm.enable = true;
-      uwsm.waylandCompositors = {
-        hyprland = {
-          prettyName = "Hyprland";
-          comment = "Hyprland compositor managed by UWSM";
-          binPath = "/run/current-system/sw/bin/Hyprland";
-        };
-      };
+    programs.niri.enable = true;
 
-      hyprland = {
-        withUWSM  = true;
-        enable = true;
-        xwayland.enable = true;
-      };
-    };
-
-    # this is mainly for the lock screen
-    # lock.png is provided elsewhere
-    services.xserver = {
-      enable = true;
-
-      desktopManager = {
-        xterm.enable = false;
-      };
-
-
-      displayManager = {
-        lightdm.background = ./lock.png;
-      };
-    };
-
-    # this is a lot of env vars.
-    # and this requires some cleanup
-    # but hyprland moves fast and some of these are probably outdated already
     environment.sessionVariables = {
-      XDG_SESSION_TYPE="wayland";
-      XDG_CURRENT_DESKTOP="Hyprland";
-      XDG_SESSION_DESKTOP="Hyprland";
-      NIXOS_OZONE_WL="1";
-      XCURSOR_SIZE="24";
+      XDG_SESSION_TYPE = "wayland";
+      XDG_CURRENT_DESKTOP = "niri";
+      XDG_SESSION_DESKTOP = "niri";
+      NIXOS_OZONE_WL = "1";
+      ELECTRON_OZONE_PLATFORM_HINT = "auto";
+      XCURSOR_SIZE = "24";
       GDK_SCALE = "1.5";
       RUSTICL_ENABLE = "radeonsi"; # for davinci resolve
     };
 
-    # allow hyprlock (lockscreen) to lock user session
-    security.pam.services.hyprlock = { };
+    # allow swaylock (lockscreen) to lock user session
+    security.pam.services.swaylock = { };
     security.polkit.enable = true;
     security.pam.services.gdm.enableGnomeKeyring = true;
   }
@@ -1040,7 +986,7 @@ I also use it to install programs that are okay with being installed at the user
       ./wallpaper.nix
       ./lock.nix
       ./unity.nix
-      ./hyprland.nix
+      ./niri.nix
       ./walker.nix
       ./theme.nix
       ./terminal.nix
@@ -1062,7 +1008,7 @@ Oof! Again with all the imports! We can go through them one at a time!
 
 Mostly styling and enabling modules in the [[https://github.com/Alexays/Waybar][top bar]].
 #+begin_src nix :tangle home/waybar.nix :noweb tangle :mkdirp yes
-  { lib, ... }: {
+  { lib, pkgs, ... }: {
     programs.ashell = {
       enable = true;
       systemd.enable = true;
@@ -1081,6 +1027,11 @@ Mostly styling and enabling modules in the [[https://github.com/Alexays/Waybar][
           indicators = [ "Cpu" "Memory" "Temperature" "DownloadSpeed"];
         };
 
+        workspaces = {
+          visibility_mode = "MonitorSpecific";
+          enable_workspace_filling = false;
+        };
+
         keyboard_layout = {
           "English (US)" = "EN";
           "Swedish" = "SE";
@@ -1096,6 +1047,7 @@ Mostly styling and enabling modules in the [[https://github.com/Alexays/Waybar][
     systemd.user.services.ashell = {
       Unit.PartOf = [ "graphical-session.target" ];
       Service = {
+        ExecStartPre = "${pkgs.coreutils}/bin/sleep 2";
         Restart = lib.mkForce "always";
         RestartSec = "2s";
       };
@@ -1106,22 +1058,25 @@ Mostly styling and enabling modules in the [[https://github.com/Alexays/Waybar][
 ** Wallpaper
 
 [[./assets/background.png]]
-I use [[https://wiki.hyprland.org/Hypr-Ecosystem/hyprpaper/][hyprpaper]] for setting the wallpaper. The image is copied into the home folder when applying this configuration and the tool picks it from there.
+I use [[https://github.com/swaywm/swaybg][swaybg]] for setting the wallpaper. The image is copied into the home folder when applying this configuration and the tool picks it from there.
 #+begin_src nix :tangle home/wallpaper.nix :noweb tangle :mkdirp yes
   { pkgs, ... }:
   {
     home.packages = with pkgs; [
-      hyprpaper
+      swaybg
     ];
 
-    services.hyprpaper.enable = true;
-    services.hyprpaper.settings = {
-      ipc = "on";
-      splash = false;
-
-      wallpaper = {
-        monitor = "";
-        path = "~/.background-image.png";
+    systemd.user.services.swaybg = {
+      Unit = {
+        Description = "Wallpaper";
+        After = [ "graphical-session.target" ];
+        PartOf = [ "graphical-session.target" ];
+        ConditionEnvironment = "WAYLAND_DISPLAY";
+      };
+      Install.WantedBy = [ "graphical-session.target" ];
+      Service = {
+        ExecStart = "${pkgs.swaybg}/bin/swaybg --image %h/.background-image.png --mode fill";
+        Restart = "on-failure";
       };
     };
 
@@ -1140,15 +1095,17 @@ I use [[https://wiki.hyprland.org/Hypr-Ecosystem/hyprpaper/][hyprpaper]] for set
 
 #+end_src
 ** Lock Screen
-The lock screen configured using [[https://wiki.hyprland.org/Hypr-Ecosystem/hyprlock/][hyprlock]].
-I use [[https://wiki.hyprland.org/Hypr-Ecosystem/hypridle/][hypridle]] to detect idle time and use wlogout to show a logout menu.
+The lock screen configured using [[https://github.com/mortie/swaylock-effects][swaylock-effects]].
+I use [[https://github.com/swaywm/swayidle][swayidle]] to detect idle time and use wlogout to show a logout menu.
 They are configured below.
 #+begin_src nix :tangle home/lock.nix :noweb tangle :mkdirp yes
-  { pkgs, ... } :
+  { config, pkgs, ... } :
+  let
+    lockCommand = "${pkgs.procps}/bin/pidof swaylock || ${pkgs.swaylock-effects}/bin/swaylock";
+  in
   {
     home.packages = with pkgs; [
-      hyprlock
-      hypridle
+      swaylock-effects
       wlogout
     ];
 
@@ -1161,42 +1118,39 @@ They are configured below.
     };
 
     services = {
-      # hypridle to
+      # swayidle to
       # 150 seconds - turn of monitor
       # 300 seconds - lock screen
       # 330 seconds - turn of monitor
       #  30 minutes - put to sleep
-      hypridle = {
+      swayidle = {
         enable = true;
-        settings = {
-          general = {
-            lock_cmd = "pidof hyprlock || hyprlock";       # avoid starting multiple hyprlock instances.
-            before_sleep_cmd = "loginctl lock-session";    # lock before suspend.
-            after_sleep_cmd = "hyprctl dispatch dpms on";  # to avoid having to press a key twice to turn on the display.
-          };
-
-          listener = [
-            {
-              timeout = 150;                                # 2.5min.
-              on-timeout = "brightnessctl -s set 10";         # set monitor backlight to minimum, avoid 0 on OLED monitor.
-              on-resume = "brightnessctl -r";                 # monitor backlight restore.
-            }
-            {
-              timeout = 300;                                 # 5min
-              on-timeout = "loginctl lock-session";            # lock screen when timeout has passed
-            }
-            {
-              timeout = 330;                                                     # 5.5min
-              on-timeout = "hyprctl dispatch dpms off";                            # screen off when timeout has passed
-              on-resume = "hyprctl dispatch dpms on && brightnessctl -r";          # screen on when activity is detected after timeout has fired.
-            }
-            {
-              timeout = 1800;                                # 30min
-              on-timeout = "systemctl suspend";                # suspend pc
-            }
-          ];
-
+        events = {
+          lock = lockCommand;                                                          # avoid starting multiple swaylock instances.
+          before-sleep = "${pkgs.systemd}/bin/loginctl lock-session";                 # lock before suspend.
+          after-resume = "${pkgs.niri}/bin/niri msg action power-on-monitors";         # to avoid having to press a key twice to turn on the display.
         };
+
+        timeouts = [
+          {
+            timeout = 150;                                                            # 2.5min.
+            command = "${pkgs.brightnessctl}/bin/brightnessctl -s set 10";             # set monitor backlight to minimum, avoid 0 on OLED monitor.
+            resumeCommand = "${pkgs.brightnessctl}/bin/brightnessctl -r";              # monitor backlight restore.
+          }
+          {
+            timeout = 300;                                                            # 5min
+            command = "${pkgs.systemd}/bin/loginctl lock-session";                     # lock screen when timeout has passed
+          }
+          {
+            timeout = 330;                                                            # 5.5min
+            command = "${pkgs.niri}/bin/niri msg action power-off-monitors";           # screen off when timeout has passed
+            resumeCommand = "${pkgs.niri}/bin/niri msg action power-on-monitors && ${pkgs.brightnessctl}/bin/brightnessctl -r"; # screen on when activity is detected after timeout has fired.
+          }
+          {
+            timeout = 1800;                                                           # 30min
+            command = "${pkgs.systemd}/bin/systemctl suspend";                        # suspend pc
+          }
+        ];
       };
     };
 
@@ -1207,7 +1161,7 @@ They are configured below.
       layout = [
         {
           "label"  = "lock";
-          "action" = "hyprlock";
+          "action" = lockCommand;
           "text" = "Lock";
           "keybind" = "l";
         }
@@ -1246,58 +1200,42 @@ They are configured below.
 
     catppuccin.wlogout.iconStyle = "wleave";
 
-    programs.hyprlock = {
-      enable = true;
-      settings = {
-        auth = {
-          fingerprint = {
-            enabled = true;
-          };
-        };
-
-        background = {
-          path = "~/.lock.png";
-          color = "$base";
-        };
-
-        label = {
-          monitor = "";
-          text = "$TIME";
-          color = "$text";
-          font_size = 90;
-          position = "0, 0";
-          halign = "center";
-          valign = "top";
-        };
-
-        input-field = {
-          monitor = "";
-          size = "300, 60";
-          outline_thickness = 4;
-          dots_size = 0.2;
-          dots_spacing = 0.2;
-          dots_center = true;
-          outer_color = "$accent";
-          inner_color = "$surface0";
-          font_color = "$text";
-          fade_on_empty = true;
-          placeholder_text = ''<span foreground="##$textAlpha"><i>󰌾 Logged in as </i><span foreground="##$accentAlpha">$USER</span></span>'';
-          hide_input = false;
-          check_color = "$accent";
-          fail_color = "$red";
-          fail_text = ''<i>$FAIL <b>($ATTEMPTS)</b></i>'';
-          capslock_color = "$yellow";
-          position = "0, -47";
-          halign = "center";
-          valign = "center";
-        };
-      };
-    };
-
-    catppuccin.hyprlock.enable = true;
-    catppuccin.hyprlock.flavor = "mocha";
-    catppuccin.hyprlock.accent = "blue";
-    catppuccin.hyprlock.useDefaultConfig = false; # we use our own
+    xdg.configFile."swaylock/config".text = ''
+      ignore-empty-password
+      show-failed-attempts
+      daemonize
+      image=${config.home.homeDirectory}/.lock.png
+      scaling=fill
+      indicator
+      clock
+      timestr=%H:%M
+      datestr=%A, %F
+      font=Aporetic
+      font-size=36
+      indicator-radius=110
+      indicator-thickness=12
+      line-uses-ring
+      effect-blur=7x5
+      effect-vignette=0.5:0.5
+      inside-color=1e1e2ecc
+      inside-clear-color=a6e3a1cc
+      inside-caps-lock-color=f9e2afcc
+      inside-ver-color=89b4facc
+      inside-wrong-color=f38ba8cc
+      ring-color=89b4fa
+      ring-clear-color=a6e3a1
+      ring-caps-lock-color=f9e2af
+      ring-ver-color=89b4fa
+      ring-wrong-color=f38ba8
+      key-hl-color=a6e3a1
+      bs-hl-color=f38ba8
+      text-color=cdd6f4
+      text-clear-color=1e1e2e
+      text-caps-lock-color=1e1e2e
+      text-ver-color=1e1e2e
+      text-wrong-color=1e1e2e
+      separator-color=00000000
+    '';
   }
 
 #+end_src
@@ -1318,220 +1256,186 @@ Often I work with dotnet directly inside of unity and so we set that up too.
   }
 #+end_src
 
-** Hyprland
+** Niri
 This configures the desktop environment along with the peripherals. The comments should explain whats happening.
-#+begin_src nix :tangle home/hyprland.nix :noweb tangle :mkdirp yes.
-  { lib, pkgs, ... }:
+#+begin_src nix :tangle home/niri.nix :noweb tangle :mkdirp yes.
+  {
+    config,
+    lib,
+    pkgs,
+    ...
+  }:
   let
-    inherit (lib.generators) mkLuaInline;
-    luaString = builtins.toJSON;
-    bind = key: dispatcher: {
-      _args = [
-        (mkLuaInline key)
-        (mkLuaInline dispatcher)
-      ];
+    cfg = config.nambiar.niri;
+  in
+  {
+    options.nambiar.niri = {
+      extraConfig = lib.mkOption {
+        type = lib.types.lines;
+        default = "";
+        description = "Extra top-level niri KDL appended before key bindings.";
+      };
+
+      extraBinds = lib.mkOption {
+        type = lib.types.lines;
+        default = "";
+        description = "Extra niri KDL key bindings inserted into the binds block.";
+      };
     };
-    bindWith = key: dispatcher: flags: {
-      _args = [
-        (mkLuaInline key)
-        (mkLuaInline dispatcher)
-        flags
-      ];
-    };
-    exec = command: "hl.dsp.exec_cmd(${luaString command})";
-    mod = key: ''mod .. " + ${key}"'';
-    modShift = key: ''mod .. " + SHIFT + ${key}"'';
-    modCtrl = key: ''mod .. " + CTRL + ${key}"'';
-    modAlt = key: ''mod .. " + ALT + ${key}"'';
-  in {
-    # required for the default Hyprland config
-    programs.kitty.enable = true;
 
-    services.hyprpolkitagent.enable = true;
+    config = {
+      # required for the default Niri config
+      programs.kitty.enable = true;
 
-    # enable Hyprland
-    wayland.windowManager.hyprland.enable = true;
+      services.polkit-gnome.enable = true;
 
-    # we start hyprland using uwsm
-    wayland.windowManager.hyprland.systemd.enable = false;
+      xdg.configFile."niri/config.kdl".text = ''
+        input {
+            keyboard {
+                xkb {
+                    layout "us,se"
+                    options "ctrl:nocaps"
+                }
 
-    # hyprland.lua
-    wayland.windowManager.hyprland.configType = "lua";
-    wayland.windowManager.hyprland.settings = {
-      mod = {
-        _var = "SUPER";
-      };
+                track-layout "global"
+            }
 
-      config = {
-        input = {
-          follow_mouse = 1;
+            touchpad {
+                scroll-factor 0.5
+            }
 
-          touchpad = {
-            natural_scroll = false;
-            scroll_factor = 0.5;
-          };
+            mouse {
+                accel-speed -0.5
+                accel-profile "adaptive"
+                scroll-factor 0.5
+            }
 
-          scroll_factor = 0.5;
-
-          accel_profile =  "adaptive";
-          sensitivity = -0.5; # -1.0 - 1.0, 0 means no modification.
-
-          kb_layout = "us,se";
-
-          # very emacs specific, i use caps as an extra ctrl key
-          kb_options = "ctrl:nocaps";
-        };
-
-        cursor = {
-          no_hardware_cursors = 1;
-        };
-
-        general = {
-          gaps_in = 2;
-          gaps_out = 4;
-          border_size = 2;
-          col = {
-            active_border = {
-              colors = [
-                (mkLuaInline "colors.blue")
-                (mkLuaInline "colors.green")
-              ];
-              angle = 45;
-            };
-            inactive_border = mkLuaInline "colors.base";
-          };
-
-          layout = "dwindle";
-        };
-
-        decoration = {
-          rounding = 5;
-        };
-
-        xwayland = {
-          force_zero_scaling = true;
-        };
-
-        animations = {
-          enabled = true;
-        };
-
-        dwindle = {
-          preserve_split = true;
-        };
-
-        misc = {
-          disable_hyprland_logo = true;
-          focus_on_activate = true;
-        };
-      };
-
-      curve = {
-        _args = [
-          "myBezier"
-          {
-            type = "bezier";
-            points = [
-              [ 0.05 0.9 ]
-              [ 0.1 1.05 ]
-            ];
-          }
-        ];
-      };
-
-      animation =  [
-        { leaf = "windows"; enabled = true; speed = 7; bezier = "myBezier"; }
-        { leaf = "windowsOut"; enabled = true; speed = 7; bezier = "default"; style = "popin 80%"; }
-        { leaf = "border"; enabled = true; speed = 10; bezier = "default"; }
-        { leaf = "borderangle"; enabled = true; speed = 8; bezier = "default"; }
-        { leaf = "fade"; enabled = true; speed = 7; bezier = "default"; }
-        { leaf = "workspaces"; enabled = true; speed = 6; bezier = "default"; }
-      ];
-
-      device = {
-        name = "surface-arc-mouse";
-        scroll_factor = 0.3;
-        sensitivity = -0.5;
-      };
-
-      gesture = {
-        fingers = 3;
-        direction = "horizontal";
-        action = "workspace";
-      };
-
-      on = [
-        {
-          _args = [
-            "hyprland.start"
-            (mkLuaInline ''
-              function()
-                hl.exec_cmd("dbus-update-activation-environment --systemd --all")
-                hl.exec_cmd("uwsm app -- hyprpaper")
-              end
-            '')
-          ];
+            focus-follows-mouse
+            mod-key "Super"
         }
-      ];
 
-      bind = [
-        (bind (mod "Return") (exec "ghostty +new-window"))
-        (bind (mod "i") (exec "firefox"))
-        (bind (mod "e") (exec "emacs"))
-        (bind (modShift "Q") "hl.dsp.window.close()")
-        (bind (modShift "M") (exec "uwsm stop"))
-        (bind (mod "F") (exec "thunar"))
-        (bind (modShift "Space") ''hl.dsp.window.float({ action = "toggle" })'')
-        (bind (modShift "K") (exec "hyprctl switchxkblayout current next"))
+        layout {
+            gaps 4
 
-        # use walker to show exec menu
-        (bind (mod "Space") (exec "walker"))
+            default-column-width { proportion 0.5; }
 
-        (bind (modShift "right") ''hl.dsp.window.move({ direction = "r" })'')
-        (bind (modShift "up") ''hl.dsp.window.move({ direction = "u" })'')
-        (bind (modShift "down") ''hl.dsp.window.move({ direction = "d" })'')
+            focus-ring {
+                off
+            }
 
-        (bind (modCtrl "left") ''hl.dsp.workspace.move({ monitor = "l" })'')
-        (bind (modCtrl "right") ''hl.dsp.workspace.move({ monitor = "r" })'')
+            border {
+                width 2
+                active-gradient from="#89b4fa" to="#a6e3a1" angle=45
+                inactive-color "#1e1e2e"
+            }
+        }
 
-        (bind (mod "left") ''hl.dsp.focus({ direction = "l" })'')
-        (bind (mod "right") ''hl.dsp.focus({ direction = "r" })'')
-        (bind (mod "up") ''hl.dsp.focus({ direction = "u" })'')
-        (bind (mod "down") ''hl.dsp.focus({ direction = "d" })'')
+        screenshot-path "~/screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
 
-        (bind (mod "mouse_down") ''hl.dsp.focus({ workspace = "e+1" })'')
-        (bind (mod "mouse_up") ''hl.dsp.focus({ workspace = "e-1" })'')
+        prefer-no-csd
 
-        (bind (modShift "p") (exec "grimblast -n -f copysave active"))
-        (bind (modShift "a") (exec "grimblast -n -f copysave area"))
-        (bind (modAlt "p") (exec "grimblast -n -f copysave output"))
-        (bind (modCtrl "p") (exec "grimblast -n -f copysave screen"))
+        xwayland-satellite {
+            path "${pkgs.xwayland-satellite}/bin/xwayland-satellite"
+        }
 
-        (bind (modShift "S") (exec "wlogout"))
-        (bind (luaString "ALT + Tab") "hl.dsp.window.cycle_next({})")
+        window-rule {
+            geometry-corner-radius 5
+            clip-to-geometry true
+        }
 
-        (bindWith (mod "mouse:272") "hl.dsp.window.drag()" { mouse = true; })
-        (bindWith (mod "mouse:273") "hl.dsp.window.resize()" { mouse = true; })
-      ] ++ (
-        # workspaces
-        # binds $mod + [shift +] {1..9} to [move to] workspace {1..9}
-        builtins.concatLists (builtins.genList (i:
-          let ws = i + 1;
-          in [
-            (bind (mod (toString ws)) "hl.dsp.focus({ workspace = ${toString ws} })")
-            (bind (modShift (toString ws)) "hl.dsp.window.move({ workspace = ${toString ws} })")
-          ]
-        )
-          9)
-      );
+        window-rule {
+            match app-id=r#"firefox$"# title="^Picture-in-Picture$"
+            open-floating true
+        }
+
+        window-rule {
+            match is-window-cast-target=true
+
+            border {
+                active-color "#f38ba8"
+                inactive-color "#7d0d2d"
+            }
+        }
+
+        ${cfg.extraConfig}
+
+        binds {
+            Mod+Return { spawn "ghostty" "+new-window"; }
+            Mod+I { spawn "firefox"; }
+            Mod+E { spawn "emacs"; }
+            Mod+Shift+Q { close-window; }
+            Mod+Shift+M { quit; }
+            Mod+F { spawn "thunar"; }
+            Mod+Shift+Space { toggle-window-floating; }
+            Mod+Shift+K { switch-layout "next"; }
+            Mod+M { maximize-window-to-edges; }
+            Mod+Shift+F { fullscreen-window; }
+
+            // use walker to show exec menu
+            Mod+Space { spawn "walker"; }
+            Alt+Tab { focus-window-previous; }
+
+            Mod+Shift+Left { move-column-left; }
+            Mod+Shift+Right { move-column-right; }
+            Mod+Shift+Up { move-window-up; }
+            Mod+Shift+Down { move-window-down; }
+
+            Mod+Ctrl+Left { move-workspace-to-monitor-left; }
+            Mod+Ctrl+Right { move-workspace-to-monitor-right; }
+
+            Mod+Left { focus-column-or-monitor-left; }
+            Mod+Right { focus-column-or-monitor-right; }
+            Mod+Up { focus-window-or-monitor-up; }
+            Mod+Down { focus-window-or-monitor-down; }
+
+            Mod+WheelScrollDown cooldown-ms=150 { focus-workspace-down; }
+            Mod+WheelScrollUp cooldown-ms=150 { focus-workspace-up; }
+
+            Mod+Shift+P { screenshot-window; }
+            Mod+Shift+A { screenshot; }
+            Mod+Alt+P { screenshot-screen; }
+            Mod+Ctrl+P { screenshot-screen; }
+
+            Mod+Shift+S { spawn "wlogout"; }
+            Mod+Alt+L allow-when-locked=true { spawn "${pkgs.swaylock-effects}/bin/swaylock"; }
+            Mod+Ctrl+Shift+F { toggle-windowed-fullscreen; }
+            Mod+Alt+C { set-dynamic-cast-window; }
+            Mod+Shift+C { set-dynamic-cast-monitor; }
+            Mod+Ctrl+C { clear-dynamic-cast-target; }
+
+            Mod+1 { focus-workspace "1"; }
+            Mod+2 { focus-workspace "2"; }
+            Mod+3 { focus-workspace "3"; }
+            Mod+4 { focus-workspace "4"; }
+            Mod+5 { focus-workspace "5"; }
+            Mod+6 { focus-workspace "6"; }
+            Mod+7 { focus-workspace "7"; }
+            Mod+8 { focus-workspace "8"; }
+            Mod+9 { focus-workspace "9"; }
+
+            Mod+Shift+1 { move-window-to-workspace "1"; }
+            Mod+Shift+2 { move-window-to-workspace "2"; }
+            Mod+Shift+3 { move-window-to-workspace "3"; }
+            Mod+Shift+4 { move-window-to-workspace "4"; }
+            Mod+Shift+5 { move-window-to-workspace "5"; }
+            Mod+Shift+6 { move-window-to-workspace "6"; }
+            Mod+Shift+7 { move-window-to-workspace "7"; }
+            Mod+Shift+8 { move-window-to-workspace "8"; }
+            Mod+Shift+9 { move-window-to-workspace "9"; }
+
+            ${cfg.extraBinds}
+
+            Mod+Escape allow-inhibiting=false { toggle-keyboard-shortcuts-inhibit; }
+        }
+      '';
     };
   }
 #+end_src
 
 ** Walker
-[[https://github.com/abenz1267/walker][This]] is how I launch applications. It is bound to Win+Space in the hyprland config above.
+[[https://github.com/abenz1267/walker][This]] is how I launch applications. It is bound to Win+Space in the niri config above.
 Installed as a home-manager module from the walker flake with ~runAsService~ for instant launches.
-The Walker module imports and enables Elephant through Home Manager. Both services are tied to the user ~graphical-session.target~, so Hyprland must be launched through UWSM rather than the plain ~hyprland.desktop~ session.
+The Walker module imports and enables Elephant through Home Manager. Both services are tied to the user ~graphical-session.target~, so Niri must be launched through ~niri-session~ rather than plain ~niri --session~.
 #+begin_src nix :tangle home/walker.nix :noweb tangle :mkdirp yes.
   {
     programs.walker = {
@@ -2638,28 +2542,12 @@ As you might notice, there are a lot more kernel modules. This device has thunde
 *** Home
 This is mostly about configuring the monitor and key bindings. And laptop specific utilities.
 #+begin_src nix :tangle machines/smallbox/home.nix :noweb tangle :mkdirp yes
-  { lib, pkgs, ... } :
+  { pkgs, ... } :
   let
-    inherit (lib.generators) mkLuaInline;
-    luaString = builtins.toJSON;
-    bind = key: dispatcher: {
-      _args = [
-        (mkLuaInline key)
-        (mkLuaInline dispatcher)
-      ];
-    };
-    bindWith = key: dispatcher: flags: {
-      _args = [
-        (mkLuaInline key)
-        (mkLuaInline dispatcher)
-        flags
-      ];
-    };
-    exec = command: "hl.dsp.exec_cmd(${luaString command})";
-    startOn = workspace: command: ''
-      hl.exec_cmd(${luaString command}, { workspace = ${luaString "${workspace} silent"} })
-    '';
-  in {
+    mainOutput = "PNP(AOC) Q3279WG5B 0x00000161";
+    laptopOutput = "eDP-1";
+  in
+  {
     imports = [
       ../../home
     ];
@@ -2669,46 +2557,56 @@ This is mostly about configuring the monitor and key bindings. And laptop specif
       davinci-resolve
     ];
 
-    wayland.windowManager.hyprland.settings = {
-      bind = [
-        (bindWith (luaString "XF86MonBrightnessUp") (exec "brightnessctl set 5%+") { repeating = true; })
-        (bindWith (luaString "XF86MonBrightnessDown") (exec "brightnessctl set 5%-") { repeating = true; })
-        (bindWith (luaString "XF86AudioRaiseVolume") (exec "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+") { repeating = true; })
-        (bindWith (luaString "XF86AudioLowerVolume") (exec "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-") { repeating = true; })
-        (bindWith (luaString "XF86AudioMute") (exec "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle") { locked = true; })
-        (bindWith (luaString "XF86AudioMicMute") (exec "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle") { locked = true; })
-        (bindWith (luaString "switch:on:Lid Switch") (exec ''hyprctl keyword monitor "eDP-1, disable"'') { locked = true; })
-        (bindWith (luaString "switch:off:Lid Switch") (exec ''hyprctl keyword monitor "eDP-1, preferred, 2560x0, 1.5"'') { locked = true; })
-      ];
+    nambiar.niri.extraConfig = ''
+      // Niri reports the external display by make/model/serial, unlike Hyprland's desc: name.
+      output "${mainOutput}" {
+          scale 1
+          position x=0 y=0
+          focus-at-startup
+      }
 
-      monitor = [
-        { output = "desc:AOC Q3279WG5B 0x00000161"; mode = "preferred"; position = "0x0"; scale = 1; }      # main monitor
-        { output = "eDP-1"; mode = "preferred"; position = "2560x0"; scale = 1.5; }  # laptop monitor
-      ];
+      output "${laptopOutput}" {
+          scale 1.5
+          position x=2560 y=0
+      }
 
-      workspace_rule = [
-        { workspace = "1"; monitor = "desc:AOC Q3279WG5B 0x00000161"; default = true; }
-        { workspace = "2"; monitor = "desc:AOC Q3279WG5B 0x00000161"; default = true; }
-        { workspace = "3"; monitor = "desc:AOC Q3279WG5B 0x00000161"; default = true; }
-        { workspace = "5"; monitor = "eDP-1"; default = true; }
-        { workspace = "6"; monitor = "eDP-1"; default = true; }
-      ];
+      workspace "1" { open-on-output "${mainOutput}"; }
+      workspace "2" { open-on-output "${mainOutput}"; }
+      workspace "3" { open-on-output "${mainOutput}"; }
+      workspace "4" { open-on-output "${mainOutput}"; }
+      workspace "5" { open-on-output "${laptopOutput}"; }
+      workspace "6" { open-on-output "${laptopOutput}"; }
 
-      on = [
-        {
-          _args = [
-            "hyprland.start"
-            (mkLuaInline ''
-              function()
-                ${startOn "1" "firefox"}
-                ${startOn "2" "emacs"}
-                ${startOn "5" "slack"}
-              end
-            '')
-          ];
-        }
-      ];
-    };
+      spawn-at-startup "firefox"
+      spawn-at-startup "emacs"
+      spawn-at-startup "slack"
+
+      window-rule {
+          match at-startup=true app-id=r#"firefox$"#
+          open-on-workspace "1"
+      }
+
+      window-rule {
+          match at-startup=true app-id=r#"emacs"#
+          open-on-workspace "2"
+      }
+
+      window-rule {
+          match at-startup=true app-id=r#"Slack"#
+          match at-startup=true app-id=r#"slack"#
+          open-on-workspace "5"
+          open-maximized-to-edges true
+      }
+    '';
+
+    nambiar.niri.extraBinds = ''
+      XF86MonBrightnessUp allow-when-locked=true { spawn "brightnessctl" "set" "5%+"; }
+      XF86MonBrightnessDown allow-when-locked=true { spawn "brightnessctl" "set" "5%-"; }
+      XF86AudioRaiseVolume allow-when-locked=true { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "5%+"; }
+      XF86AudioLowerVolume allow-when-locked=true { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "5%-"; }
+      XF86AudioMute allow-when-locked=true { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SINK@" "toggle"; }
+      XF86AudioMicMute allow-when-locked=true { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SOURCE@" "toggle"; }
+    '';
   }
 #+end_src
 

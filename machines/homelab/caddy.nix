@@ -43,11 +43,11 @@ in
       chat.${domain} {
         reverse_proxy /_matrix/* localhost:8008
         reverse_proxy /_synapse/client/* localhost:8008
-      
+
         reverse_proxy localhost:8008
-      
+
         respond /.well-known/matrix/server "{\"m.server\": \"chat.${domain}:443\"}" 200
-      
+
         respond /.well-known/matrix/client "{\"m.homeserver\": {\"base_url\": \"chat.${domain}\"}, \"m.identity_server\": {\"base_url\": \"https://vector.im\"}}" 200
       }
     '';

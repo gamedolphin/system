@@ -4,17 +4,20 @@
 { pkgs, ... }:
 {
   home.packages = with pkgs; [
-    hyprpaper
+    swaybg
   ];
 
-  services.hyprpaper.enable = true;
-  services.hyprpaper.settings = {
-    ipc = "on";
-    splash = false;
-
-    wallpaper = {
-      monitor = "";
-      path = "~/.background-image.png";
+  systemd.user.services.swaybg = {
+    Unit = {
+      Description = "Wallpaper";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+      ConditionEnvironment = "WAYLAND_DISPLAY";
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
+    Service = {
+      ExecStart = "${pkgs.swaybg}/bin/swaybg --image %h/.background-image.png --mode fill";
+      Restart = "on-failure";
     };
   };
 

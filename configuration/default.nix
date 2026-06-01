@@ -11,7 +11,7 @@
     ./locale.nix
     ./nix-settings.nix
     ./networking.nix
-    ./hyprland.nix
+    ./niri.nix
     ./services.nix
     ./audio.nix
     ./steam.nix
@@ -33,11 +33,11 @@
     tmux       # seems useful for a bunch of things
     element-desktop
   ];
-  
+
   # to enable icons with wlogout
   # https://github.com/catppuccin/nix/issues/584
   programs.gdk-pixbuf.modulePackages = [ pkgs.librsvg ];
-  
+
   services.minidlna = {
     enable = true;
     openFirewall = true;
@@ -49,12 +49,12 @@
       inotify = "yes";
     };
   };
-  
+
   users.users.minidlna = {
     extraGroups = [ "users" ];
   };
 
-  
+
 
   users.users.${user.username} = {
     isNormalUser = true;

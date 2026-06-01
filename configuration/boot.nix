@@ -20,7 +20,7 @@
 
     loader = {
       systemd-boot.enable = true;                # systemd-boot
-      systemd-boot.configurationLimit = 2;
+      systemd-boot.configurationLimit = 5;
       efi.canTouchEfiVariables = true;           # allow editing efi to edit the boot loader
 
 

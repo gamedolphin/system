@@ -11,7 +11,7 @@
     enable = true;
     settings = {
       default_session = {
-        command = pkgs.lib.mkForce "${pkgs.tuigreet}/bin/tuigreet --remember --time --time-format '%I:%M %p | %a • %h | %F' --cmd '${pkgs.uwsm}/bin/uwsm start -e -D Hyprland hyprland.desktop'";
+        command = pkgs.lib.mkForce "${pkgs.tuigreet}/bin/tuigreet --remember --time --time-format '%I:%M %p | %a • %h | %F' --cmd '${pkgs.niri}/bin/niri-session'";
       };
     };
   };
