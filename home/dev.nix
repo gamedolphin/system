@@ -13,6 +13,7 @@
       enable = true;
       enableZshIntegration = true;
       enableBashIntegration = true;
+      settings.gcloud.disabled = true;
     };
 
     # fuzzy finder

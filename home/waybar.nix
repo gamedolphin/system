@@ -40,9 +40,9 @@
   systemd.user.services.ashell = {
     Unit.PartOf = [ "graphical-session.target" ];
     Service = {
-      ExecStartPre = "${pkgs.coreutils}/bin/sleep 2";
+      ExecStartPre = "${pkgs.coreutils}/bin/sleep 5";
       Restart = lib.mkForce "always";
-      RestartSec = "2s";
+      RestartSec = "10s";
     };
   };
 }

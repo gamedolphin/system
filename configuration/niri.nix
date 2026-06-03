@@ -3,12 +3,15 @@
 # Any changes made here will be overwritten.
 { pkgs, ... }:
 {
-  environment.systemPackages = with pkgs; [
-    niri
-    xwayland-satellite # X11 app support for niri
-  ];
+  programs.niri = {
+    enable = true;
+    package = pkgs.niri;
+  };
 
-  programs.niri.enable = true;
+  niri-flake.cache.enable = false;
+
+  # Keep using the existing polkit-gnome user agent instead of niri-flake's KDE agent.
+  systemd.user.services.niri-flake-polkit.enable = false;
 
   environment.sessionVariables = {
     XDG_SESSION_TYPE = "wayland";

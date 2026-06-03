@@ -41,6 +41,11 @@
 
     llm-agents.url = "github:numtide/llm-agents.nix";
 
+    niri = {
+      url = "github:sodiboo/niri-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     elephant.url = "github:abenz1267/elephant";
 
     walker = {
@@ -60,6 +65,7 @@
       deploy-rs,
       disko,
       llm-agents,
+      niri,
       walker,
       ...
   }@inputs:
@@ -115,6 +121,7 @@
                     ];
                   };
                 }
+                niri.nixosModules.niri               # niri-flake
                 disko.nixosModules.disko             # disks
                 sops-nix.nixosModules.sops           # sops
                 catppuccin.nixosModules.catppuccin   # theme

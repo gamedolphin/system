@@ -8,171 +8,174 @@
   ...
 }:
 let
-  cfg = config.nambiar.niri;
+  inherit (config.lib.niri) actions;
 in
 {
-  options.nambiar.niri = {
-    extraConfig = lib.mkOption {
-      type = lib.types.lines;
-      default = "";
-      description = "Extra top-level niri KDL appended before key bindings.";
-    };
-
-    extraBinds = lib.mkOption {
-      type = lib.types.lines;
-      default = "";
-      description = "Extra niri KDL key bindings inserted into the binds block.";
-    };
-  };
-
   config = {
     # required for the default Niri config
     programs.kitty.enable = true;
 
     services.polkit-gnome.enable = true;
 
-    xdg.configFile."niri/config.kdl".text = ''
-      input {
-          keyboard {
-              xkb {
-                  layout "us,se"
-                  options "ctrl:nocaps"
-              }
+    programs.niri.settings = with actions; {
+      input = {
+        keyboard = {
+          xkb = {
+            layout = "us,se";
+            options = "ctrl:nocaps";
+          };
+          track-layout = "global";
+        };
 
-              track-layout "global"
-          }
+        touchpad.scroll-factor = 0.5;
 
-          touchpad {
-              scroll-factor 0.5
-          }
+        mouse = {
+          accel-speed = -0.5;
+          accel-profile = "adaptive";
+          scroll-factor = 0.5;
+        };
 
-          mouse {
-              accel-speed -0.5
-              accel-profile "adaptive"
-              scroll-factor 0.5
-          }
+        focus-follows-mouse.enable = true;
+        mod-key = "Super";
+      };
 
-          focus-follows-mouse
-          mod-key "Super"
-      }
+      layout = {
+        gaps = 4;
+        default-column-width.proportion = 0.5;
 
-      layout {
-          gaps 4
+        focus-ring = {
+          enable = true;
+          width = 2;
+          active.gradient = {
+            from = "#89b4fa";
+            to = "#a6e3a1";
+            angle = 45;
+          };
+          inactive.color = "#1e1e2e";
+        };
 
-          default-column-width { proportion 0.5; }
+        border.enable = false;
+      };
 
-          focus-ring {
-              off
-          }
+      screenshot-path = "~/screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png";
+      prefer-no-csd = true;
 
-          border {
-              width 2
-              active-gradient from="#89b4fa" to="#a6e3a1" angle=45
-              inactive-color "#1e1e2e"
-          }
-      }
+      xwayland-satellite.path = lib.getExe pkgs.xwayland-satellite;
 
-      screenshot-path "~/screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
+      hotkey-overlay.skip-at-startup = true;
 
-      prefer-no-csd
+      window-rules = [
+        {
+          geometry-corner-radius = {
+            top-left = 5.0;
+            top-right = 5.0;
+            bottom-right = 5.0;
+            bottom-left = 5.0;
+          };
+          clip-to-geometry = true;
+        }
+        {
+          matches = [
+            {
+              app-id = "firefox$";
+              title = "^Picture-in-Picture$";
+            }
+          ];
+          open-floating = true;
+        }
+        {
+          matches = [
+            { is-window-cast-target = true; }
+          ];
+          focus-ring = {
+            active.color = "#f38ba8";
+            inactive.color = "#7d0d2d";
+          };
+        }
+      ];
 
-      xwayland-satellite {
-          path "${pkgs.xwayland-satellite}/bin/xwayland-satellite"
-      }
+      binds = {
+        "Mod+Return".action = spawn "ghostty" "+new-window";
+        "Mod+I".action = spawn "firefox";
+        "Mod+E".action = spawn "emacs";
+        "Mod+Shift+Q".action = close-window;
+        "Mod+Shift+M".action = quit;
+        "Mod+F".action = spawn "thunar";
+        "Mod+Shift+Space".action = toggle-window-floating;
+        "Mod+Shift+K".action = switch-layout "next";
+        "Mod+M".action = maximize-window-to-edges;
+        "Mod+Shift+F".action = fullscreen-window;
 
-      hotkey-overlay {
-          skip-at-startup
-      }
+        # use walker to show exec menu
+        "Mod+Space".action = spawn "walker";
+        "Alt+Tab".action = focus-window-previous;
 
-      window-rule {
-          geometry-corner-radius 5
-          clip-to-geometry true
-      }
+        "Mod+Shift+Left".action = move-column-left;
+        "Mod+Shift+Right".action = move-column-right;
+        "Mod+Shift+Up".action = move-window-up;
+        "Mod+Shift+Down".action = move-window-down;
 
-      window-rule {
-          match app-id=r#"firefox$"# title="^Picture-in-Picture$"
-          open-floating true
-      }
+        "Mod+Ctrl+Left".action = move-workspace-to-monitor-left;
+        "Mod+Ctrl+Right".action = move-workspace-to-monitor-right;
 
-      window-rule {
-          match is-window-cast-target=true
+        "Mod+Left".action = focus-column-or-monitor-left;
+        "Mod+A".action = focus-column-or-monitor-left;
+        "Mod+Right".action = focus-column-or-monitor-right;
+        "Mod+D".action = focus-column-or-monitor-right;
+        "Mod+Up".action = focus-window-or-monitor-up;
+        "Mod+W".action = focus-window-or-monitor-up;
+        "Mod+Down".action = focus-window-or-monitor-down;
+        "Mod+S".action = focus-window-or-monitor-down;
 
-          border {
-              active-color "#f38ba8"
-              inactive-color "#7d0d2d"
-          }
-      }
+        "Mod+WheelScrollDown" = {
+          cooldown-ms = 150;
+          action = focus-workspace-down;
+        };
+        "Mod+WheelScrollUp" = {
+          cooldown-ms = 150;
+          action = focus-workspace-up;
+        };
 
-      ${cfg.extraConfig}
+        "Mod+Shift+P".action = { screenshot-window = [ ]; };
+        "Mod+Shift+A".action = { screenshot = [ ]; };
+        "Mod+Alt+P".action = { screenshot-screen = [ ]; };
+        "Mod+Ctrl+P".action = { screenshot-screen = [ ]; };
 
-      binds {
-          Mod+Return { spawn "ghostty" "+new-window"; }
-          Mod+I { spawn "firefox"; }
-          Mod+E { spawn "emacs"; }
-          Mod+Shift+Q { close-window; }
-          Mod+Shift+M { quit; }
-          Mod+F { spawn "thunar"; }
-          Mod+Shift+Space { toggle-window-floating; }
-          Mod+Shift+K { switch-layout "next"; }
-          Mod+M { maximize-window-to-edges; }
-          Mod+Shift+F { fullscreen-window; }
+        "Mod+Shift+S".action = spawn "wlogout";
+        "Mod+Alt+L" = {
+          allow-when-locked = true;
+          action = spawn "${pkgs.swaylock-effects}/bin/swaylock";
+        };
+        "Mod+Ctrl+Shift+F".action = toggle-windowed-fullscreen;
+        "Mod+Alt+C".action = set-dynamic-cast-window;
+        "Mod+Shift+C".action = set-dynamic-cast-monitor;
+        "Mod+Ctrl+C".action = clear-dynamic-cast-target;
 
-          // use walker to show exec menu
-          Mod+Space { spawn "walker"; }
-          Alt+Tab { focus-window-previous; }
+        "Mod+1".action = focus-workspace "1";
+        "Mod+2".action = focus-workspace "2";
+        "Mod+3".action = focus-workspace "3";
+        "Mod+4".action = focus-workspace "4";
+        "Mod+5".action = focus-workspace "5";
+        "Mod+6".action = focus-workspace "6";
+        "Mod+7".action = focus-workspace "7";
+        "Mod+8".action = focus-workspace "8";
+        "Mod+9".action = focus-workspace "9";
 
-          Mod+Shift+Left { move-column-left; }
-          Mod+Shift+Right { move-column-right; }
-          Mod+Shift+Up { move-window-up; }
-          Mod+Shift+Down { move-window-down; }
+        "Mod+Shift+1".action = { move-window-to-workspace = "1"; };
+        "Mod+Shift+2".action = { move-window-to-workspace = "2"; };
+        "Mod+Shift+3".action = { move-window-to-workspace = "3"; };
+        "Mod+Shift+4".action = { move-window-to-workspace = "4"; };
+        "Mod+Shift+5".action = { move-window-to-workspace = "5"; };
+        "Mod+Shift+6".action = { move-window-to-workspace = "6"; };
+        "Mod+Shift+7".action = { move-window-to-workspace = "7"; };
+        "Mod+Shift+8".action = { move-window-to-workspace = "8"; };
+        "Mod+Shift+9".action = { move-window-to-workspace = "9"; };
 
-          Mod+Ctrl+Left { move-workspace-to-monitor-left; }
-          Mod+Ctrl+Right { move-workspace-to-monitor-right; }
-
-          Mod+Left { focus-column-or-monitor-left; }
-          Mod+Right { focus-column-or-monitor-right; }
-          Mod+Up { focus-window-or-monitor-up; }
-          Mod+Down { focus-window-or-monitor-down; }
-
-          Mod+WheelScrollDown cooldown-ms=150 { focus-workspace-down; }
-          Mod+WheelScrollUp cooldown-ms=150 { focus-workspace-up; }
-
-          Mod+Shift+P { screenshot-window; }
-          Mod+Shift+A { screenshot; }
-          Mod+Alt+P { screenshot-screen; }
-          Mod+Ctrl+P { screenshot-screen; }
-
-          Mod+Shift+S { spawn "wlogout"; }
-          Mod+Alt+L allow-when-locked=true { spawn "${pkgs.swaylock-effects}/bin/swaylock"; }
-          Mod+Ctrl+Shift+F { toggle-windowed-fullscreen; }
-          Mod+Alt+C { set-dynamic-cast-window; }
-          Mod+Shift+C { set-dynamic-cast-monitor; }
-          Mod+Ctrl+C { clear-dynamic-cast-target; }
-
-          Mod+1 { focus-workspace "1"; }
-          Mod+2 { focus-workspace "2"; }
-          Mod+3 { focus-workspace "3"; }
-          Mod+4 { focus-workspace "4"; }
-          Mod+5 { focus-workspace "5"; }
-          Mod+6 { focus-workspace "6"; }
-          Mod+7 { focus-workspace "7"; }
-          Mod+8 { focus-workspace "8"; }
-          Mod+9 { focus-workspace "9"; }
-
-          Mod+Shift+1 { move-window-to-workspace "1"; }
-          Mod+Shift+2 { move-window-to-workspace "2"; }
-          Mod+Shift+3 { move-window-to-workspace "3"; }
-          Mod+Shift+4 { move-window-to-workspace "4"; }
-          Mod+Shift+5 { move-window-to-workspace "5"; }
-          Mod+Shift+6 { move-window-to-workspace "6"; }
-          Mod+Shift+7 { move-window-to-workspace "7"; }
-          Mod+Shift+8 { move-window-to-workspace "8"; }
-          Mod+Shift+9 { move-window-to-workspace "9"; }
-
-          ${cfg.extraBinds}
-
-          Mod+Escape allow-inhibiting=false { toggle-keyboard-shortcuts-inhibit; }
-      }
-    '';
+        "Mod+Escape" = {
+          allow-inhibiting = false;
+          action = toggle-keyboard-shortcuts-inhibit;
+        };
+      };
+    };
   };
 }

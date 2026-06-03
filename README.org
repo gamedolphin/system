@@ -177,6 +177,11 @@ The inputs for my system's configuration are very simple
 
       llm-agents.url = "github:numtide/llm-agents.nix";
 
+      niri = {
+        url = "github:sodiboo/niri-flake";
+        inputs.nixpkgs.follows = "nixpkgs";
+      };
+
       elephant.url = "github:abenz1267/elephant";
 
       walker = {
@@ -206,6 +211,7 @@ We also add a devshell that makes editing this repository easier in emacs.
       deploy-rs,
       disko,
       llm-agents,
+      niri,
       walker,
       ...
   }@inputs:
@@ -244,6 +250,7 @@ We also add a devshell that makes editing this repository easier in emacs.
                 <<flake-emacs-module>>
                 <<flake-config-module>>
                 <<flake-home-module>>
+                niri.nixosModules.niri               # niri-flake
                 disko.nixosModules.disko             # disks
                 sops-nix.nixosModules.sops           # sops
                 catppuccin.nixosModules.catppuccin   # theme
@@ -649,12 +656,15 @@ The key bindings and monitor configuration are done in the home manager section.
 #+begin_src nix :tangle configuration/niri.nix :noweb tangle :mkdirp yes
   { pkgs, ... }:
   {
-    environment.systemPackages = with pkgs; [
-      niri
-      xwayland-satellite # X11 app support for niri
-    ];
+    programs.niri = {
+      enable = true;
+      package = pkgs.niri;
+    };
 
-    programs.niri.enable = true;
+    niri-flake.cache.enable = false;
+
+    # Keep using the existing polkit-gnome user agent instead of niri-flake's KDE agent.
+    systemd.user.services.niri-flake-polkit.enable = false;
 
     environment.sessionVariables = {
       XDG_SESSION_TYPE = "wayland";
@@ -1047,9 +1057,9 @@ Mostly styling and enabling modules in the [[https://github.com/Alexays/Waybar][
     systemd.user.services.ashell = {
       Unit.PartOf = [ "graphical-session.target" ];
       Service = {
-        ExecStartPre = "${pkgs.coreutils}/bin/sleep 2";
+        ExecStartPre = "${pkgs.coreutils}/bin/sleep 5";
         Restart = lib.mkForce "always";
-        RestartSec = "2s";
+        RestartSec = "10s";
       };
     };
   }
@@ -1102,11 +1112,51 @@ They are configured below.
   { config, pkgs, ... } :
   let
     lockCommand = "${pkgs.procps}/bin/pidof swaylock || ${pkgs.swaylock-effects}/bin/swaylock";
+    resumeDisplay = pkgs.writeShellScriptBin "niri-resume-display" ''
+      set -u
+
+      aoc_name="PNP(AOC) Q3279WG5B 0x00000161"
+
+      log() {
+        echo "niri-resume-display: $*"
+      }
+
+      ${pkgs.niri}/bin/niri msg action power-on-monitors >/dev/null 2>&1 || log "initial power-on-monitors failed"
+      ${pkgs.brightnessctl}/bin/brightnessctl -r >/dev/null 2>&1 || true
+
+      # The AOC is behind an AMD USB4/MST path that can churn for a while after resume.
+      # Restart layer-shell clients only after Niri sees the monitor, or after the wait expires.
+      ${pkgs.coreutils}/bin/sleep 5
+
+      seen=0
+      for i in $(${pkgs.coreutils}/bin/seq 1 75); do
+        if ${pkgs.niri}/bin/niri msg outputs 2>/dev/null | ${pkgs.gnugrep}/bin/grep -Fq "$aoc_name"; then
+          log "AOC visible in niri after $i seconds"
+          seen=1
+          break
+        fi
+
+        if [ $((i % 5)) -eq 0 ]; then
+          ${pkgs.niri}/bin/niri msg action power-on-monitors >/dev/null 2>&1 || true
+        fi
+
+        ${pkgs.coreutils}/bin/sleep 1
+      done
+
+      if [ "$seen" -eq 0 ]; then
+        log "AOC still not visible after waiting; restarting ashell against current outputs"
+      fi
+
+      ${pkgs.niri}/bin/niri msg action power-on-monitors >/dev/null 2>&1 || true
+      ${pkgs.systemd}/bin/systemctl --user try-restart ashell.service >/dev/null 2>&1 || log "ashell try-restart failed"
+    '';
+    resumeDisplayCommand = "${pkgs.systemd}/bin/systemctl --user start niri-resume-display.service";
   in
   {
     home.packages = with pkgs; [
       swaylock-effects
       wlogout
+      resumeDisplay
     ];
 
 
@@ -1127,30 +1177,43 @@ They are configured below.
         enable = true;
         events = {
           lock = lockCommand;                                                          # avoid starting multiple swaylock instances.
-          before-sleep = "${pkgs.systemd}/bin/loginctl lock-session";                 # lock before suspend.
-          after-resume = "${pkgs.niri}/bin/niri msg action power-on-monitors";         # to avoid having to press a key twice to turn on the display.
+          before-sleep = "${pkgs.systemd}/bin/loginctl lock-session";                  # lock before suspend.
+          after-resume = resumeDisplayCommand;                                         # let USB4/MST outputs settle before restarting shell surfaces.
         };
 
         timeouts = [
           {
-            timeout = 150;                                                            # 2.5min.
+            timeout = 150;                                                             # 2.5min.
             command = "${pkgs.brightnessctl}/bin/brightnessctl -s set 10";             # set monitor backlight to minimum, avoid 0 on OLED monitor.
             resumeCommand = "${pkgs.brightnessctl}/bin/brightnessctl -r";              # monitor backlight restore.
           }
           {
-            timeout = 300;                                                            # 5min
+            timeout = 300;                                                             # 5min
             command = "${pkgs.systemd}/bin/loginctl lock-session";                     # lock screen when timeout has passed
           }
           {
-            timeout = 330;                                                            # 5.5min
+            timeout = 330;                                                             # 5.5min
             command = "${pkgs.niri}/bin/niri msg action power-off-monitors";           # screen off when timeout has passed
-            resumeCommand = "${pkgs.niri}/bin/niri msg action power-on-monitors && ${pkgs.brightnessctl}/bin/brightnessctl -r"; # screen on when activity is detected after timeout has fired.
+            resumeCommand = resumeDisplayCommand;                                      # screen on when activity is detected after timeout has fired.
           }
           {
             timeout = 1800;                                                           # 30min
             command = "${pkgs.systemd}/bin/systemctl suspend";                        # suspend pc
           }
         ];
+      };
+    };
+
+    systemd.user.services.niri-resume-display = {
+      Unit = {
+        Description = "Recover Niri outputs and ashell after display resume";
+        After = [ "graphical-session.target" ];
+        PartOf = [ "graphical-session.target" ];
+        ConditionEnvironment = "WAYLAND_DISPLAY";
+      };
+      Service = {
+        Type = "oneshot";
+        ExecStart = "${resumeDisplay}/bin/niri-resume-display";
       };
     };
 
@@ -1266,168 +1329,175 @@ This configures the desktop environment along with the peripherals. The comments
     ...
   }:
   let
-    cfg = config.nambiar.niri;
+    inherit (config.lib.niri) actions;
   in
   {
-    options.nambiar.niri = {
-      extraConfig = lib.mkOption {
-        type = lib.types.lines;
-        default = "";
-        description = "Extra top-level niri KDL appended before key bindings.";
-      };
-
-      extraBinds = lib.mkOption {
-        type = lib.types.lines;
-        default = "";
-        description = "Extra niri KDL key bindings inserted into the binds block.";
-      };
-    };
-
     config = {
       # required for the default Niri config
       programs.kitty.enable = true;
 
       services.polkit-gnome.enable = true;
 
-      xdg.configFile."niri/config.kdl".text = ''
-        input {
-            keyboard {
-                xkb {
-                    layout "us,se"
-                    options "ctrl:nocaps"
-                }
+      programs.niri.settings = with actions; {
+        input = {
+          keyboard = {
+            xkb = {
+              layout = "us,se";
+              options = "ctrl:nocaps";
+            };
+            track-layout = "global";
+          };
 
-                track-layout "global"
-            }
+          touchpad.scroll-factor = 0.5;
 
-            touchpad {
-                scroll-factor 0.5
-            }
+          mouse = {
+            accel-speed = -0.5;
+            accel-profile = "adaptive";
+            scroll-factor = 0.5;
+          };
 
-            mouse {
-                accel-speed -0.5
-                accel-profile "adaptive"
-                scroll-factor 0.5
-            }
+          focus-follows-mouse.enable = true;
+          mod-key = "Super";
+        };
 
-            focus-follows-mouse
-            mod-key "Super"
-        }
+        layout = {
+          gaps = 4;
+          default-column-width.proportion = 0.5;
 
-        layout {
-            gaps 4
+          focus-ring = {
+            enable = true;
+            width = 2;
+            active.gradient = {
+              from = "#89b4fa";
+              to = "#a6e3a1";
+              angle = 45;
+            };
+            inactive.color = "#1e1e2e";
+          };
 
-            default-column-width { proportion 0.5; }
+          border.enable = false;
+        };
 
-            focus-ring {
-                off
-            }
+        screenshot-path = "~/screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png";
+        prefer-no-csd = true;
 
-            border {
-                width 2
-                active-gradient from="#89b4fa" to="#a6e3a1" angle=45
-                inactive-color "#1e1e2e"
-            }
-        }
+        xwayland-satellite.path = lib.getExe pkgs.xwayland-satellite;
 
-        screenshot-path "~/screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
+        hotkey-overlay.skip-at-startup = true;
 
-        prefer-no-csd
+        window-rules = [
+          {
+            geometry-corner-radius = {
+              top-left = 5.0;
+              top-right = 5.0;
+              bottom-right = 5.0;
+              bottom-left = 5.0;
+            };
+            clip-to-geometry = true;
+          }
+          {
+            matches = [
+              {
+                app-id = "firefox$";
+                title = "^Picture-in-Picture$";
+              }
+            ];
+            open-floating = true;
+          }
+          {
+            matches = [
+              { is-window-cast-target = true; }
+            ];
+            focus-ring = {
+              active.color = "#f38ba8";
+              inactive.color = "#7d0d2d";
+            };
+          }
+        ];
 
-        xwayland-satellite {
-            path "${pkgs.xwayland-satellite}/bin/xwayland-satellite"
-        }
+        binds = {
+          "Mod+Return".action = spawn "ghostty" "+new-window";
+          "Mod+I".action = spawn "firefox";
+          "Mod+E".action = spawn "emacs";
+          "Mod+Shift+Q".action = close-window;
+          "Mod+Shift+M".action = quit;
+          "Mod+F".action = spawn "thunar";
+          "Mod+Shift+Space".action = toggle-window-floating;
+          "Mod+Shift+K".action = switch-layout "next";
+          "Mod+M".action = maximize-window-to-edges;
+          "Mod+Shift+F".action = fullscreen-window;
 
-        window-rule {
-            geometry-corner-radius 5
-            clip-to-geometry true
-        }
+          # use walker to show exec menu
+          "Mod+Space".action = spawn "walker";
+          "Alt+Tab".action = focus-window-previous;
 
-        window-rule {
-            match app-id=r#"firefox$"# title="^Picture-in-Picture$"
-            open-floating true
-        }
+          "Mod+Shift+Left".action = move-column-left;
+          "Mod+Shift+Right".action = move-column-right;
+          "Mod+Shift+Up".action = move-window-up;
+          "Mod+Shift+Down".action = move-window-down;
 
-        window-rule {
-            match is-window-cast-target=true
+          "Mod+Ctrl+Left".action = move-workspace-to-monitor-left;
+          "Mod+Ctrl+Right".action = move-workspace-to-monitor-right;
 
-            border {
-                active-color "#f38ba8"
-                inactive-color "#7d0d2d"
-            }
-        }
+          "Mod+Left".action = focus-column-or-monitor-left;
+          "Mod+A".action = focus-column-or-monitor-left;
+          "Mod+Right".action = focus-column-or-monitor-right;
+          "Mod+D".action = focus-column-or-monitor-right;
+          "Mod+Up".action = focus-window-or-monitor-up;
+          "Mod+W".action = focus-window-or-monitor-up;
+          "Mod+Down".action = focus-window-or-monitor-down;
+          "Mod+S".action = focus-window-or-monitor-down;
 
-        ${cfg.extraConfig}
+          "Mod+WheelScrollDown" = {
+            cooldown-ms = 150;
+            action = focus-workspace-down;
+          };
+          "Mod+WheelScrollUp" = {
+            cooldown-ms = 150;
+            action = focus-workspace-up;
+          };
 
-        binds {
-            Mod+Return { spawn "ghostty" "+new-window"; }
-            Mod+I { spawn "firefox"; }
-            Mod+E { spawn "emacs"; }
-            Mod+Shift+Q { close-window; }
-            Mod+Shift+M { quit; }
-            Mod+F { spawn "thunar"; }
-            Mod+Shift+Space { toggle-window-floating; }
-            Mod+Shift+K { switch-layout "next"; }
-            Mod+M { maximize-window-to-edges; }
-            Mod+Shift+F { fullscreen-window; }
+          "Mod+Shift+P".action = { screenshot-window = [ ]; };
+          "Mod+Shift+A".action = { screenshot = [ ]; };
+          "Mod+Alt+P".action = { screenshot-screen = [ ]; };
+          "Mod+Ctrl+P".action = { screenshot-screen = [ ]; };
 
-            // use walker to show exec menu
-            Mod+Space { spawn "walker"; }
-            Alt+Tab { focus-window-previous; }
+          "Mod+Shift+S".action = spawn "wlogout";
+          "Mod+Alt+L" = {
+            allow-when-locked = true;
+            action = spawn "${pkgs.swaylock-effects}/bin/swaylock";
+          };
+          "Mod+Ctrl+Shift+F".action = toggle-windowed-fullscreen;
+          "Mod+Alt+C".action = set-dynamic-cast-window;
+          "Mod+Shift+C".action = set-dynamic-cast-monitor;
+          "Mod+Ctrl+C".action = clear-dynamic-cast-target;
 
-            Mod+Shift+Left { move-column-left; }
-            Mod+Shift+Right { move-column-right; }
-            Mod+Shift+Up { move-window-up; }
-            Mod+Shift+Down { move-window-down; }
+          "Mod+1".action = focus-workspace "1";
+          "Mod+2".action = focus-workspace "2";
+          "Mod+3".action = focus-workspace "3";
+          "Mod+4".action = focus-workspace "4";
+          "Mod+5".action = focus-workspace "5";
+          "Mod+6".action = focus-workspace "6";
+          "Mod+7".action = focus-workspace "7";
+          "Mod+8".action = focus-workspace "8";
+          "Mod+9".action = focus-workspace "9";
 
-            Mod+Ctrl+Left { move-workspace-to-monitor-left; }
-            Mod+Ctrl+Right { move-workspace-to-monitor-right; }
+          "Mod+Shift+1".action = { move-window-to-workspace = "1"; };
+          "Mod+Shift+2".action = { move-window-to-workspace = "2"; };
+          "Mod+Shift+3".action = { move-window-to-workspace = "3"; };
+          "Mod+Shift+4".action = { move-window-to-workspace = "4"; };
+          "Mod+Shift+5".action = { move-window-to-workspace = "5"; };
+          "Mod+Shift+6".action = { move-window-to-workspace = "6"; };
+          "Mod+Shift+7".action = { move-window-to-workspace = "7"; };
+          "Mod+Shift+8".action = { move-window-to-workspace = "8"; };
+          "Mod+Shift+9".action = { move-window-to-workspace = "9"; };
 
-            Mod+Left { focus-column-or-monitor-left; }
-            Mod+Right { focus-column-or-monitor-right; }
-            Mod+Up { focus-window-or-monitor-up; }
-            Mod+Down { focus-window-or-monitor-down; }
-
-            Mod+WheelScrollDown cooldown-ms=150 { focus-workspace-down; }
-            Mod+WheelScrollUp cooldown-ms=150 { focus-workspace-up; }
-
-            Mod+Shift+P { screenshot-window; }
-            Mod+Shift+A { screenshot; }
-            Mod+Alt+P { screenshot-screen; }
-            Mod+Ctrl+P { screenshot-screen; }
-
-            Mod+Shift+S { spawn "wlogout"; }
-            Mod+Alt+L allow-when-locked=true { spawn "${pkgs.swaylock-effects}/bin/swaylock"; }
-            Mod+Ctrl+Shift+F { toggle-windowed-fullscreen; }
-            Mod+Alt+C { set-dynamic-cast-window; }
-            Mod+Shift+C { set-dynamic-cast-monitor; }
-            Mod+Ctrl+C { clear-dynamic-cast-target; }
-
-            Mod+1 { focus-workspace "1"; }
-            Mod+2 { focus-workspace "2"; }
-            Mod+3 { focus-workspace "3"; }
-            Mod+4 { focus-workspace "4"; }
-            Mod+5 { focus-workspace "5"; }
-            Mod+6 { focus-workspace "6"; }
-            Mod+7 { focus-workspace "7"; }
-            Mod+8 { focus-workspace "8"; }
-            Mod+9 { focus-workspace "9"; }
-
-            Mod+Shift+1 { move-window-to-workspace "1"; }
-            Mod+Shift+2 { move-window-to-workspace "2"; }
-            Mod+Shift+3 { move-window-to-workspace "3"; }
-            Mod+Shift+4 { move-window-to-workspace "4"; }
-            Mod+Shift+5 { move-window-to-workspace "5"; }
-            Mod+Shift+6 { move-window-to-workspace "6"; }
-            Mod+Shift+7 { move-window-to-workspace "7"; }
-            Mod+Shift+8 { move-window-to-workspace "8"; }
-            Mod+Shift+9 { move-window-to-workspace "9"; }
-
-            ${cfg.extraBinds}
-
-            Mod+Escape allow-inhibiting=false { toggle-keyboard-shortcuts-inhibit; }
-        }
-      '';
+          "Mod+Escape" = {
+            allow-inhibiting = false;
+            action = toggle-keyboard-shortcuts-inhibit;
+          };
+        };
+      };
     };
   }
 #+end_src
@@ -1530,6 +1600,7 @@ All the miscellaneous dev tools on this computer.
         enable = true;
         enableZshIntegration = true;
         enableBashIntegration = true;
+        settings.gcloud.disabled = true;
       };
 
       # fuzzy finder
@@ -2542,7 +2613,7 @@ As you might notice, there are a lot more kernel modules. This device has thunde
 *** Home
 This is mostly about configuring the monitor and key bindings. And laptop specific utilities.
 #+begin_src nix :tangle machines/smallbox/home.nix :noweb tangle :mkdirp yes
-  { pkgs, ... } :
+  { config, pkgs, ... } :
   let
     mainOutput = "PNP(AOC) Q3279WG5B 0x00000161";
     laptopOutput = "eDP-1";
@@ -2557,56 +2628,106 @@ This is mostly about configuring the monitor and key bindings. And laptop specif
       davinci-resolve
     ];
 
-    nambiar.niri.extraConfig = ''
-      // Niri reports the external display by make/model/serial, unlike Hyprland's desc: name.
-      output "${mainOutput}" {
-          scale 1
-          position x=0 y=0
-          focus-at-startup
-      }
+    programs.niri.settings = with config.lib.niri.actions; {
+      # Niri reports the external display by make/model/serial, unlike Hyprland's desc: name.
+      outputs = {
+        main = {
+          name = mainOutput;
+          scale = 1;
+          position = {
+            x = 0;
+            y = 0;
+          };
+          focus-at-startup = true;
+        };
 
-      output "${laptopOutput}" {
-          scale 1.5
-          position x=2560 y=0
-      }
+        laptop = {
+          name = laptopOutput;
+          scale = 1.5;
+          position = {
+            x = 2560;
+            y = 0;
+          };
+        };
+      };
 
-      workspace "1" { open-on-output "${mainOutput}"; }
-      workspace "2" { open-on-output "${mainOutput}"; }
-      workspace "3" { open-on-output "${mainOutput}"; }
-      workspace "4" { open-on-output "${mainOutput}"; }
-      workspace "5" { open-on-output "${laptopOutput}"; }
-      workspace "6" { open-on-output "${laptopOutput}"; }
+      workspaces = {
+        "1".open-on-output = mainOutput;
+        "2".open-on-output = mainOutput;
+        "3".open-on-output = mainOutput;
+        "4".open-on-output = mainOutput;
+        "5".open-on-output = laptopOutput;
+        "6".open-on-output = laptopOutput;
+      };
 
-      spawn-at-startup "firefox"
-      spawn-at-startup "emacs"
-      spawn-at-startup "slack"
+      spawn-at-startup = [
+        { command = [ "firefox" ]; }
+        { command = [ "emacs" ]; }
+        { command = [ "slack" ]; }
+      ];
 
-      window-rule {
-          match at-startup=true app-id=r#"firefox$"#
-          open-on-workspace "1"
-      }
+      window-rules = [
+        {
+          matches = [
+            {
+              at-startup = true;
+              app-id = "firefox$";
+            }
+          ];
+          open-on-workspace = "1";
+        }
+        {
+          matches = [
+            {
+              at-startup = true;
+              app-id = "emacs";
+            }
+          ];
+          open-on-workspace = "2";
+        }
+        {
+          matches = [
+            {
+              at-startup = true;
+              app-id = "Slack";
+            }
+            {
+              at-startup = true;
+              app-id = "slack";
+            }
+          ];
+          open-on-workspace = "5";
+          open-maximized = true;
+        }
+      ];
 
-      window-rule {
-          match at-startup=true app-id=r#"emacs"#
-          open-on-workspace "2"
-      }
-
-      window-rule {
-          match at-startup=true app-id=r#"Slack"#
-          match at-startup=true app-id=r#"slack"#
-          open-on-workspace "5"
-          open-maximized-to-edges true
-      }
-    '';
-
-    nambiar.niri.extraBinds = ''
-      XF86MonBrightnessUp allow-when-locked=true { spawn "brightnessctl" "set" "5%+"; }
-      XF86MonBrightnessDown allow-when-locked=true { spawn "brightnessctl" "set" "5%-"; }
-      XF86AudioRaiseVolume allow-when-locked=true { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "5%+"; }
-      XF86AudioLowerVolume allow-when-locked=true { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "5%-"; }
-      XF86AudioMute allow-when-locked=true { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SINK@" "toggle"; }
-      XF86AudioMicMute allow-when-locked=true { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SOURCE@" "toggle"; }
-    '';
+      binds = {
+        "XF86MonBrightnessUp" = {
+          allow-when-locked = true;
+          action = spawn "brightnessctl" "set" "5%+";
+        };
+        "XF86MonBrightnessDown" = {
+          allow-when-locked = true;
+          action = spawn "brightnessctl" "set" "5%-";
+        };
+        "XF86AudioRaiseVolume" = {
+          allow-when-locked = true;
+          action = spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "5%+";
+        };
+        "XF86AudioLowerVolume" = {
+          allow-when-locked = true;
+          action = spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "5%-";
+        };
+        "XF86AudioMute" = {
+          allow-when-locked = true;
+          action = spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SINK@" "toggle";
+        };
+        "XF86AudioMicMute" = {
+          allow-when-locked = true;
+          action = spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SOURCE@" "toggle";
+        };
+      };
+    };
   }
 #+end_src
 
@@ -3261,6 +3382,7 @@ This script adds a =DO NOT MODIFY= header to all the generated nix files.
     (defun add-tangle-headers ()
       (message "running in %s" (buffer-file-name))
       (when (string= (file-name-extension (buffer-file-name)) "nix")
+        (delete-trailing-whitespace)
         (goto-char (point-min))
         (insert "# WARNING : This file was generated by README.org\n# DO NOT MODIFY THIS FILE!\n# Any changes made here will be overwritten.\n")
         (save-buffer))

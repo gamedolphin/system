@@ -4,11 +4,51 @@
 { config, pkgs, ... } :
 let
   lockCommand = "${pkgs.procps}/bin/pidof swaylock || ${pkgs.swaylock-effects}/bin/swaylock";
+  resumeDisplay = pkgs.writeShellScriptBin "niri-resume-display" ''
+    set -u
+
+    aoc_name="PNP(AOC) Q3279WG5B 0x00000161"
+
+    log() {
+      echo "niri-resume-display: $*"
+    }
+
+    ${pkgs.niri}/bin/niri msg action power-on-monitors >/dev/null 2>&1 || log "initial power-on-monitors failed"
+    ${pkgs.brightnessctl}/bin/brightnessctl -r >/dev/null 2>&1 || true
+
+    # The AOC is behind an AMD USB4/MST path that can churn for a while after resume.
+    # Restart layer-shell clients only after Niri sees the monitor, or after the wait expires.
+    ${pkgs.coreutils}/bin/sleep 5
+
+    seen=0
+    for i in $(${pkgs.coreutils}/bin/seq 1 75); do
+      if ${pkgs.niri}/bin/niri msg outputs 2>/dev/null | ${pkgs.gnugrep}/bin/grep -Fq "$aoc_name"; then
+        log "AOC visible in niri after $i seconds"
+        seen=1
+        break
+      fi
+
+      if [ $((i % 5)) -eq 0 ]; then
+        ${pkgs.niri}/bin/niri msg action power-on-monitors >/dev/null 2>&1 || true
+      fi
+
+      ${pkgs.coreutils}/bin/sleep 1
+    done
+
+    if [ "$seen" -eq 0 ]; then
+      log "AOC still not visible after waiting; restarting ashell against current outputs"
+    fi
+
+    ${pkgs.niri}/bin/niri msg action power-on-monitors >/dev/null 2>&1 || true
+    ${pkgs.systemd}/bin/systemctl --user try-restart ashell.service >/dev/null 2>&1 || log "ashell try-restart failed"
+  '';
+  resumeDisplayCommand = "${pkgs.systemd}/bin/systemctl --user start niri-resume-display.service";
 in
 {
   home.packages = with pkgs; [
     swaylock-effects
     wlogout
+    resumeDisplay
   ];
 
 
@@ -29,30 +69,43 @@ in
       enable = true;
       events = {
         lock = lockCommand;                                                          # avoid starting multiple swaylock instances.
-        before-sleep = "${pkgs.systemd}/bin/loginctl lock-session";                 # lock before suspend.
-        after-resume = "${pkgs.niri}/bin/niri msg action power-on-monitors";         # to avoid having to press a key twice to turn on the display.
+        before-sleep = "${pkgs.systemd}/bin/loginctl lock-session";                  # lock before suspend.
+        after-resume = resumeDisplayCommand;                                         # let USB4/MST outputs settle before restarting shell surfaces.
       };
 
       timeouts = [
         {
-          timeout = 150;                                                            # 2.5min.
+          timeout = 150;                                                             # 2.5min.
           command = "${pkgs.brightnessctl}/bin/brightnessctl -s set 10";             # set monitor backlight to minimum, avoid 0 on OLED monitor.
           resumeCommand = "${pkgs.brightnessctl}/bin/brightnessctl -r";              # monitor backlight restore.
         }
         {
-          timeout = 300;                                                            # 5min
+          timeout = 300;                                                             # 5min
           command = "${pkgs.systemd}/bin/loginctl lock-session";                     # lock screen when timeout has passed
         }
         {
-          timeout = 330;                                                            # 5.5min
+          timeout = 330;                                                             # 5.5min
           command = "${pkgs.niri}/bin/niri msg action power-off-monitors";           # screen off when timeout has passed
-          resumeCommand = "${pkgs.niri}/bin/niri msg action power-on-monitors && ${pkgs.brightnessctl}/bin/brightnessctl -r"; # screen on when activity is detected after timeout has fired.
+          resumeCommand = resumeDisplayCommand;                                      # screen on when activity is detected after timeout has fired.
         }
         {
           timeout = 1800;                                                           # 30min
           command = "${pkgs.systemd}/bin/systemctl suspend";                        # suspend pc
         }
       ];
+    };
+  };
+
+  systemd.user.services.niri-resume-display = {
+    Unit = {
+      Description = "Recover Niri outputs and ashell after display resume";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+      ConditionEnvironment = "WAYLAND_DISPLAY";
+    };
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${resumeDisplay}/bin/niri-resume-display";
     };
   };
 
