@@ -4,3 +4,7 @@
 /.envrc.private
 /.agent-shell/
 /.claude/
+/error.log
+/scripts/
+/.codegraph/
+/result

@@ -38,25 +38,15 @@
       wg_peer_public_key = {};   # wireguard VPN server public key
       vpn_endpoint = {};          # wireguard VPN server endpoint
       homelab_domain = {};        # homelab base domain
-      macbox_ip = {};             # macbox local IP
       wg_wavefunk_private_key = {
         mode = "600";
         path = "/home/${user.username}/.ssh/wg_wavefunk_private_key";
-      };
-      wg_id8nxt_private_key = {
-        mode = "600";
-        path = "/home/${user.username}/.ssh/wg_id8nxt_private_key";
       };
     };
 
   sops.templates."ssh-hosts" = {
     owner = "${user.username}";
     content = ''
-      Host macbox
-        HostName ${config.sops.placeholder.macbox_ip}
-        User nambiar
-        IdentityFile ${config.sops.secrets."ssh/smallbox/private".path}
-
       Host homelab
         HostName ${config.sops.placeholder.homelab_domain}
         User root
@@ -69,7 +59,4 @@
     enable = true;
     polkitPolicyOwners = [ "${user.username}" ];
   };
-  programs.ssh.extraConfig = ''
-    Include ${config.sops.templates."ssh-hosts".path}
-    '';
 }

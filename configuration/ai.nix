@@ -2,90 +2,14 @@
 # DO NOT MODIFY THIS FILE!
 # Any changes made here will be overwritten.
 { pkgs, lib, config, user, llm-agents, ... } :
-let
-  youwhatknow = let
-    version = "0.2.1";
-    target = "x86_64-unknown-linux-gnu";
-  in pkgs.stdenv.mkDerivation {
-    pname = "youwhatknow";
-    inherit version;
-
-    src = pkgs.fetchurl {
-      url = "https://github.com/wavefunk/youwhatknow/releases/download/v${version}/youwhatknow-${target}.tar.xz";
-      hash = "sha256-zsXWAzWqi30yqfeaOECL3MBYvRBdtMqUN3W27yS24sc=";
-    };
-
-    sourceRoot = "youwhatknow-${target}";
-    nativeBuildInputs = [ pkgs.makeWrapper ];
-
-    installPhase = ''
-        install -Dm755 youwhatknow $out/bin/youwhatknow
-        wrapProgram $out/bin/youwhatknow
-      '';
-  };
-
-  claude-teammate = let
-    claude-bin = llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.claude-code;
-    deepseek-model = "deepseek-v4-pro[1m]";
-    deepseek-base-url = "https://api.deepseek.com/anthropic";
-    secrets-path = config.sops.secrets.deepseek_key.path;
-    teammate-prompt = ''
-      CRITICAL: You are a teammate in an agent team. Your plain text output is NOT visible to anyone.
-      You MUST use the SendMessage tool to communicate ALL results, findings, and status updates to the team lead.
-      After completing your work, ALWAYS call SendMessage with to="team-lead" and your results as the message.
-      If you do not call SendMessage, your work will be lost and nobody will see your output.
-    '';
-  in pkgs.writeShellScriptBin "claude-teammate" ''
-    set -euo pipefail
-
-    DEEPSEEK_API_KEY="$(cat ${secrets-path})"
-    if [ -z "$DEEPSEEK_API_KEY" ]; then
-      echo "[claude-teammate] Failed to read DeepSeek API key from ${secrets-path}" >&2
-      exit 1
-    fi
-
-    unset CLAUDE_CODE_OAUTH_TOKEN
-    unset ANTHROPIC_AUTH_TOKEN
-    unset CLAUDE_CODE_SESSION_ACCESS_TOKEN
-
-    export ANTHROPIC_BASE_URL="${deepseek-base-url}"
-    export ANTHROPIC_API_KEY="$DEEPSEEK_API_KEY"
-
-    args=()
-    skip_next=false
-    for arg in "$@"; do
-      if $skip_next; then
-        skip_next=false
-        continue
-      fi
-      if [ "$arg" = "--model" ]; then
-        skip_next=true
-        continue
-      fi
-      case "$arg" in
-        --model=*) continue ;;
-      esac
-      args+=("$arg")
-    done
-
-    args+=(--model "${deepseek-model}")
-    args+=(--append-system-prompt "${teammate-prompt}")
-
-    exec ${claude-bin}/bin/claude "''${args[@]}"
-  '';
-in
 {
   environment.systemPackages = (with llm-agents.packages.${pkgs.stdenv.hostPlatform.system}; [
     claude-code
-    beads-rust
-    gnhf
     pi
     agent-browser
     codex
-  ]) ++ [ youwhatknow ];
-
-  environment.sessionVariables.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = "1";
-  environment.sessionVariables.CLAUDE_CODE_TEAMMATE_COMMAND = "${claude-teammate}/bin/claude-teammate";
+    codegraph
+  ]);
 
   nix.settings = {
     substituters = [ "https://cache.numtide.com" ];

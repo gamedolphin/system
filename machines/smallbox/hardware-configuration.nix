@@ -49,11 +49,11 @@
     options = [ "fmask=0077" "dmask=0077" ];
   };
 
-  # external disk — automount on first access, don't block boot
+  # external disk - manual mount so missing travel disks don't block shell startup
   fileSystems."/home/${user.username}/external" = {
     device = "/dev/disk/by-uuid/18818348-1ee4-4fa5-9984-e4e01b9fa304";
     fsType = "ext4";
-    options = [ "noauto" "nofail" "x-systemd.automount" "x-systemd.idle-timeout=300" ];
+    options = [ "noauto" "nofail" ];
   };
 
   swapDevices = [];

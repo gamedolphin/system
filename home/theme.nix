@@ -26,4 +26,5 @@
   catppuccin.accent = "blue";
   catppuccin.gtk.icon.enable = true;
   catppuccin.cursors.enable = true;
+  catppuccin.cache.enable = true;
 }

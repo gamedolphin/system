@@ -31,13 +31,15 @@
     jaq        # rust based jq alternative
     comma      # nix-run helper
     tmux       # seems useful for a bunch of things
+    kache      # rust cache
     element-desktop
   ];
 
-  # to enable icons with wlogout
+  # to enable svg icons in gtk apps
   # https://github.com/catppuccin/nix/issues/584
   programs.gdk-pixbuf.modulePackages = [ pkgs.librsvg ];
 
+  # sharing folders to the tv over local network
   services.minidlna = {
     enable = true;
     openFirewall = true;
@@ -52,6 +54,15 @@
 
   users.users.minidlna = {
     extraGroups = [ "users" ];
+  };
+
+  # enabling the kache service for faster rust builds
+  services.kache = {
+    enable = true;
+    daemon.enable = true;
+    settings.cache = {
+      local_max_size = "40GB";
+    };
   };
 
 

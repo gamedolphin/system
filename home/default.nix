@@ -4,12 +4,10 @@
 { pkgs, user, ... } :
 {
   imports = [
-    ./waybar.nix
-    ./wallpaper.nix
+    ./noctalia.nix
     ./lock.nix
     ./unity.nix
     ./niri.nix
-    ./walker.nix
     ./theme.nix
     ./terminal.nix
     ./dev.nix
@@ -33,10 +31,7 @@
     simple-scan              # scanner software
     pinta                    # image editor
     mpv                      # media player
-    claude-agent-acp         # acp server for agent-shell
   ];
-
-  services.dunst.enable = true;      # notifications daemon
 
   programs.obs-studio.enable = true; # screen recording tool
 

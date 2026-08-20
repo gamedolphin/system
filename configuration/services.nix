@@ -11,6 +11,8 @@
     printing.enable = true;               # printing services, cups
     gnome.gnome-keyring.enable = true;    # keyring
     flatpak.enable = true;                # allow installing things from flatpaks
+    upower.enable = true;                 # battery/power reporting, used by noctalia
+    power-profiles-daemon.enable = true;  # power profile switching from noctalia's control center
 
     # printer discovery
     avahi = {

@@ -1,9 +1,9 @@
 ;;; package --- Summary - My minimal Emacs init file -*- lexical-binding: t -*-
 
-  ;;; Commentary:
-  ;;; Simple Emacs setup I carry everywhere
+    ;;; Commentary:
+    ;;; Simple Emacs setup I carry everywhere
 
-  ;;; Code:
+    ;;; Code:
 (setq custom-file (locate-user-emacs-file "custom.el"))
 (load custom-file 'noerror)            ;; no error on missing custom file
 
@@ -165,7 +165,7 @@
       (((class color) (min-colors 88) (background dark))
        :background ,(catppuccin-color 'sapphire))
       (t :inverse-video t))
-    "Alternative nord face for `pulsar-face'."
+    "Alternative Catppuccin face for `pulsar-face'."
     :group 'pulsar-faces)
   :custom
   (pulsar-face 'pulsar-catppuccin)
@@ -230,7 +230,11 @@
   ("C-a"     . crux-move-beginning-of-line))
 
 (use-package magit
-  :bind (("C-M-g" . magit-status)))
+  :bind (("C-M-g" . magit-status)
+         :map project-prefix-map
+         ("m" . magit-project-status))
+  :config
+  (add-to-list 'project-switch-commands '(magit-project-status "Magit") t))
 
 (use-package nerd-icons-corfu
   :commands nerd-icons-corfu-formatter
@@ -276,23 +280,45 @@
   :custom
   (nixpkgs-fmt-command "nixfmt"))
 
-(use-package eat
-  :bind
-  (("C-c e p" . eat-project)
-   ("C-c e t" . eat)))
+(use-package ghostel
+  :bind (("C-x m" . ghostel)
+         :map ghostel-semi-char-mode-map
+         ("C-s"  . consult-line)
+         ("M-<backspace>" . ghostel-backward-kill-word)
+         ("M-p" . (lambda () (interactive) (ghostel-send-key "p" "ctrl")))
+         ("M-n" . (lambda () (interactive) (ghostel-send-key "n" "ctrl")))
+         :map project-prefix-map
+         ("t" . ghostel-project)
+         ("T" . ghostel-project-list-buffers))
+  :config
+  (defun ghostel-send-C-k-and-kill ()
+    "Send `C-k' to ghostel.
+     Like normal Emacs `C-k'.  Kill to end of line and put content in kill-ring."
+    (interactive)
+    (kill-ring-save (point) (line-end-position))
+    (ghostel-send-key "k" "ctrl"))
+
+  (add-to-list 'project-switch-commands '(ghostel-project "Ghostel") t)
+  (add-to-list 'project-switch-commands '(ghostel-project-list-buffers "Ghostel buffers") t)
+  (add-to-list 'ghostel-eval-cmds '("magit-status-setup-buffer" magit-status-setup-buffer)))
+
+(use-package ghostel-compile
+  :hook (after-init . ghostel-compile-global-mode))
+
+(use-package ghostel-comint
+  :hook (after-init . ghostel-comint-global-mode))
 
 (use-package f :demand t)
 
-(use-package envrc
-  :commands envrc-global-mode
+(use-package ben
+  :diminish ben-global-mode
+  :bind
+  (:map ben-mode-map
+        ("C-c b" . ben-command-map))
   :hook
-  (after-init . envrc-global-mode))
+  (after-init . ben-global-mode))
 
-(use-package gptel
-  :commands gptel-make-anthropic f-read-text
-  :config
-  (gptel-make-anthropic "Claude"
-    :stream t :key (f-read-text "/run/secrets/claude_key")))
+(use-package gptel)
 
 (use-package sideline-flymake)
 (use-package sideline
@@ -307,14 +333,16 @@
   (eglot-ignored-server-capabilities '(:inlayHintProvider))
   (jsonrpc-event-hook nil)
   :hook
-  (eglot-managed-mode . eldoc-box-hover-mode)
-  (before-save . eldoc-format-buffer)
+  (eglot-managed-mode . (lambda ()
+                          (add-hook 'before-save-hook #'eglot-format-buffer nil t)))
   :bind
   (:map eglot-mode-map
         ("C-c l a" . eglot-code-actions)
+        ("C-c l b" . flymake-show-buffer-diagnostics)
         ("C-c l r" . eglot-rename)
         ("C-c l h" . eldoc)
         ("C-c l g" . xref-find-references)
+        ("C-c l p" . flymake-show-project-diagnostics)
         ("C-c l w" . eglot-reconnect)))
 
 (use-package proced
@@ -324,163 +352,6 @@
   (proced-enable-color-flag t)
   (proced-show-remote-processes t))
 
-(use-package org
-  :ensure t
-  :defer t
-  :commands (org-mode org-capture org-agenda)
-  :init
-  (defvar org-journal-file "~/nextcloud/org/journal.org")
-  (defvar org-archive-file "~/nextcloud/org/archive.org")
-  (defvar org-notes-file "~/nextcloud/org/notes.org")
-  (defvar org-inbox-file "~/nextcloud/org/inbox.org")
-  (defvar org-work-file "~/nextcloud/org/work.org")
-  (defun my/org-capture-project-target-heading ()
-    "Determine Org target headings from the current file's project path.
-
-    This function assumes a directory structure like '~/projects/COMPANY/PROJECT/'.
-    It extracts 'COMPANY' and 'PROJECT' to use as nested headlines
-    for an Org capture template.
-
-    If the current buffer is not visi
-ting a file within such a
-    project structure, it returns nil, causing capture to default to
-    the top of the file."
-    (when-let* ((path (buffer-file-name))) ; Ensure we are in a file-visiting buffer
-      (let ((path-parts (split-string path "/" t " ")))
-        (when-let* ((projects-pos (cl-position "projects" path-parts :test #'string=))
-                    (company      (nth (+ 1 projects-pos) path-parts))
-                    (project      (nth (+ 2 projects-pos) path-parts)))
-          ;; Return a list of headlines for Org to find or create.
-          (list company project)))))
-  :bind
-  (("C-c c" . org-capture)
-   ("C-c i" . org-store-link)
-   ("C-c a" . org-agenda)
-   :map org-mode-map
-   ("C-c t" . org-toggle-inline-images)
-   ("C-c l" . org-toggle-link-display))
-  :custom
-  (org-agenda-files (list org-inbox-file org-journal-file
-                          "~/nextcloud/org/wavefunk.org"
-                          "~/nextcloud/org/projects/"))
-  (org-directory "~/nextcloud/org")
-  (org-default-notes-file org-inbox-file)
-  (org-archive-location (concat org-archive-file "::* From %s"))
-  (org-log-done 'time)
-  (org-log-into-drawer t)
-  (org-hide-emphasis-markers t)
-  (org-src-fontify-natively t)
-  (org-src-tab-acts-natively t)
-  (org-refile-targets '((org-agenda-files :maxlevel . 4)))
-  (org-archive-save-context-info '(time category todo itags olpath))
-  (org-refile-use-outline-path 'file)
-  (org-todo-keywords
-   '((sequence "TODO" "NEXT" "WAITING" "PROJECT" "|" "DONE" "KILLED" "SOMEDAY")))
-  (org-capture-templates '(("t" "Todo" entry (file org-inbox-file)
-                            "* TODO %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n\n%a\n\n)")
-                           ("j" "Journal" entry (file+olp+datetree org-journal-file)
-                            "* %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n\n%a\n\n")
-                           ("n" "Note" entry (file org-notes-file)
-                            "* %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n\n%a\n\n")
-                           ("p" "Project Task" item
-                            (file+function org-work-file my/org-capture-project-target-heading)
-                            "* TODO %? \n  CLOCK: %U"
-                            ))
-                         )
-  :config
-  ;; Enable syntax highlighting in code blocks
-  (add-hook 'org-mode-hook 'turn-on-font-lock)
-  (add-hook 'org-mode-hook 'org-indent-mode))
-
-;;; wavefunk task tracking helpers
-
-(defvar wavefunk/org-projects-dir "~/nextcloud/org/projects/"
-  "Directory containing canonical project org files.")
-
-(defun wavefunk/org-get-active-tasks (file)
-  "Return the content under the first 'Active' heading in FILE as a string."
-  (with-current-buffer (find-file-noselect (expand-file-name file))
-    (save-excursion
-      (goto-char (point-min))
-      (when (re-search-forward "^\\* Active" nil t)
-        (let ((start (line-beginning-position)))
-          (org-end-of-subtree t t)
-          (buffer-substring-no-properties start (point)))))))
-
-(defun wavefunk/org-set-todo-by-id (id state)
-  "Find heading with CUSTOM_ID matching ID and set its TODO state to STATE.
-   Searches all org files in `wavefunk/org-projects-dir'."
-  (let ((files (directory-files wavefunk/org-projects-dir t "\\.org$")))
-    (catch 'found
-      (dolist (file files)
-        (with-current-buffer (find-file-noselect file)
-          (org-with-wide-buffer
-           (goto-char (point-min))
-           (while (re-search-forward
-                   (format ":CUSTOM_ID:\\s-*%s" (regexp-quote id)) nil t)
-             (org-back-to-heading t)
-             (org-todo state)
-             (save-buffer)
-             (throw 'found (format "Set %s to %s in %s" id state (file-name-nondirectory file))))))
-        (format "ID %s not found" id)))))
-
-(defun wavefunk/org-next-id (file prefix)
-  "Return the next available PREFIX-NN id in FILE."
-  (let ((max-id 0))
-    (with-current-buffer (find-file-noselect (expand-file-name file))
-      (org-map-entries
-       (lambda ()
-         (when-let* ((id (org-entry-get nil "CUSTOM_ID")))
-           (when (string-match (format "^%s\\([0-9]+\\)$" (regexp-quote prefix)) id)
-             (setq max-id (max max-id (string-to-number (match-string 1 id)))))))))
-    (format "%s%02d" prefix (1+ max-id))))
-
-(defun wavefunk/org-add-task (file heading title prefix)
-  "Add a TODO task with TITLE under HEADING in FILE with auto-assigned ID.
-HEADING is a top-level heading like \"Active\" or \"Backlog\".
-PREFIX is the project prefix like \"aw-\"."
-  (let ((next-id (wavefunk/org-next-id file prefix)))
-    (with-current-buffer (find-file-noselect (expand-file-name file))
-      (goto-char (point-min))
-      (if (re-search-forward (format "^\\* %s" (regexp-quote heading)) nil t)
-          (progn
-            (org-end-of-subtree t nil)
-            (insert (format "\n** TODO %s\n:PROPERTIES:\n:CUSTOM_ID: %s\n:CREATED: %s\n:END:\n"
-                            title next-id (format-time-string "[%Y-%m-%d %a]")))
-            (save-buffer)
-            (format "Added %s: %s under %s" next-id title heading))
-        (format "Heading '%s' not found in %s" heading file)))))
-
-(defun wavefunk/org-query-all (state)
-  "Return all tasks matching TODO STATE across all project org files."
-  (let ((files (directory-files wavefunk/org-projects-dir t "\\.org$"))
-        (results '()))
-    (dolist (file files)
-      (with-current-buffer (find-file-noselect file)
-        (org-map-entries
-         (lambda ()
-           (when (string= (org-get-todo-state) state)
-             (push (format "[%s] %s — %s"
-                           (or (org-entry-get nil "CUSTOM_ID") "no-id")
-                           (org-get-heading t t t t)
-                           (file-name-sans-extension (file-name-nondirectory file)))
-                   results))))))
-    (mapconcat #'identity (nreverse results) "\n")))
-
-(defun wavefunk/org-backfill-ids (file prefix)
-  "Assign CUSTOM_IDs to all headings in FILE that lack one. Uses PREFIX."
-  (with-current-buffer (find-file-noselect (expand-file-name file))
-    (let ((count 0))
-      (org-map-entries
-       (lambda ()
-         (unless (org-entry-get nil "CUSTOM_ID")
-           (when (org-get-todo-state)  ; only assign IDs to TODO items
-             (let ((next-id (wavefunk/org-next-id file prefix)))
-               (org-set-property "CUSTOM_ID" next-id)
-               (setq count (1+ count)))))))
-      (when (> count 0) (save-buffer))
-      (format "Backfilled %d IDs in %s" count (file-name-nondirectory file)))))
-
 ;; extras
 (use-package comp-run
   :ensure nil
@@ -488,10 +359,12 @@ PREFIX is the project prefix like \"aw-\"."
   (push "tramp-loaddefs.el.gz" native-comp-jit-compilation-deny-list)
   (push "cl-loaddefs.el.gz" native-comp-jit-compilation-deny-list))
 
-(use-package rustic
-  :custom
-  (rustic-lsp-client 'eglot))
+(use-package rust-ts-mode
+  :ensure nil
+  :mode "\\.rs\\'"
+  :hook
+  (rust-ts-mode . eglot-ensure))
 
 (provide 'init)
 
-  ;;; init.el ends here
+;;; init.el ends here

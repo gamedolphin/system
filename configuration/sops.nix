@@ -6,12 +6,4 @@
   sops.defaultSopsFile = ../secrets/secrets.yaml;
   sops.defaultSopsFormat = "yaml";
   sops.age.keyFile = "/home/${user.username}/.config/sops/age/keys.txt";
-
-  sops.secrets.claude_key = { # anthropic claude api key, used in emacs
-    owner = "${user.username}";
-  };
-
-  sops.secrets.deepseek_key = { # deepseek api key, used by claude-teammate wrapper
-    owner = "${user.username}";
-  };
 }

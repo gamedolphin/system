@@ -17,7 +17,6 @@ in
   ];
 
   programs.niri.settings = with config.lib.niri.actions; {
-    # Niri reports the external display by make/model/serial, unlike Hyprland's desc: name.
     outputs = {
       main = {
         name = mainOutput;
@@ -31,6 +30,11 @@ in
 
       laptop = {
         name = laptopOutput;
+        mode = {
+          width = 2880;
+          height = 1800;
+          refresh = 60.000;
+        };
         scale = 1.5;
         position = {
           x = 2560;

@@ -10,6 +10,7 @@
     usbutils
     udiskie
     file-roller
+    uv
   ];
 
   programs.thunar = {

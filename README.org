@@ -12,13 +12,13 @@
 #+HTML:       <p></p>
 #+HTML:       <div align="center">
 #+HTML:          <a href="https://orgmode.org/index.html">
-#+HTML:             <img src="https://img.shields.io/badge/org_mode-9.7-blue.svg?style=for-the-badge&labelColor=1e1e2e&logo=org&logoColor=a6e3a1&color=1e1e2e">
+#+HTML:             <img src="https://img.shields.io/badge/org_mode-9.8-blue.svg?style=for-the-badge&labelColor=1e1e2e&logo=org&logoColor=a6e3a1&color=1e1e2e">
 #+HTML:          </a>
 #+HTML:          <a = href="https://nixos.org">
 #+HTML:             <img src="https://img.shields.io/badge/NixOS-unstable-blue.svg?style=for-the-badge&labelColor=1e1e2e&logo=NixOS&logoColor=89b4fa&color=1e1e2e">
 #+HTML:          </a>
 #+HTML:          <a = href="https://www.gnu.org/software/emacs/">
-#+HTML:             <img src="https://img.shields.io/badge/emacs-30-blue.svg?style=for-the-badge&labelColor=1e1e2e&logo=gnuemacs&logoColor=cba6f7&color=1e1e2e">
+#+HTML:             <img src="https://img.shields.io/badge/emacs-32-blue.svg?style=for-the-badge&labelColor=1e1e2e&logo=gnuemacs&logoColor=cba6f7&color=1e1e2e">
 #+HTML:          </a>
 #+HTML:          <a href="https://github.com/gamedolphin/system/blob/main/LICENSE">
 #+HTML:             <img src="https://img.shields.io/static/v1.svg?style=for-the-badge&label=License&message=GPL&colorA=1e1e2e&colorB=f38ba8&logo=unlicense&logoColor=f9e2af&%22"/>
@@ -32,7 +32,6 @@
 #+HTML: </h1>
 
 * Introduction
-#+HTML:    <div align="center"><img src="./.github/images/screenshot.png" width="100%" /> </div>
 Hello! Welcome to my literate file that describes (and generates) the configuration for all my computers.
 
 For people who are confused, this file has a bunch of source blocks that are then put into individual files using emacs+org's tangle mode.
@@ -41,7 +40,7 @@ Once the files are generated, they are converted into an immutable system config
 
 This repository consists of configuration for my main machine
 - =smallbox= -- my wfh computer and main laptop
-- =macbox= -- work computer for builds etc
+- =homelab= -- personal homelab server for experiments etc
 
 To generate the actual nix files, you need to open this file in emacs and then execute =M-x org-babel-tangle=.
 
@@ -55,9 +54,9 @@ Once the nix files are ready, you can deploy using
   nixos-rebuild switch --flake .#<machine>
 #+end_src
 
-To update the mac machine
+To update the homelab machine
 #+begin_src bash :tangle no
-  nix run github:serokell/deploy-rs -- .#macbox
+  nix run github:serokell/deploy-rs -- .#homelab
 #+end_src
 
 Other files in this repo are :-
@@ -99,18 +98,14 @@ There's also a github action that generates and commits these files if they do d
 * TLDR App List
 
 | Window Manager       | [[https://github.com/YaLTeR/niri][Niri]]               |
-| Bar                  | [[https://github.com/Alexays/Waybar][Waybar]]             |
-| Application Launcher | [[https://github.com/abenz1267/walker][Walker]]             |
-| Notification Daemon  | [[https://github.com/dunst-project/dunst][Dunst]]              |
+| Desktop Shell        | [[https://github.com/noctalia-dev/noctalia][Noctalia]]           |
+| Login Greeter        | [[https://github.com/apognu/tuigreet][tuigreet]]           |
 | Terminal Emulator    | [[https://alacritty.org/][Alacritty]]          |
-| Shell                | [[https://ohmyz.sh/][Zsh]] and [[https://starship.rs/][Starship]]   |
+| Shell                | [[https://ohmyz.sh/][Zsh]]                |
 | Text Editor          | [[https://www.gnu.org/software/emacs/][Emacs]]              |
 | File Manager         | [[https://docs.xfce.org/xfce/thunar/start][Thunar]]             |
 | Fonts                | [[https://protesilaos.com/codelog/2025-02-12-aporetic-fonts-version-1-1-0/][Aporeti]]            |
-| Colors               | [[https://catppuccin.com/][Catppuccin]]         |
-| Icons                | [[https://nix.catppuccin.com/][Catppuccin Nix    ]] |
-| Lock Screen          | [[https://github.com/mortie/swaylock-effects][swaylock-effects]]   |
-| Wallpapers           | [[https://github.com/swaywm/swaybg][swaybg]]             |
+| Colors + Icons       | [[https://catppuccin.com/][Catppuccin]]         |
 
 * Configuration Variables
 I have a bunch of constant strings that I would rather put in a file. Thats what ~user.nix~ is.
@@ -133,8 +128,13 @@ The inputs for my system's configuration are very simple
 3. [[https://github.com/nix-community/emacs-overlay][emacs-overlay]] - this has more configuration options and generally a newer emacs available provided by the community.
 4. [[https://github.com/getsops/sops][sops-nix]] - adds latest sops for secrets management.
 5. [[https://nix.catppuccin.com/][catppuccin]] - nix module that allows everything to be catppuccin themed.
-6. [[https://github.com/nix-darwin/nix-darwin][nix-darwin]] - nix module to deploy to macos
-7. [[https://github.com/serokell/deploy-rs][deploy-rs]] - tool that allows deploying to remote machines (like the mac)
+7. [[https://github.com/serokell/deploy-rs][deploy-rs]] - tool that allows deploying to remote machines (like the homelab)
+8. [[https://github.com/noctalia-dev/noctalia][noctalia]] - the desktop shell: bar, launcher, notifications, control center, lock screen and wallpapers in one.
+9. [[https://github.com/nix-community/disko][disko]] - manage the disk configuration declaratively.
+10. [[https://github.com/numtide/llm-agents.nix][llm-agents]] - latest greatest AI tooling versions.
+11. [[https://github.com/niri-wm/niri][niri]] - desktop window manager.
+12. [[https://noctalia.dev/][noctalia]] - desktop shell that manages everything else. stays out of the way.
+13. [[https://github.com/kunobi-ninja/kache][kache]] - rust specific cache for cross worktree shared cache on the machine.
 
 #+begin_src nix :tangle flake.nix :noweb tangle
   {
@@ -163,11 +163,6 @@ The inputs for my system's configuration are very simple
         inputs.nixpkgs.follows = "nixpkgs";
       };
 
-      nix-darwin = {
-        url = "github:LnL7/nix-darwin";
-        inputs.nixpkgs.follows = "nixpkgs";
-      };
-
       deploy-rs.url = "github:serokell/deploy-rs";
 
       disko = {
@@ -182,12 +177,14 @@ The inputs for my system's configuration are very simple
         inputs.nixpkgs.follows = "nixpkgs";
       };
 
-      elephant.url = "github:abenz1267/elephant";
+      noctalia.url = "github:noctalia-dev/noctalia/cachix";
 
-      walker = {
-        url = "github:abenz1267/walker";
-        inputs.elephant.follows = "elephant";
+      noctalia-greeter = {
+        url = "github:noctalia-dev/noctalia-greeter";
+        inputs.nixpkgs.follows = "nixpkgs";
       };
+
+      kache.url = "github:kunobi-ninja/kache";
     };
 
     <<flake-outputs>>
@@ -195,7 +192,10 @@ The inputs for my system's configuration are very simple
 #+end_src
 
 * Flake Output
-Now that the inputs are ready, the outputs define what the system will actually look like. I also define the machines that this configuration specifies early on. Finally, I iterate over the ~machines~ list and pull files from ~/.machines/${name}~ subdirectory. This allows me to have configuration that has machine specific configuration limited to those files while also keeping a modular reusable base.
+Now that the inputs are ready, the outputs define what the system will actually look like.
+I also define the machines that this configuration specifies early on.
+Finally, I iterate over the ~machines~ list and pull files from ~/.machines/${name}~ subdirectory.
+This allows me to have configuration that has machine specific configuration limited to those files while also keeping a modular reusable base.
 We also add a devshell that makes editing this repository easier in emacs.
 
 #+name: flake-outputs
@@ -207,20 +207,20 @@ We also add a devshell that makes editing this repository easier in emacs.
       emacs-overlay,
       sops-nix,
       catppuccin,
-      nix-darwin,
       deploy-rs,
       disko,
       llm-agents,
       niri,
-      walker,
+      noctalia,
+      noctalia-greeter,
+      kache,
       ...
   }@inputs:
     let
       user = import ./user.nix;
       lib = nixpkgs.lib;
-      machines = [
+      workstations = [
         "smallbox"
-        "homelab"
       ];
 
       pkgs = import nixpkgs {
@@ -234,12 +234,6 @@ We also add a devshell that makes editing this repository easier in emacs.
           (self: super: { deploy-rs = { inherit (pkgs) deploy-rs; lib = super.deploy-rs.lib; }; })
         ];
       };
-
-      macSystem = "aarch64-darwin";
-
-      pkgsMac = import nixpkgs {
-        system = macSystem;
-      };
     in
       {
         nixosConfigurations = builtins.listToAttrs (
@@ -248,22 +242,32 @@ We also add a devshell that makes editing this repository easier in emacs.
             value = lib.nixosSystem {
               modules = [
                 <<flake-emacs-module>>
+                <<flake-kache-module>>
                 <<flake-config-module>>
                 <<flake-home-module>>
-                niri.nixosModules.niri               # niri-flake
-                disko.nixosModules.disko             # disks
-                sops-nix.nixosModules.sops           # sops
-                catppuccin.nixosModules.catppuccin   # theme
+                niri.nixosModules.niri                       # niri-flake
+                disko.nixosModules.disko                     # disks
+                sops-nix.nixosModules.sops                   # sops
+                catppuccin.nixosModules.catppuccin           # theme
+                kache.nixosModules.default                   # kache
+                noctalia-greeter.nixosModules.default        # login
               ];
               specialArgs = {
                 hostname = machine;
                 inherit user llm-agents;
               };
             };
-          }) machines
-        );
-
-        <<macbox-module>>
+          }) workstations
+        ) // {
+          homelab = lib.nixosSystem {
+            modules = [
+              ./machines/homelab/configuration.nix
+              disko.nixosModules.disko
+              sops-nix.nixosModules.sops
+            ];
+            specialArgs = { inherit user; };
+          };
+        };
 
         <<homelab-module>>
 
@@ -278,7 +282,7 @@ We also add a devshell that makes editing this repository easier in emacs.
 #+end_src
 
 Lets look at the individual modules
-1. Emacs
+1. Emacs + Kache
    The first is the emacs overlay so that it uses the nix-community emacs overlay from the inputs instead of the nixpkgs one.
    Overlays are a special nix way to override existing packages within a repository.
 
@@ -289,7 +293,14 @@ Lets look at the individual modules
      })
    #+end_src
 
-2. Then the machine specific configuration, in this case, just "smallbox".
+   #+name: flake-kache-module
+   #+begin_src nix
+     ({ ... }: {
+       nixpkgs.overlays = [ kache.overlays.default ];
+     })
+   #+end_src
+
+2. Then the workstation-specific configuration.
    #+name: flake-config-module
    #+begin_src nix
      ./machines/${machine}/configuration.nix
@@ -325,7 +336,7 @@ Lets look at the individual modules
          imports =  [
            ./machines/${machine}/home.nix
            catppuccin.homeModules.catppuccin
-           walker.homeManagerModules.default
+           noctalia.homeModules.default
          ];
        };
      #+end_src
@@ -350,14 +361,10 @@ The individual machines subdirectory is configured as follows :-
 #+name: tree
 #+begin_src ditaa
   +--machine
-  |  +--configuration.nix
-  |  +--home.nix
-  |  +--hardware-configuration.nix
+  |  +--configuration.nix           # has the system configuration.
+  |  +--home.nix                    # has the user level configuration.
+  |  +--hardware-configuration.nix  # has the unique hardware configuration.
 #+end_src
-
-- configuration.nix has the system configuration.
-- home.nix has the user level configuration.
-- hardware-configuration.nix has the unique hardware configuration.
 
 ~nixos-rebuild switch --flake .#smallbox~ looks for the smallbox configuration (in ~/machines/smallbox~)  and returns the configuration that is specific to that computer.
 
@@ -461,18 +468,19 @@ These are global nix settings that configure the settings for the actual tool.
       # enable flakes
       experimental-features = ["nix-command" "flakes"];
 
+      # allow the configured primary user to use flake-provided binary caches
+      trusted-users = [ user.username ];
+
       # add a cache that speed up new applications by downloading binaries
       # from the trusted cache instead of compiling from sourcer
       substituters = [
         "https://nix-community.cachix.org"
-        "https://walker.cachix.org"
-        "https://walker-git.cachix.org"
+        "https://noctalia.cachix.org"
       ];
       # trust the cache public key
       trusted-public-keys = [
         "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-        "walker.cachix.org-1:fG8q+uAaMqhsMxWjwvk0IMb4mFPFLqHjuvfwQxE4oJM="
-        "walker-git.cachix.org-1:vmC0ocfPWh0S/vRAQGtChuiZBTAe4wiKDeyyXM0/7pM="
+        "noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4="
       ];
     };
 
@@ -531,22 +539,18 @@ This file has most of the settings the control how the computer boots up.
 #+end_src
 
 ** Login
-Here we control what the login screen would look like. I'm using greetd's [[https://github.com/apognu/tuigreet][tuigreet]] for the ui.
-Doesn't match the rest of the aesthetic of the system (with niri), but I like its simplicity.
-The default session command starts the systemd-managed Niri session explicitly. That keeps ~graphical-session.target~ active, which is what Home Manager graphical services such as Walker and Elephant attach to.
 
 #+begin_src nix :tangle configuration/login.nix :noweb tangle :mkdirp yes
-  { pkgs, user, ... } :
   {
-    environment.systemPackages = with pkgs; [
-      tuigreet
-    ];
-
-    services.greetd = {
+    programs.noctalia-greeter = {
       enable = true;
+
       settings = {
-        default_session = {
-          command = pkgs.lib.mkForce "${pkgs.tuigreet}/bin/tuigreet --remember --time --time-format '%I:%M %p | %a • %h | %F' --cmd '${pkgs.niri}/bin/niri-session'";
+        session = {
+          default = "Niri";
+        };
+        user = {
+          default = "nambiar";
         };
       };
     };
@@ -584,6 +588,7 @@ Along with that, a few other utilities like zip and enabling services to automou
       usbutils
       udiskie
       file-roller
+      uv
     ];
 
     programs.thunar = {
@@ -654,7 +659,7 @@ Not much to see here. I want networking to be enabled. I want firewall as well.
 This is a big one because the DE needs so much configuration. This section mostly installs [[https://github.com/YaLTeR/niri][Niri]].
 The key bindings and monitor configuration are done in the home manager section.
 #+begin_src nix :tangle configuration/niri.nix :noweb tangle :mkdirp yes
-  { pkgs, ... }:
+  { config, lib, pkgs, ... }:
   {
     programs.niri = {
       enable = true;
@@ -665,6 +670,20 @@ The key bindings and monitor configuration are done in the home manager section.
 
     # Keep using the existing polkit-gnome user agent instead of niri-flake's KDE agent.
     systemd.user.services.niri-flake-polkit.enable = false;
+
+    # Niri's default portal preference tries GNOME first. GNOME's FileChooser
+    # backend delegates to a service that is not activatable in this session, so
+    # route file dialogs directly to GTK while keeping the rest of the defaults.
+    xdg.portal = {
+      extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+      config.niri = {
+        default = [ "gnome" "gtk" ];
+        "org.freedesktop.impl.portal.Access" = [ "gtk" ];
+        "org.freedesktop.impl.portal.FileChooser" = [ "gtk" ];
+        "org.freedesktop.impl.portal.Notification" = [ "gtk" ];
+        "org.freedesktop.impl.portal.Secret" = [ "gnome-keyring" ];
+      };
+    };
 
     environment.sessionVariables = {
       XDG_SESSION_TYPE = "wayland";
@@ -677,8 +696,6 @@ The key bindings and monitor configuration are done in the home manager section.
       RUSTICL_ENABLE = "radeonsi"; # for davinci resolve
     };
 
-    # allow swaylock (lockscreen) to lock user session
-    security.pam.services.swaylock = { };
     security.polkit.enable = true;
     security.pam.services.gdm.enableGnomeKeyring = true;
   }
@@ -698,6 +715,8 @@ These are some of the services that I enable at the system level. Explanation in
       printing.enable = true;               # printing services, cups
       gnome.gnome-keyring.enable = true;    # keyring
       flatpak.enable = true;                # allow installing things from flatpaks
+      upower.enable = true;                 # battery/power reporting, used by noctalia
+      power-profiles-daemon.enable = true;  # power profile switching from noctalia's control center
 
       # printer discovery
       avahi = {
@@ -766,14 +785,6 @@ We use [[https://github.com/Mic92/sops-nix][sops]] to manage secrets on this mac
     sops.defaultSopsFile = ../secrets/secrets.yaml;
     sops.defaultSopsFormat = "yaml";
     sops.age.keyFile = "/home/${user.username}/.config/sops/age/keys.txt";
-
-    sops.secrets.claude_key = { # anthropic claude api key, used in emacs
-      owner = "${user.username}";
-    };
-
-    sops.secrets.deepseek_key = { # deepseek api key, used by claude-teammate wrapper
-      owner = "${user.username}";
-    };
   }
 #+end_src
 
@@ -791,107 +802,19 @@ creation_rules:
 #+end_src
 
 ** AI + LLMs
-The workstation is increasingly being automated with claude at this point. Adding it to the global packages makes it easier to launch in arbitrary locations. I am also using beads everywhere for tracking work between projects, pinned to a github version. [[https://github.com/wavefunk/youwhatknow][
-youwhatknow]] is a Claude Code hook server that injects file summaries before reads, installed from GitHub release binaries.
-
-*** Agent Teams + DeepSeek Routing
-Claude Code supports agent teams -- the lead session (Opus) spawns teammates in tmux panes. Each teammate is a full Claude Code process making its own API calls. By default they all hit Anthropic's API.
-
-~CLAUDE_CODE_TEAMMATE_COMMAND~ overrides the binary used to spawn teammates. We use a wrapper script that reroutes teammate API calls to DeepSeek's Anthropic-compatible endpoint instead. The lead session stays on Anthropic (Opus), while teammates run on DeepSeek (cheaper, still capable for sub-tasks).
-
-The wrapper:
-1. Clears OAuth tokens (the lead uses OAuth, but DeepSeek needs an API key)
-2. Sets ~ANTHROPIC_BASE_URL~ to DeepSeek's Anthropic-compatible endpoint
-3. Sets ~ANTHROPIC_API_KEY~ from the sops-managed secret at ~/run/secrets/deepseek_key~
-4. Rewrites ~--model~ to the DeepSeek model name
-5. Execs the real ~claude~ binary
+The workstation is increasingly being automated with agents at this point.
+Adding it to the global packages makes it easier to launch in arbitrary locations.
 
 #+begin_src nix :tangle configuration/ai.nix :noweb tangle :mkdirp yes
   { pkgs, lib, config, user, llm-agents, ... } :
-  let
-    youwhatknow = let
-      version = "0.2.1";
-      target = "x86_64-unknown-linux-gnu";
-    in pkgs.stdenv.mkDerivation {
-      pname = "youwhatknow";
-      inherit version;
-
-      src = pkgs.fetchurl {
-        url = "https://github.com/wavefunk/youwhatknow/releases/download/v${version}/youwhatknow-${target}.tar.xz";
-        hash = "sha256-zsXWAzWqi30yqfeaOECL3MBYvRBdtMqUN3W27yS24sc=";
-      };
-
-      sourceRoot = "youwhatknow-${target}";
-      nativeBuildInputs = [ pkgs.makeWrapper ];
-
-      installPhase = ''
-          install -Dm755 youwhatknow $out/bin/youwhatknow
-          wrapProgram $out/bin/youwhatknow
-        '';
-    };
-
-    claude-teammate = let
-      claude-bin = llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.claude-code;
-      deepseek-model = "deepseek-v4-pro[1m]";
-      deepseek-base-url = "https://api.deepseek.com/anthropic";
-      secrets-path = config.sops.secrets.deepseek_key.path;
-      teammate-prompt = ''
-        CRITICAL: You are a teammate in an agent team. Your plain text output is NOT visible to anyone.
-        You MUST use the SendMessage tool to communicate ALL results, findings, and status updates to the team lead.
-        After completing your work, ALWAYS call SendMessage with to="team-lead" and your results as the message.
-        If you do not call SendMessage, your work will be lost and nobody will see your output.
-      '';
-    in pkgs.writeShellScriptBin "claude-teammate" ''
-      set -euo pipefail
-
-      DEEPSEEK_API_KEY="$(cat ${secrets-path})"
-      if [ -z "$DEEPSEEK_API_KEY" ]; then
-        echo "[claude-teammate] Failed to read DeepSeek API key from ${secrets-path}" >&2
-        exit 1
-      fi
-
-      unset CLAUDE_CODE_OAUTH_TOKEN
-      unset ANTHROPIC_AUTH_TOKEN
-      unset CLAUDE_CODE_SESSION_ACCESS_TOKEN
-
-      export ANTHROPIC_BASE_URL="${deepseek-base-url}"
-      export ANTHROPIC_API_KEY="$DEEPSEEK_API_KEY"
-
-      args=()
-      skip_next=false
-      for arg in "$@"; do
-        if $skip_next; then
-          skip_next=false
-          continue
-        fi
-        if [ "$arg" = "--model" ]; then
-          skip_next=true
-          continue
-        fi
-        case "$arg" in
-          --model=*) continue ;;
-        esac
-        args+=("$arg")
-      done
-
-      args+=(--model "${deepseek-model}")
-      args+=(--append-system-prompt "${teammate-prompt}")
-
-      exec ${claude-bin}/bin/claude "''${args[@]}"
-    '';
-  in
   {
     environment.systemPackages = (with llm-agents.packages.${pkgs.stdenv.hostPlatform.system}; [
       claude-code
-      beads-rust
-      gnhf
       pi
       agent-browser
       codex
-    ]) ++ [ youwhatknow ];
-
-    environment.sessionVariables.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = "1";
-    environment.sessionVariables.CLAUDE_CODE_TEAMMATE_COMMAND = "${claude-teammate}/bin/claude-teammate";
+      codegraph
+    ]);
 
     nix.settings = {
       substituters = [ "https://cache.numtide.com" ];
@@ -917,13 +840,15 @@ The wrapper:
     jaq        # rust based jq alternative
     comma      # nix-run helper
     tmux       # seems useful for a bunch of things
+    kache      # rust cache
     element-desktop
   ];
 
-  # to enable icons with wlogout
+  # to enable svg icons in gtk apps
   # https://github.com/catppuccin/nix/issues/584
   programs.gdk-pixbuf.modulePackages = [ pkgs.librsvg ];
 
+  # sharing folders to the tv over local network
   services.minidlna = {
     enable = true;
     openFirewall = true;
@@ -938,6 +863,15 @@ The wrapper:
 
   users.users.minidlna = {
     extraGroups = [ "users" ];
+  };
+
+  # enabling the kache service for faster rust builds
+  services.kache = {
+    enable = true;
+    daemon.enable = true;
+    settings.cache = {
+      local_max_size = "40GB";
+    };
   };
 #+end_src
 
@@ -992,12 +926,10 @@ I also use it to install programs that are okay with being installed at the user
   { pkgs, user, ... } :
   {
     imports = [
-      ./waybar.nix
-      ./wallpaper.nix
+      ./noctalia.nix
       ./lock.nix
       ./unity.nix
       ./niri.nix
-      ./walker.nix
       ./theme.nix
       ./terminal.nix
       ./dev.nix
@@ -1013,87 +945,47 @@ I also use it to install programs that are okay with being installed at the user
 #+end_src
 Oof! Again with all the imports! We can go through them one at a time!
 
-** Waybar
-[[./.github/images/waybar.png]]
+** Noctalia
+[[./assets/background.png]]
 
-Mostly styling and enabling modules in the [[https://github.com/Alexays/Waybar][top bar]].
-#+begin_src nix :tangle home/waybar.nix :noweb tangle :mkdirp yes
-  { lib, pkgs, ... }: {
-    programs.ashell = {
+[[https://github.com/noctalia-dev/noctalia][Noctalia]] is the desktop shell. A single Wayland client provides the bar, the application launcher, the notification daemon, the control center, the session menu, the lock screen and the wallpaper.
+The settings below are generated into a TOML file that noctalia validates at build time.
+I stay close to the defaults, with the catppuccin palette to match the rest of the system.
+The shell runs as a systemd user service (the method the [[https://docs.noctalia.dev/v5/getting-started/nixos/][v5 NixOS docs]] recommend): it is bound to ~graphical-session.target~, restarts on crash and on config changes.
+Niri talks to it over IPC (~noctalia msg ...~) — the keybindings are in the niri section below.
+Per the docs, ~launch_apps_as_systemd_services~ keeps apps launched from noctalia alive across shell restarts.
+#+begin_src nix :tangle home/noctalia.nix :noweb tangle :mkdirp yes
+  { config, ... }:
+  {
+    programs.noctalia = {
       enable = true;
       systemd.enable = true;
-      systemd.target = "graphical-session.target";
       settings = {
-        outputs = "All";
-        position = "Top";
-        enable_esc_key = true;
-        modules = {
-          left = ["Workspaces" "WindowTitle" ];
-          center = [ "Clock" ];
-          right = [ "SystemInfo" [ "Privacy" "Settings" "KeyboardLayout" "Tray" ] ];
+        shell = {
+          font_family = "Aporetic Sans Mono";
+          launch_apps_as_systemd_services = true;
         };
 
-        system_info = {
-          indicators = [ "Cpu" "Memory" "Temperature" "DownloadSpeed"];
+        bar = {
+          margin_edge = 0;
+          margin_ends = 0;
+          radius = 0;
         };
 
-        workspaces = {
-          visibility_mode = "MonitorSpecific";
-          enable_workspace_filling = false;
+        theme = {
+          mode = "dark";
+          source = "builtin";
+          builtin = "Catppuccin";
         };
 
-        keyboard_layout = {
-          "English (US)" = "EN";
-          "Swedish" = "SE";
-        };
-
-        appearance = {
-          font_name = "Aporetic";
-          style = "Solid";
-        };
-      };
-    };
-
-    systemd.user.services.ashell = {
-      Unit.PartOf = [ "graphical-session.target" ];
-      Service = {
-        ExecStartPre = "${pkgs.coreutils}/bin/sleep 5";
-        Restart = lib.mkForce "always";
-        RestartSec = "10s";
-      };
-    };
-  }
-#+end_src
-
-** Wallpaper
-
-[[./assets/background.png]]
-I use [[https://github.com/swaywm/swaybg][swaybg]] for setting the wallpaper. The image is copied into the home folder when applying this configuration and the tool picks it from there.
-#+begin_src nix :tangle home/wallpaper.nix :noweb tangle :mkdirp yes
-  { pkgs, ... }:
-  {
-    home.packages = with pkgs; [
-      swaybg
-    ];
-
-    systemd.user.services.swaybg = {
-      Unit = {
-        Description = "Wallpaper";
-        After = [ "graphical-session.target" ];
-        PartOf = [ "graphical-session.target" ];
-        ConditionEnvironment = "WAYLAND_DISPLAY";
-      };
-      Install.WantedBy = [ "graphical-session.target" ];
-      Service = {
-        ExecStart = "${pkgs.swaybg}/bin/swaybg --image %h/.background-image.png --mode fill";
-        Restart = "on-failure";
+        wallpaper.directory = "${config.home.homeDirectory}/wallpapers";
       };
     };
 
     home.file = {
       background = {
         source = ../assets/background.png;
-        target = ".background-image.png";
+        target = "wallpapers/background.png";
       };
 
       me = {
@@ -1105,217 +997,93 @@ I use [[https://github.com/swaywm/swaybg][swaybg]] for setting the wallpaper. Th
 
 #+end_src
 ** Lock Screen
-The lock screen configured using [[https://github.com/mortie/swaylock-effects][swaylock-effects]].
-I use [[https://github.com/swaywm/swayidle][swayidle]] to detect idle time and use wlogout to show a logout menu.
+The lock screen and the session (logout) menu are provided by noctalia, configured in the section above.
+I use [[https://github.com/swaywm/swayidle][swayidle]] for explicit session lock/sleep events.
+Idle timeouts are deliberately disabled so this machine never locks, turns monitors off, or sleeps unless I ask it to.
 They are configured below.
 #+begin_src nix :tangle home/lock.nix :noweb tangle :mkdirp yes
-  { config, pkgs, ... } :
+  { config, lib, pkgs, ... } :
   let
-    lockCommand = "${pkgs.procps}/bin/pidof swaylock || ${pkgs.swaylock-effects}/bin/swaylock";
-    resumeDisplay = pkgs.writeShellScriptBin "niri-resume-display" ''
-      set -u
-
-      aoc_name="PNP(AOC) Q3279WG5B 0x00000161"
-
-      log() {
-        echo "niri-resume-display: $*"
-      }
-
-      ${pkgs.niri}/bin/niri msg action power-on-monitors >/dev/null 2>&1 || log "initial power-on-monitors failed"
-      ${pkgs.brightnessctl}/bin/brightnessctl -r >/dev/null 2>&1 || true
-
-      # The AOC is behind an AMD USB4/MST path that can churn for a while after resume.
-      # Restart layer-shell clients only after Niri sees the monitor, or after the wait expires.
-      ${pkgs.coreutils}/bin/sleep 5
-
-      seen=0
-      for i in $(${pkgs.coreutils}/bin/seq 1 75); do
-        if ${pkgs.niri}/bin/niri msg outputs 2>/dev/null | ${pkgs.gnugrep}/bin/grep -Fq "$aoc_name"; then
-          log "AOC visible in niri after $i seconds"
-          seen=1
-          break
-        fi
-
-        if [ $((i % 5)) -eq 0 ]; then
-          ${pkgs.niri}/bin/niri msg action power-on-monitors >/dev/null 2>&1 || true
-        fi
-
-        ${pkgs.coreutils}/bin/sleep 1
-      done
-
-      if [ "$seen" -eq 0 ]; then
-        log "AOC still not visible after waiting; restarting ashell against current outputs"
-      fi
-
-      ${pkgs.niri}/bin/niri msg action power-on-monitors >/dev/null 2>&1 || true
-      ${pkgs.systemd}/bin/systemctl --user try-restart ashell.service >/dev/null 2>&1 || log "ashell try-restart failed"
-    '';
-    resumeDisplayCommand = "${pkgs.systemd}/bin/systemctl --user start niri-resume-display.service";
+    lockCommand = "${lib.getExe config.programs.noctalia.package} msg session lock";
   in
   {
-    home.packages = with pkgs; [
-      swaylock-effects
-      wlogout
-      resumeDisplay
-    ];
-
-
-    home.file = {
-      lock = {
-        source = ../assets/lock.png;
-        target = ".lock.png";
-      };
-    };
-
     services = {
-      # swayidle to
-      # 150 seconds - turn of monitor
-      # 300 seconds - lock screen
-      # 330 seconds - turn of monitor
-      #  30 minutes - put to sleep
       swayidle = {
         enable = true;
         events = {
-          lock = lockCommand;                                                          # avoid starting multiple swaylock instances.
+          lock = lockCommand;                                                          # noctalia's lock screen.
           before-sleep = "${pkgs.systemd}/bin/loginctl lock-session";                  # lock before suspend.
-          after-resume = resumeDisplayCommand;                                         # let USB4/MST outputs settle before restarting shell surfaces.
         };
 
-        timeouts = [
-          {
-            timeout = 150;                                                             # 2.5min.
-            command = "${pkgs.brightnessctl}/bin/brightnessctl -s set 10";             # set monitor backlight to minimum, avoid 0 on OLED monitor.
-            resumeCommand = "${pkgs.brightnessctl}/bin/brightnessctl -r";              # monitor backlight restore.
-          }
-          {
-            timeout = 300;                                                             # 5min
-            command = "${pkgs.systemd}/bin/loginctl lock-session";                     # lock screen when timeout has passed
-          }
-          {
-            timeout = 330;                                                             # 5.5min
-            command = "${pkgs.niri}/bin/niri msg action power-off-monitors";           # screen off when timeout has passed
-            resumeCommand = resumeDisplayCommand;                                      # screen on when activity is detected after timeout has fired.
-          }
-          {
-            timeout = 1800;                                                           # 30min
-            command = "${pkgs.systemd}/bin/systemctl suspend";                        # suspend pc
-          }
-        ];
+        timeouts = [];
       };
     };
-
-    systemd.user.services.niri-resume-display = {
-      Unit = {
-        Description = "Recover Niri outputs and ashell after display resume";
-        After = [ "graphical-session.target" ];
-        PartOf = [ "graphical-session.target" ];
-        ConditionEnvironment = "WAYLAND_DISPLAY";
-      };
-      Service = {
-        Type = "oneshot";
-        ExecStart = "${resumeDisplay}/bin/niri-resume-display";
-      };
-    };
-
-
-
-    programs.wlogout = {
-      enable = true;
-      layout = [
-        {
-          "label"  = "lock";
-          "action" = lockCommand;
-          "text" = "Lock";
-          "keybind" = "l";
-        }
-        {
-          "label" = "shutdown";
-          "action" = "systemctl poweroff";
-          "text" = "Shutdown";
-          "keybind" = "s";
-        }
-        {
-          "label" = "suspend";
-          "action" = "systemctl suspend";
-          "text" = "Suspend";
-          "keybind" = "u";
-        }
-        {
-          "label" = "reboot";
-          "action" = "systemctl reboot";
-          "text" = "Reboot";
-          "keybind" = "r";
-        }
-        {
-          "label" = "hibernate";
-          "action" = "systemctl hibernate";
-          "text" = "Hibernate";
-          "keybind" = "h";
-        }
-        {
-          "label" = "reboot";
-          "action" = "systemctl reboot";
-          "text" = "Reboot";
-          "keybind" = "r";
-        }
-      ];
-    };
-
-    catppuccin.wlogout.iconStyle = "wleave";
-
-    xdg.configFile."swaylock/config".text = ''
-      ignore-empty-password
-      show-failed-attempts
-      daemonize
-      image=${config.home.homeDirectory}/.lock.png
-      scaling=fill
-      indicator
-      clock
-      timestr=%H:%M
-      datestr=%A, %F
-      font=Aporetic
-      font-size=36
-      indicator-radius=110
-      indicator-thickness=12
-      line-uses-ring
-      effect-blur=7x5
-      effect-vignette=0.5:0.5
-      inside-color=1e1e2ecc
-      inside-clear-color=a6e3a1cc
-      inside-caps-lock-color=f9e2afcc
-      inside-ver-color=89b4facc
-      inside-wrong-color=f38ba8cc
-      ring-color=89b4fa
-      ring-clear-color=a6e3a1
-      ring-caps-lock-color=f9e2af
-      ring-ver-color=89b4fa
-      ring-wrong-color=f38ba8
-      key-hl-color=a6e3a1
-      bs-hl-color=f38ba8
-      text-color=cdd6f4
-      text-clear-color=1e1e2e
-      text-caps-lock-color=1e1e2e
-      text-ver-color=1e1e2e
-      text-wrong-color=1e1e2e
-      separator-color=00000000
-    '';
   }
 
 #+end_src
 ** Unity
 I work with the [[https://unity.com/][Unity Game Engine]] and I have the unity hub installed globally, instead of in a project flake.
+Unity also ships an experimental standalone [[https://docs.unity.com/en-us/hub/unity-cli][Unity CLI]] for installing editors, managing modules, and scripting Hub workflows from the terminal.
 Often I work with dotnet directly inside of unity and so we set that up too.
 #+begin_src nix :tangle home/unity.nix :noweb tangle :mkdirp yes.
-  { pkgs, ... }:
+  { config, lib, pkgs, ... }:
+  let
+    unityCliBin = pkgs.stdenvNoCC.mkDerivation rec {
+      pname = "unity-cli-bin";
+      version = "0.1.0-beta.7";
+
+      src = pkgs.fetchurl {
+        url = "https://public-cdn.cloud.unity3d.com/hub/prod/cli/${version}/unity-linux-x64";
+        hash = "sha256-5BmKjJTP0PQ2tDSvjPBTm9Ktfvx380yDkrmfUKEOXhU=";
+      };
+
+      dontUnpack = true;
+
+      installPhase = ''
+        runHook preInstall
+        install -Dm755 $src $out/bin/unity-cli
+        runHook postInstall
+      '';
+    };
+
+    unityhubWithCli =
+      let
+        unityhub = pkgs.unityhub.override {
+          extraPkgs = pkgs: with pkgs; [
+            dotnet-sdk_10
+            python314
+            unityCliBin
+          ];
+        };
+      in unityhub.overrideAttrs (old: {
+        installPhase = old.installPhase + ''
+          makeWrapper ${unityhub.fhsEnv}/bin/unityhub-fhs-env $out/bin/unity \
+            --add-flags ${unityCliBin}/bin/unity-cli \
+            --argv0 unity
+        '';
+      });
+  in
   {
-    home.packages = with pkgs; [
-      (pkgs.unityhub.override {
-        extraPkgs = pkgs: with pkgs; [
-          dotnet-sdk
-        ];
-      })
+    home.packages = [
+      unityhubWithCli
     ];
 
+    xdg.desktopEntries.unityhub = {
+      name = "Unity Hub";
+      exec = "${unityhubWithCli}/bin/unityhub %U";
+      terminal = false;
+      type = "Application";
+      icon = "unityhub";
+      settings.StartupWMClass = "unityhub";
+      comment = "The Official Unity Hub";
+      categories = [ "Development" ];
+      mimeType = [ "x-scheme-handler/unityhub" ];
+    };
+
+    xdg.mimeApps = {
+      enable = true;
+      defaultApplications."x-scheme-handler/unityhub" = "unityhub.desktop";
+    };
   }
 #+end_src
 
@@ -1330,6 +1098,7 @@ This configures the desktop environment along with the peripherals. The comments
   }:
   let
     inherit (config.lib.niri) actions;
+    noctalia = lib.getExe config.programs.noctalia.package;
   in
   {
     config = {
@@ -1405,6 +1174,13 @@ This configures the desktop environment along with the peripherals. The comments
             open-floating = true;
           }
           {
+            # the noctalia settings window floats instead of tiling.
+            matches = [
+              { app-id = "dev.noctalia.Noctalia.Settings"; }
+            ];
+            open-floating = true;
+          }
+          {
             matches = [
               { is-window-cast-target = true; }
             ];
@@ -1427,8 +1203,10 @@ This configures the desktop environment along with the peripherals. The comments
           "Mod+M".action = maximize-window-to-edges;
           "Mod+Shift+F".action = fullscreen-window;
 
-          # use walker to show exec menu
-          "Mod+Space".action = spawn "walker";
+          # noctalia's application launcher, clipboard history and control center
+          "Mod+Space".action = spawn noctalia "msg" "panel-toggle" "launcher";
+          "Mod+V".action = spawn noctalia "msg" "panel-toggle" "clipboard";
+          "Mod+N".action = spawn noctalia "msg" "panel-toggle" "control-center";
           "Alt+Tab".action = focus-window-previous;
 
           "Mod+Shift+Left".action = move-column-left;
@@ -1462,10 +1240,10 @@ This configures the desktop environment along with the peripherals. The comments
           "Mod+Alt+P".action = { screenshot-screen = [ ]; };
           "Mod+Ctrl+P".action = { screenshot-screen = [ ]; };
 
-          "Mod+Shift+S".action = spawn "wlogout";
+          "Mod+Shift+S".action = spawn noctalia "msg" "panel-toggle" "session";
           "Mod+Alt+L" = {
             allow-when-locked = true;
-            action = spawn "${pkgs.swaylock-effects}/bin/swaylock";
+            action = spawn noctalia "msg" "session" "lock";
           };
           "Mod+Ctrl+Shift+F".action = toggle-windowed-fullscreen;
           "Mod+Alt+C".action = set-dynamic-cast-window;
@@ -1502,25 +1280,6 @@ This configures the desktop environment along with the peripherals. The comments
   }
 #+end_src
 
-** Walker
-[[https://github.com/abenz1267/walker][This]] is how I launch applications. It is bound to Win+Space in the niri config above.
-Installed as a home-manager module from the walker flake with ~runAsService~ for instant launches.
-The Walker module imports and enables Elephant through Home Manager. Both services are tied to the user ~graphical-session.target~, so Niri must be launched through ~niri-session~ rather than plain ~niri --session~.
-#+begin_src nix :tangle home/walker.nix :noweb tangle :mkdirp yes.
-  {
-    programs.walker = {
-      enable = true;
-      runAsService = true;
-      config = {
-        close = "ctrl g";
-        next = "ctrl n";
-        previous = "ctrl p";
-        quick_activate = ["1" "2" "3" "4"];
-      };
-    };
-  }
-#+end_src
-
 ** Theme
 I use the [[https://catppuccin.com/][Catppuccin]] almost everywhere. The nix module integrates almost automatically everywhere (except gtk).
 You'll notice the color values in multiple places outside this as well.
@@ -1550,6 +1309,7 @@ You'll notice the color values in multiple places outside this as well.
     catppuccin.accent = "blue";
     catppuccin.gtk.icon.enable = true;
     catppuccin.cursors.enable = true;
+    catppuccin.cache.enable = true;
   }
 #+end_src
 
@@ -1595,14 +1355,6 @@ All the miscellaneous dev tools on this computer.
       ripgrep.enable = true;  # fast text search across projects
       btop.enable = true;     # even better task manager
 
-      # nicer terminal info
-      starship = {
-        enable = true;
-        enableZshIntegration = true;
-        enableBashIntegration = true;
-        settings.gcloud.disabled = true;
-      };
-
       # fuzzy finder
       fzf = {
         enable = true;
@@ -1647,18 +1399,6 @@ All the miscellaneous dev tools on this computer.
           bd = "br"; # beads
         };
 
-        # for emacs-eat package
-        initContent = pkgs.lib.mkOrder 1200 ''
-          [ -n "$EAT_SHELL_INTEGRATION_DIR" ] && \
-          source "$EAT_SHELL_INTEGRATION_DIR/zsh"
-
-          if command -v direnv >/dev/null 2>&1; then
-            if [ -n "$CLAUDECODE" ]; then
-              eval "$(direnv hook bash)"
-              eval "$(DIRENV_LOG_FORMAT= direnv export bash)"
-            fi
-          fi
-        '';
       };
 
       # git with lfs
@@ -1697,10 +1437,7 @@ A bunch of programs that I use.
     simple-scan              # scanner software
     pinta                    # image editor
     mpv                      # media player
-    claude-agent-acp         # acp server for agent-shell
   ];
-
-  services.dunst.enable = true;      # notifications daemon
 
   programs.obs-studio.enable = true; # screen recording tool
 #+end_src
@@ -1743,13 +1480,10 @@ Comments describe the emacs package and what it does.
         epkgs.yasnippet-snippets       # commonly used snippets
         epkgs.rg                       # ripgrep
         epkgs.exec-path-from-shell     # load env and path
-        epkgs.eat                      # better shell
-        epkgs.rust-mode                # rust mode (when rust-ts doesn't cut it)
-        epkgs.rustic                   # more rust things
+        epkgs.ghostel                  # better shell
         epkgs.nix-mode                 # nix lang
         epkgs.hcl-mode                 # hashicorp file mode
         epkgs.shell-pop                # quick shell popup
-        epkgs.envrc                    # support for loading .envrc
         epkgs.nixpkgs-fmt              # format nix files
         epkgs.f                        # string + file utilities
         epkgs.gptel
@@ -1758,12 +1492,16 @@ Comments describe the emacs package and what it does.
         epkgs.eldoc-box                # docs in a box
         epkgs.sideline                 # mainly for flymake errors on the side
         epkgs.sideline-flymake         # mainly for flymake errors on the side
+        epkgs.ben                      # support for loading envrc, async
       ];
     };
 
     home.sessionVariables = {
       EDITOR = "emacs";
       XDG_SCREENSHOTS_DIR = "~/screenshots";
+      # zoxide's doctor check false-positives in non-interactive shells
+      # (agents, scripts): the chpwd hook never fires without a prompt
+      _ZO_DOCTOR = "0";
     };
 
     home.file = {
@@ -1914,12 +1652,12 @@ These are listed here.
 Now starts the main emacs configuration.
 
 #+begin_src emacs-lisp :tangle home/emacs/init.el :mkdirp yes
-    ;;; package --- Summary - My minimal Emacs init file -*- lexical-binding: t -*-
+      ;;; package --- Summary - My minimal Emacs init file -*- lexical-binding: t -*-
 
-    ;;; Commentary:
-    ;;; Simple Emacs setup I carry everywhere
+      ;;; Commentary:
+      ;;; Simple Emacs setup I carry everywhere
 
-    ;;; Code:
+      ;;; Code:
   (setq custom-file (locate-user-emacs-file "custom.el"))
   (load custom-file 'noerror)            ;; no error on missing custom file
 
@@ -2081,7 +1819,7 @@ Now starts the main emacs configuration.
         (((class color) (min-colors 88) (background dark))
          :background ,(catppuccin-color 'sapphire))
         (t :inverse-video t))
-      "Alternative nord face for `pulsar-face'."
+      "Alternative Catppuccin face for `pulsar-face'."
       :group 'pulsar-faces)
     :custom
     (pulsar-face 'pulsar-catppuccin)
@@ -2146,7 +1884,11 @@ Now starts the main emacs configuration.
     ("C-a"     . crux-move-beginning-of-line))
 
   (use-package magit
-    :bind (("C-M-g" . magit-status)))
+    :bind (("C-M-g" . magit-status)
+           :map project-prefix-map
+           ("m" . magit-project-status))
+    :config
+    (add-to-list 'project-switch-commands '(magit-project-status "Magit") t))
 
   (use-package nerd-icons-corfu
     :commands nerd-icons-corfu-formatter
@@ -2192,23 +1934,45 @@ Now starts the main emacs configuration.
     :custom
     (nixpkgs-fmt-command "nixfmt"))
 
-  (use-package eat
-    :bind
-    (("C-c e p" . eat-project)
-     ("C-c e t" . eat)))
+  (use-package ghostel
+    :bind (("C-x m" . ghostel)
+           :map ghostel-semi-char-mode-map
+           ("C-s"  . consult-line)
+           ("M-<backspace>" . ghostel-backward-kill-word)
+           ("M-p" . (lambda () (interactive) (ghostel-send-key "p" "ctrl")))
+           ("M-n" . (lambda () (interactive) (ghostel-send-key "n" "ctrl")))
+           :map project-prefix-map
+           ("t" . ghostel-project)
+           ("T" . ghostel-project-list-buffers))
+    :config
+    (defun ghostel-send-C-k-and-kill ()
+      "Send `C-k' to ghostel.
+       Like normal Emacs `C-k'.  Kill to end of line and put content in kill-ring."
+      (interactive)
+      (kill-ring-save (point) (line-end-position))
+      (ghostel-send-key "k" "ctrl"))
+
+    (add-to-list 'project-switch-commands '(ghostel-project "Ghostel") t)
+    (add-to-list 'project-switch-commands '(ghostel-project-list-buffers "Ghostel buffers") t)
+    (add-to-list 'ghostel-eval-cmds '("magit-status-setup-buffer" magit-status-setup-buffer)))
+
+  (use-package ghostel-compile
+    :hook (after-init . ghostel-compile-global-mode))
+
+  (use-package ghostel-comint
+    :hook (after-init . ghostel-comint-global-mode))
 
   (use-package f :demand t)
 
-  (use-package envrc
-    :commands envrc-global-mode
+  (use-package ben
+    :diminish ben-global-mode
+    :bind
+    (:map ben-mode-map
+          ("C-c b" . ben-command-map))
     :hook
-    (after-init . envrc-global-mode))
+    (after-init . ben-global-mode))
 
-  (use-package gptel
-    :commands gptel-make-anthropic f-read-text
-    :config
-    (gptel-make-anthropic "Claude"
-      :stream t :key (f-read-text "/run/secrets/claude_key")))
+  (use-package gptel)
 
   (use-package sideline-flymake)
   (use-package sideline
@@ -2223,14 +1987,16 @@ Now starts the main emacs configuration.
     (eglot-ignored-server-capabilities '(:inlayHintProvider))
     (jsonrpc-event-hook nil)
     :hook
-    (eglot-managed-mode . eldoc-box-hover-mode)
-    (before-save . eldoc-format-buffer)
+    (eglot-managed-mode . (lambda ()
+                            (add-hook 'before-save-hook #'eglot-format-buffer nil t)))
     :bind
     (:map eglot-mode-map
           ("C-c l a" . eglot-code-actions)
+          ("C-c l b" . flymake-show-buffer-diagnostics)
           ("C-c l r" . eglot-rename)
           ("C-c l h" . eldoc)
           ("C-c l g" . xref-find-references)
+          ("C-c l p" . flymake-show-project-diagnostics)
           ("C-c l w" . eglot-reconnect)))
 
   (use-package proced
@@ -2240,163 +2006,6 @@ Now starts the main emacs configuration.
     (proced-enable-color-flag t)
     (proced-show-remote-processes t))
 
-  (use-package org
-    :ensure t
-    :defer t
-    :commands (org-mode org-capture org-agenda)
-    :init
-    (defvar org-journal-file "~/nextcloud/org/journal.org")
-    (defvar org-archive-file "~/nextcloud/org/archive.org")
-    (defvar org-notes-file "~/nextcloud/org/notes.org")
-    (defvar org-inbox-file "~/nextcloud/org/inbox.org")
-    (defvar org-work-file "~/nextcloud/org/work.org")
-    (defun my/org-capture-project-target-heading ()
-      "Determine Org target headings from the current file's project path.
-
-      This function assumes a directory structure like '~/projects/COMPANY/PROJECT/'.
-      It extracts 'COMPANY' and 'PROJECT' to use as nested headlines
-      for an Org capture template.
-
-      If the current buffer is not visi
-  ting a file within such a
-      project structure, it returns nil, causing capture to default to
-      the top of the file."
-      (when-let* ((path (buffer-file-name))) ; Ensure we are in a file-visiting buffer
-        (let ((path-parts (split-string path "/" t " ")))
-          (when-let* ((projects-pos (cl-position "projects" path-parts :test #'string=))
-                      (company      (nth (+ 1 projects-pos) path-parts))
-                      (project      (nth (+ 2 projects-pos) path-parts)))
-            ;; Return a list of headlines for Org to find or create.
-            (list company project)))))
-    :bind
-    (("C-c c" . org-capture)
-     ("C-c i" . org-store-link)
-     ("C-c a" . org-agenda)
-     :map org-mode-map
-     ("C-c t" . org-toggle-inline-images)
-     ("C-c l" . org-toggle-link-display))
-    :custom
-    (org-agenda-files (list org-inbox-file org-journal-file
-                            "~/nextcloud/org/wavefunk.org"
-                            "~/nextcloud/org/projects/"))
-    (org-directory "~/nextcloud/org")
-    (org-default-notes-file org-inbox-file)
-    (org-archive-location (concat org-archive-file "::* From %s"))
-    (org-log-done 'time)
-    (org-log-into-drawer t)
-    (org-hide-emphasis-markers t)
-    (org-src-fontify-natively t)
-    (org-src-tab-acts-natively t)
-    (org-refile-targets '((org-agenda-files :maxlevel . 4)))
-    (org-archive-save-context-info '(time category todo itags olpath))
-    (org-refile-use-outline-path 'file)
-    (org-todo-keywords
-     '((sequence "TODO" "NEXT" "WAITING" "PROJECT" "|" "DONE" "KILLED" "SOMEDAY")))
-    (org-capture-templates '(("t" "Todo" entry (file org-inbox-file)
-                              "* TODO %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n\n%a\n\n)")
-                             ("j" "Journal" entry (file+olp+datetree org-journal-file)
-                              "* %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n\n%a\n\n")
-                             ("n" "Note" entry (file org-notes-file)
-                              "* %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n\n%a\n\n")
-                             ("p" "Project Task" item
-                              (file+function org-work-file my/org-capture-project-target-heading)
-                              "* TODO %? \n  CLOCK: %U"
-                              ))
-                           )
-    :config
-    ;; Enable syntax highlighting in code blocks
-    (add-hook 'org-mode-hook 'turn-on-font-lock)
-    (add-hook 'org-mode-hook 'org-indent-mode))
-
-  ;;; wavefunk task tracking helpers
-
-  (defvar wavefunk/org-projects-dir "~/nextcloud/org/projects/"
-    "Directory containing canonical project org files.")
-
-  (defun wavefunk/org-get-active-tasks (file)
-    "Return the content under the first 'Active' heading in FILE as a string."
-    (with-current-buffer (find-file-noselect (expand-file-name file))
-      (save-excursion
-        (goto-char (point-min))
-        (when (re-search-forward "^\\* Active" nil t)
-          (let ((start (line-beginning-position)))
-            (org-end-of-subtree t t)
-            (buffer-substring-no-properties start (point)))))))
-
-  (defun wavefunk/org-set-todo-by-id (id state)
-    "Find heading with CUSTOM_ID matching ID and set its TODO state to STATE.
-     Searches all org files in `wavefunk/org-projects-dir'."
-    (let ((files (directory-files wavefunk/org-projects-dir t "\\.org$")))
-      (catch 'found
-        (dolist (file files)
-          (with-current-buffer (find-file-noselect file)
-            (org-with-wide-buffer
-             (goto-char (point-min))
-             (while (re-search-forward
-                     (format ":CUSTOM_ID:\\s-*%s" (regexp-quote id)) nil t)
-               (org-back-to-heading t)
-               (org-todo state)
-               (save-buffer)
-               (throw 'found (format "Set %s to %s in %s" id state (file-name-nondirectory file))))))
-          (format "ID %s not found" id)))))
-
-  (defun wavefunk/org-next-id (file prefix)
-    "Return the next available PREFIX-NN id in FILE."
-    (let ((max-id 0))
-      (with-current-buffer (find-file-noselect (expand-file-name file))
-        (org-map-entries
-         (lambda ()
-           (when-let* ((id (org-entry-get nil "CUSTOM_ID")))
-             (when (string-match (format "^%s\\([0-9]+\\)$" (regexp-quote prefix)) id)
-               (setq max-id (max max-id (string-to-number (match-string 1 id)))))))))
-      (format "%s%02d" prefix (1+ max-id))))
-
-  (defun wavefunk/org-add-task (file heading title prefix)
-    "Add a TODO task with TITLE under HEADING in FILE with auto-assigned ID.
-  HEADING is a top-level heading like \"Active\" or \"Backlog\".
-  PREFIX is the project prefix like \"aw-\"."
-    (let ((next-id (wavefunk/org-next-id file prefix)))
-      (with-current-buffer (find-file-noselect (expand-file-name file))
-        (goto-char (point-min))
-        (if (re-search-forward (format "^\\* %s" (regexp-quote heading)) nil t)
-            (progn
-              (org-end-of-subtree t nil)
-              (insert (format "\n** TODO %s\n:PROPERTIES:\n:CUSTOM_ID: %s\n:CREATED: %s\n:END:\n"
-                              title next-id (format-time-string "[%Y-%m-%d %a]")))
-              (save-buffer)
-              (format "Added %s: %s under %s" next-id title heading))
-          (format "Heading '%s' not found in %s" heading file)))))
-
-  (defun wavefunk/org-query-all (state)
-    "Return all tasks matching TODO STATE across all project org files."
-    (let ((files (directory-files wavefunk/org-projects-dir t "\\.org$"))
-          (results '()))
-      (dolist (file files)
-        (with-current-buffer (find-file-noselect file)
-          (org-map-entries
-           (lambda ()
-             (when (string= (org-get-todo-state) state)
-               (push (format "[%s] %s — %s"
-                             (or (org-entry-get nil "CUSTOM_ID") "no-id")
-                             (org-get-heading t t t t)
-                             (file-name-sans-extension (file-name-nondirectory file)))
-                     results))))))
-      (mapconcat #'identity (nreverse results) "\n")))
-
-  (defun wavefunk/org-backfill-ids (file prefix)
-    "Assign CUSTOM_IDs to all headings in FILE that lack one. Uses PREFIX."
-    (with-current-buffer (find-file-noselect (expand-file-name file))
-      (let ((count 0))
-        (org-map-entries
-         (lambda ()
-           (unless (org-entry-get nil "CUSTOM_ID")
-             (when (org-get-todo-state)  ; only assign IDs to TODO items
-               (let ((next-id (wavefunk/org-next-id file prefix)))
-                 (org-set-property "CUSTOM_ID" next-id)
-                 (setq count (1+ count)))))))
-        (when (> count 0) (save-buffer))
-        (format "Backfilled %d IDs in %s" count (file-name-nondirectory file)))))
-
   ;; extras
   (use-package comp-run
     :ensure nil
@@ -2404,13 +2013,15 @@ Now starts the main emacs configuration.
     (push "tramp-loaddefs.el.gz" native-comp-jit-compilation-deny-list)
     (push "cl-loaddefs.el.gz" native-comp-jit-compilation-deny-list))
 
-  (use-package rustic
-    :custom
-    (rustic-lsp-client 'eglot))
+  (use-package rust-ts-mode
+    :ensure nil
+    :mode "\\.rs\\'"
+    :hook
+    (rust-ts-mode . eglot-ensure))
 
   (provide 'init)
 
-    ;;; init.el ends here
+  ;;; init.el ends here
 #+end_src
 
 * Machines
@@ -2430,7 +2041,6 @@ Nothing specific for the laptop.
       ];
 
     <<smallbox-secrets>>
-    <<macbox-host>>
   }
 #+end_src
 
@@ -2491,42 +2101,6 @@ Both smallbox and homelab use wireguard to connect to the VPN. The shared peer p
       ];
     };
 
-    networking.wg-quick.interfaces."wg-id8nxt" = {
-      address = [ "10.42.0.1/32" ];
-      privateKeyFile = config.sops.secrets.wg_id8nxt_private_key.path;
-      peers = [
-        {
-          publicKey = "f+Y69bLw3Lnvyi39TjNYaOieu4GQtfF9MV/1Wpcg6Tg=";
-          endpoint = "204.168.131.4:51820";
-          allowedIPs = [ "10.42.0.2/32" ];
-          persistentKeepalive = 25;
-        }
-        {
-          publicKey = "a5xFiL5DZKQOCfuprSMw9ccIpjBEZHAbdnsgyqGEIG8=";
-          endpoint = "77.42.121.26:51820";
-          allowedIPs = [ "10.42.0.3/32" ];
-          persistentKeepalive = 25;
-        }
-        {
-          publicKey = "ggaD3hGGyf/ICi7MOx2r5+NwlNUltXEpaB7rWREPc1E=";
-          endpoint = "65.109.238.249:51820";
-          allowedIPs = [ "10.42.0.4/32" ];
-          persistentKeepalive = 25;
-        }
-        {
-          publicKey = "TI1eNNrrA+F/lrxGCbnV9CxjwZf85NlFZ54bmVk2Yx0=";
-          endpoint = "65.109.114.187:51820";
-          allowedIPs = [ "10.42.0.5/32" ];
-          persistentKeepalive = 25;
-        }
-        {
-          publicKey = "XXLxstN7/2F9rxXUKGHpMYYRNSeIB7Bvm+GO1oOVuB0=";
-          endpoint = "65.109.230.233:51820";
-          allowedIPs = [ "10.42.0.6/32" ];
-          persistentKeepalive = 25;
-        }
-      ];
-    };
   }
 #+end_src
 
@@ -2583,11 +2157,11 @@ As you might notice, there are a lot more kernel modules. This device has thunde
       options = [ "fmask=0077" "dmask=0077" ];
     };
 
-    # external disk — automount on first access, don't block boot
+    # external disk - manual mount so missing travel disks don't block shell startup
     fileSystems."/home/${user.username}/external" = {
       device = "/dev/disk/by-uuid/18818348-1ee4-4fa5-9984-e4e01b9fa304";
       fsType = "ext4";
-      options = [ "noauto" "nofail" "x-systemd.automount" "x-systemd.idle-timeout=300" ];
+      options = [ "noauto" "nofail" ];
     };
 
     swapDevices = [];
@@ -2629,7 +2203,6 @@ This is mostly about configuring the monitor and key bindings. And laptop specif
     ];
 
     programs.niri.settings = with config.lib.niri.actions; {
-      # Niri reports the external display by make/model/serial, unlike Hyprland's desc: name.
       outputs = {
         main = {
           name = mainOutput;
@@ -2643,6 +2216,11 @@ This is mostly about configuring the monitor and key bindings. And laptop specif
 
         laptop = {
           name = laptopOutput;
+          mode = {
+            width = 2880;
+            height = 1800;
+            refresh = 60.000;
+          };
           scale = 1.5;
           position = {
             x = 2560;
@@ -2765,25 +2343,15 @@ Helper to reduce boilerplate for SSH key pairs managed by sops. Each call to ~mk
       wg_peer_public_key = {};   # wireguard VPN server public key
       vpn_endpoint = {};          # wireguard VPN server endpoint
       homelab_domain = {};        # homelab base domain
-      macbox_ip = {};             # macbox local IP
       wg_wavefunk_private_key = {
         mode = "600";
         path = "/home/${user.username}/.ssh/wg_wavefunk_private_key";
-      };
-      wg_id8nxt_private_key = {
-        mode = "600";
-        path = "/home/${user.username}/.ssh/wg_id8nxt_private_key";
       };
     };
 
   sops.templates."ssh-hosts" = {
     owner = "${user.username}";
     content = ''
-      Host macbox
-        HostName ${config.sops.placeholder.macbox_ip}
-        User nambiar
-        IdentityFile ${config.sops.secrets."ssh/smallbox/private".path}
-
       Host homelab
         HostName ${config.sops.placeholder.homelab_domain}
         User root
@@ -2800,7 +2368,7 @@ Helper to reduce boilerplate for SSH key pairs managed by sops. Each call to ~mk
 ** Homelab
 *** System Level
 #+begin_src nix :tangle machines/homelab/configuration.nix :noweb tangle :mkdirp yes
-  { config, lib, pkgs, ... }:
+  { config, lib, pkgs, user, ... }:
 
   {
     imports =
@@ -3150,228 +2718,66 @@ The caddy reverse proxy block is a noweb reference (~caddy-matrix-host~) include
     };
   };
 #+end_src
-** Macbox
-#+name: macbox-host
-#+begin_src nix
-  programs.ssh.extraConfig = ''
-    Include ${config.sops.templates."ssh-hosts".path}
-    '';
-#+end_src
-
-#+name: macbox-module
-#+begin_src nix
-  darwinConfigurations.macbox = nix-darwin.lib.darwinSystem {
-    system = macSystem;
-    modules = [
-      ({ pkgs, ... }: {
-        nix.settings.trusted-users = [ "root" "nambiar" ];
-        environment.systemPackages = with pkgs; [ vim htop git emacs ];
-
-        system.defaults.SoftwareUpdate.AutomaticallyInstallMacOSUpdates = false;
-        nix.settings.experimental-features = "nix-command flakes";
-
-        system.configurationRevision = self.rev or self.dirtyRev or null;
-
-        nixpkgs.hostPlatform = macSystem;
-
-        networking.computerName = "macbox";
-        networking.hostName = "macbox";
-
-        system.primaryUser = "nambiar";
-
-        power.restartAfterFreeze = true;
-        power.restartAfterPowerFailure  = true;
-        power.sleep.computer = "never";
-        power.sleep.display = "never";
-        power.sleep.harddisk = "never";
-
-        system.activationScripts.postActivation.text = ''
-            sudo pmset -a sleep 0 autorestart 1
-          '';
-
-        users.users.nambiar = {
-          name = "nambiar";
-          home = "/Users/nambiar";
-          openssh.authorizedKeys.keys = [ user.sshPublicKey ];
-        };
-
-        system.stateVersion = 6;
-      })
-    ];
-    specialArgs = { inherit inputs; pkgs = pkgsMac; };
-  };
-
-  deploy.nodes.macbox = {
-    hostname = "macbox";
-    profiles.system = {
-      user = "root";
-      path = deploy-rs.lib.aarch64-darwin.activate.darwin self.darwinConfigurations.macbox;
-    };
-  };
-#+end_src
 * Extras
-#+begin_src markdown :tangle CLAUDE.md :noweb tangle :mkdirp yes
-  # CLAUDE.md
-
-  This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-  ## Critical Rule
-
-  ,**Never read or edit `.nix` files directly.** All `.nix` files are generated from `README.org` via org-babel-tangle. `README.org` is the single source of truth — every change must be made there. Edits to `.nix` files will be silently overwritten on next tangle.
-
-  ## Commands
-
-  ```bash
-  # Tangle README.org into nix files (the CI workflow runs a more complete version with a startup block)
-  emacs README.org --batch -f org-babel-tangle
-
-  # Deploy to local machine
-  nixos-rebuild switch --flake .#smallbox
-
-  # Deploy to remote machines
-  nix run github:serokell/deploy-rs -- .#macbox
-  nix run github:serokell/deploy-rs -- .#homelab
-
-  # Edit encrypted secrets
-  sops secrets/secrets.yaml
-
-  # Update flake inputs
-  nix flake update
-
-  # Format nix code
-  nixfmt <file>
-
-  # Enter dev shell (provides nil, nixfmt, sops)
-  nix develop
-  # or: direnv is configured via .envrc
-  ```
-
-  There are no tests or linters — validation happens at `nixos-rebuild` time.
-
-  ## Architecture
-
-  This is a literate NixOS configuration. `README.org` contains org-mode source blocks that tangle into all `.nix` files. Noweb references (`<<name>>`) compose fragments across blocks — understand how they assemble before changing structure.
-
-  ### Machines
-
-  - **smallbox** — primary workstation (x86_64-linux, NixOS, deployed locally)
-  - **macbox** — work Mac (aarch64-darwin, nix-darwin, deployed via deploy-rs)
-  - **homelab** — home server (NixOS, deployed via deploy-rs)
-
-  ### Flake structure
-
-  `flake.nix` dynamically generates `nixosConfigurations` by mapping over a machines list. Each machine imports `machines/<name>/configuration.nix` and `machines/<name>/home.nix`. Shared modules live in `configuration/` (system-level) and `home/` (home-manager).
-
-  Key inputs: nixpkgs-unstable, home-manager, emacs-overlay, sops-nix, catppuccin, nix-darwin, deploy-rs, disko.
-
-  ### Secrets
-
-  Managed with sops-nix using age encryption. Key defined in `.sops.yaml`. Edit with `sops secrets/secrets.yaml`.
-
-  ### CI
-
-  GitHub Actions workflow (`.github/workflows/tangle.yml`) auto-tangles on push to `README.org` and commits the generated files.
-
-  ### Others
-  Also read AGENTS.md for more instructions.
-
-#+end_src
-
-*** Claude Code Settings
-Global Claude Code settings tangled to =~/.claude/settings.json=. This configures the model, plugins, permissions, teammate mode, and other preferences.
-
-#+begin_src json :tangle ~/.claude/settings.json :mkdirp yes
-  {
-    "env": {
-      "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-    },
-    "permissions": {
-      "defaultMode": "auto"
-    },
-    "model": "claude-opus-4-6[1M]",
-    "statusLine": {
-      "type": "command",
-      "command": "bash /home/nambiar/.claude/statusline-command.sh"
-    },
-    "enabledPlugins": {
-      "frontend-design@claude-plugins-official": true,
-      "superpowers@claude-plugins-official": true,
-      "feature-dev@claude-plugins-official": true,
-      "code-simplifier@claude-plugins-official": true,
-      "commit-commands@claude-plugins-official": true,
-      "security-guidance@claude-plugins-official": true,
-      "claude-md-management@claude-plugins-official": true,
-      "pr-review-toolkit@claude-plugins-official": true,
-      "claude-code-setup@claude-plugins-official": true,
-      "rust-analyzer-lsp@claude-plugins-official": true,
-      "ralph-loop@claude-plugins-official": true,
-      "figma@claude-plugins-official": true,
-      "hegel-skill@hegel-skill-marketplace": true,
-      "emacs-skills@xenodium-emacs-skills": true,
-      "csharp-lsp@claude-plugins-official": true,
-      "product-tracking-skills@claude-plugins-official": true,
-      "frontend-design@claude-code-plugins": true,
-      "atomic-agents@claude-plugins-official": true,
-      "impeccable@impeccable": true
-    },
-    "extraKnownMarketplaces": {
-      "claude-code-plugins": {
-        "source": {
-          "source": "github",
-          "repo": "anthropics/claude-code"
-        }
-      },
-      "hegel-skill-marketplace": {
-        "source": {
-          "source": "github",
-          "repo": "hegeldev/hegel-skill"
-        }
-      },
-      "impeccable": {
-        "source": {
-          "source": "github",
-          "repo": "pbakaus/impeccable"
-        }
-      }
-    },
-    "effortLevel": "high",
-    "advisorModel": "opus",
-    "awaySummaryEnabled": false,
-    "skipDangerousModePermissionPrompt": true,
-    "preferredNotifChannel": "ghostty",
-    "teammateMode": "tmux",
-    "remoteControlAtStartup": false,
-    "agentPushNotifEnabled": true,
-    "skipAutoPermissionPrompt": true
-  }
-#+end_src
-
 #+begin_src markdown :tangle AGENTS.md :noweb tangle :mkdirp yes
-  <!-- BEGIN YOUWHATKNOW INTEGRATION -->
-  ## File Summaries (youwhatknow)
+# AGENTS.md
 
-  This project uses **youwhatknow** for automatic file summaries during Claude Code sessions.
-  It works via hooks — no manual action needed.
+This file provides guidance to AI Agents when working with code in this repository.
 
-  ,**How it works:**
-  - Large files show a summary (description, symbols, line ranges) on first read
-  - Read again for full content, or use offset/limit to target sections
-  - Project structure is injected at session start
+## Critical Rule
 
-  ,**Useful commands:**
-  ```bash
-  youwhatknow status              # Check daemon health
-  youwhatknow status --json       # Machine-readable status
-  youwhatknow reindex             # Refresh index after major changes
-  youwhatknow reindex --full      # Full reindex (ignore change detection)
-  youwhatknow summary <path>      # Preview a file summary
-  youwhatknow reset <path>        # Reset read count for a file
-  youwhatknow restart             # Restart daemon
-  youwhatknow logs                # View daemon logs
-  youwhatknow prime               # Full agent workflow context
-  ```
+**Never read or edit `.nix` files directly.** All `.nix` files are generated from `README.org` via org-babel-tangle. `README.org` is the single source of truth — every change must be made there. Edits to `.nix` files will be silently overwritten on next tangle.
 
-  <!-- END YOUWHATKNOW INTEGRATION -->
+## Commands
+
+```bash
+# Tangle README.org into nix files (the CI workflow runs a more complete version with a startup block)
+emacs README.org --batch -f org-babel-tangle
+
+# Deploy to local machine
+nixos-rebuild switch --flake .#smallbox
+
+# Deploy to the remote machine
+nix run github:serokell/deploy-rs -- .#homelab
+
+# Edit encrypted secrets
+sops secrets/secrets.yaml
+
+# Update flake inputs
+nix flake update
+
+# Format nix code
+nixfmt <file>
+
+# Enter dev shell (provides nil, nixfmt, sops)
+nix develop
+# or: direnv is configured via .envrc
+```
+
+There are no tests or linters — validation happens at `nixos-rebuild` time.
+
+## Architecture
+
+This is a literate NixOS configuration. `README.org` contains org-mode source blocks that tangle into all `.nix` files. Noweb references (``) compose fragments across blocks — understand how they assemble before changing structure.
+
+### Machines
+
+- **smallbox** — primary workstation (x86_64-linux, NixOS, deployed locally)
+- **homelab** — home server (NixOS, deployed via deploy-rs)
+
+### Flake structure
+
+`flake.nix` dynamically generates `nixosConfigurations` by mapping over a machines list. Each machine imports `machines/<name>/configuration.nix` and `machines/<name>/home.nix`. Shared modules live in `configuration/` (system-level) and `home/` (home-manager).
+
+Key inputs: nixpkgs-unstable, home-manager, emacs-overlay, sops-nix, catppuccin, deploy-rs, disko.
+
+### Secrets
+
+Managed with sops-nix using age encryption. Key defined in `.sops.yaml`. Edit with `sops secrets/secrets.yaml`.
+
+### CI
+
+GitHub Actions workflow (`.github/workflows/tangle.yml`) auto-tangles on push to `README.org` and commits the generated files.
 #+end_src
 * README Utils
 *** Headers

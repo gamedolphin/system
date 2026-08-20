@@ -7,18 +7,19 @@
     # enable flakes
     experimental-features = ["nix-command" "flakes"];
 
+    # allow the configured primary user to use flake-provided binary caches
+    trusted-users = [ user.username ];
+
     # add a cache that speed up new applications by downloading binaries
     # from the trusted cache instead of compiling from sourcer
     substituters = [
       "https://nix-community.cachix.org"
-      "https://walker.cachix.org"
-      "https://walker-git.cachix.org"
+      "https://noctalia.cachix.org"
     ];
     # trust the cache public key
     trusted-public-keys = [
       "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-      "walker.cachix.org-1:fG8q+uAaMqhsMxWjwvk0IMb4mFPFLqHjuvfwQxE4oJM="
-      "walker-git.cachix.org-1:vmC0ocfPWh0S/vRAQGtChuiZBTAe4wiKDeyyXM0/7pM="
+      "noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4="
     ];
   };
 

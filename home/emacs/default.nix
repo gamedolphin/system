@@ -33,9 +33,7 @@
       epkgs.yasnippet-snippets       # commonly used snippets
       epkgs.rg                       # ripgrep
       epkgs.exec-path-from-shell     # load env and path
-      epkgs.eat                      # better shell
-      epkgs.rust-mode                # rust mode (when rust-ts doesn't cut it)
-      epkgs.rustic                   # more rust things
+      epkgs.ghostel                  # better shell
       epkgs.nix-mode                 # nix lang
       epkgs.hcl-mode                 # hashicorp file mode
       epkgs.shell-pop                # quick shell popup
@@ -54,6 +52,9 @@
   home.sessionVariables = {
     EDITOR = "emacs";
     XDG_SCREENSHOTS_DIR = "~/screenshots";
+    # zoxide's doctor check false-positives in non-interactive shells
+    # (agents, scripts): the chpwd hook never fires without a prompt
+    _ZO_DOCTOR = "0";
   };
 
   home.file = {

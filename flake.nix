@@ -27,11 +27,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    nix-darwin = {
-      url = "github:LnL7/nix-darwin";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     deploy-rs.url = "github:serokell/deploy-rs";
 
     disko = {
@@ -46,12 +41,14 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    elephant.url = "github:abenz1267/elephant";
+    noctalia.url = "github:noctalia-dev/noctalia/cachix";
 
-    walker = {
-      url = "github:abenz1267/walker";
-      inputs.elephant.follows = "elephant";
+    noctalia-greeter = {
+      url = "github:noctalia-dev/noctalia-greeter";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    kache.url = "github:kunobi-ninja/kache";
   };
 
   outputs = {
@@ -61,20 +58,20 @@
       emacs-overlay,
       sops-nix,
       catppuccin,
-      nix-darwin,
       deploy-rs,
       disko,
       llm-agents,
       niri,
-      walker,
+      noctalia,
+      noctalia-greeter,
+      kache,
       ...
   }@inputs:
     let
       user = import ./user.nix;
       lib = nixpkgs.lib;
-      machines = [
+      workstations = [
         "smallbox"
-        "homelab"
       ];
 
       pkgs = import nixpkgs {
@@ -88,12 +85,6 @@
           (self: super: { deploy-rs = { inherit (pkgs) deploy-rs; lib = super.deploy-rs.lib; }; })
         ];
       };
-
-      macSystem = "aarch64-darwin";
-
-      pkgsMac = import nixpkgs {
-        system = macSystem;
-      };
     in
       {
         nixosConfigurations = builtins.listToAttrs (
@@ -103,6 +94,9 @@
               modules = [
                 ({ ... }: {
                   nixpkgs.overlays = [ emacs-overlay.overlays.default ];
+                })
+                ({ ... }: {
+                  nixpkgs.overlays = [ kache.overlays.default ];
                 })
                 ./machines/${machine}/configuration.nix
                 home-manager.nixosModules.home-manager
@@ -117,69 +111,31 @@
                     imports =  [
                       ./machines/${machine}/home.nix
                       catppuccin.homeModules.catppuccin
-                      walker.homeManagerModules.default
+                      noctalia.homeModules.default
                     ];
                   };
                 }
-                niri.nixosModules.niri               # niri-flake
-                disko.nixosModules.disko             # disks
-                sops-nix.nixosModules.sops           # sops
-                catppuccin.nixosModules.catppuccin   # theme
+                niri.nixosModules.niri                       # niri-flake
+                disko.nixosModules.disko                     # disks
+                sops-nix.nixosModules.sops                   # sops
+                catppuccin.nixosModules.catppuccin           # theme
+                kache.nixosModules.default                   # kache
+                noctalia-greeter.nixosModules.default        # login
               ];
               specialArgs = {
                 hostname = machine;
                 inherit user llm-agents;
               };
             };
-          }) machines
-        );
-
-        darwinConfigurations.macbox = nix-darwin.lib.darwinSystem {
-          system = macSystem;
-          modules = [
-            ({ pkgs, ... }: {
-              nix.settings.trusted-users = [ "root" "nambiar" ];
-              environment.systemPackages = with pkgs; [ vim htop git emacs ];
-
-              system.defaults.SoftwareUpdate.AutomaticallyInstallMacOSUpdates = false;
-              nix.settings.experimental-features = "nix-command flakes";
-
-              system.configurationRevision = self.rev or self.dirtyRev or null;
-
-              nixpkgs.hostPlatform = macSystem;
-
-              networking.computerName = "macbox";
-              networking.hostName = "macbox";
-
-              system.primaryUser = "nambiar";
-
-              power.restartAfterFreeze = true;
-              power.restartAfterPowerFailure  = true;
-              power.sleep.computer = "never";
-              power.sleep.display = "never";
-              power.sleep.harddisk = "never";
-
-              system.activationScripts.postActivation.text = ''
-                  sudo pmset -a sleep 0 autorestart 1
-                '';
-
-              users.users.nambiar = {
-                name = "nambiar";
-                home = "/Users/nambiar";
-                openssh.authorizedKeys.keys = [ user.sshPublicKey ];
-              };
-
-              system.stateVersion = 6;
-            })
-          ];
-          specialArgs = { inherit inputs; pkgs = pkgsMac; };
-        };
-
-        deploy.nodes.macbox = {
-          hostname = "macbox";
-          profiles.system = {
-            user = "root";
-            path = deploy-rs.lib.aarch64-darwin.activate.darwin self.darwinConfigurations.macbox;
+          }) workstations
+        ) // {
+          homelab = lib.nixosSystem {
+            modules = [
+              ./machines/homelab/configuration.nix
+              disko.nixosModules.disko
+              sops-nix.nixosModules.sops
+            ];
+            specialArgs = { inherit user; };
           };
         };
 

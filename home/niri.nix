@@ -9,6 +9,7 @@
 }:
 let
   inherit (config.lib.niri) actions;
+  noctalia = lib.getExe config.programs.noctalia.package;
 in
 {
   config = {
@@ -84,6 +85,13 @@ in
           open-floating = true;
         }
         {
+          # the noctalia settings window floats instead of tiling.
+          matches = [
+            { app-id = "dev.noctalia.Noctalia.Settings"; }
+          ];
+          open-floating = true;
+        }
+        {
           matches = [
             { is-window-cast-target = true; }
           ];
@@ -106,8 +114,10 @@ in
         "Mod+M".action = maximize-window-to-edges;
         "Mod+Shift+F".action = fullscreen-window;
 
-        # use walker to show exec menu
-        "Mod+Space".action = spawn "walker";
+        # noctalia's application launcher, clipboard history and control center
+        "Mod+Space".action = spawn noctalia "msg" "panel-toggle" "launcher";
+        "Mod+V".action = spawn noctalia "msg" "panel-toggle" "clipboard";
+        "Mod+N".action = spawn noctalia "msg" "panel-toggle" "control-center";
         "Alt+Tab".action = focus-window-previous;
 
         "Mod+Shift+Left".action = move-column-left;
@@ -141,10 +151,10 @@ in
         "Mod+Alt+P".action = { screenshot-screen = [ ]; };
         "Mod+Ctrl+P".action = { screenshot-screen = [ ]; };
 
-        "Mod+Shift+S".action = spawn "wlogout";
+        "Mod+Shift+S".action = spawn noctalia "msg" "panel-toggle" "session";
         "Mod+Alt+L" = {
           allow-when-locked = true;
-          action = spawn "${pkgs.swaylock-effects}/bin/swaylock";
+          action = spawn noctalia "msg" "session" "lock";
         };
         "Mod+Ctrl+Shift+F".action = toggle-windowed-fullscreen;
         "Mod+Alt+C".action = set-dynamic-cast-window;

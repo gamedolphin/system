@@ -48,40 +48,4 @@ in
     ];
   };
 
-  networking.wg-quick.interfaces."wg-id8nxt" = {
-    address = [ "10.42.0.1/32" ];
-    privateKeyFile = config.sops.secrets.wg_id8nxt_private_key.path;
-    peers = [
-      {
-        publicKey = "f+Y69bLw3Lnvyi39TjNYaOieu4GQtfF9MV/1Wpcg6Tg=";
-        endpoint = "204.168.131.4:51820";
-        allowedIPs = [ "10.42.0.2/32" ];
-        persistentKeepalive = 25;
-      }
-      {
-        publicKey = "a5xFiL5DZKQOCfuprSMw9ccIpjBEZHAbdnsgyqGEIG8=";
-        endpoint = "77.42.121.26:51820";
-        allowedIPs = [ "10.42.0.3/32" ];
-        persistentKeepalive = 25;
-      }
-      {
-        publicKey = "ggaD3hGGyf/ICi7MOx2r5+NwlNUltXEpaB7rWREPc1E=";
-        endpoint = "65.109.238.249:51820";
-        allowedIPs = [ "10.42.0.4/32" ];
-        persistentKeepalive = 25;
-      }
-      {
-        publicKey = "TI1eNNrrA+F/lrxGCbnV9CxjwZf85NlFZ54bmVk2Yx0=";
-        endpoint = "65.109.114.187:51820";
-        allowedIPs = [ "10.42.0.5/32" ];
-        persistentKeepalive = 25;
-      }
-      {
-        publicKey = "XXLxstN7/2F9rxXUKGHpMYYRNSeIB7Bvm+GO1oOVuB0=";
-        endpoint = "65.109.230.233:51820";
-        allowedIPs = [ "10.42.0.6/32" ];
-        persistentKeepalive = 25;
-      }
-    ];
-  };
 }
