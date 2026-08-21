@@ -37,7 +37,6 @@
       epkgs.nix-mode                 # nix lang
       epkgs.hcl-mode                 # hashicorp file mode
       epkgs.shell-pop                # quick shell popup
-      epkgs.envrc                    # support for loading .envrc
       epkgs.nixpkgs-fmt              # format nix files
       epkgs.f                        # string + file utilities
       epkgs.gptel
@@ -46,6 +45,7 @@
       epkgs.eldoc-box                # docs in a box
       epkgs.sideline                 # mainly for flymake errors on the side
       epkgs.sideline-flymake         # mainly for flymake errors on the side
+      epkgs.ben                      # support for loading envrc, async
     ];
   };
 
