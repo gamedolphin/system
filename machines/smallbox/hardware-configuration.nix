@@ -16,21 +16,22 @@
   ];
 
   boot.initrd.availableKernelModules = [
-    "xhci_pci"       # usb wake up (usb host controller)
-    "thunderbolt"    # :/
-    "nvme"           # support for the nvme disk in here
-    "usb_storage"    # :/
-    "sd_mod"         # hard drive controller
+    "xhci_pci" # usb wake up (usb host controller)
+    "thunderbolt" # :/
+    "nvme" # support for the nvme disk in here
+    "usb_storage" # :/
+    "sd_mod" # hard drive controller
   ];
 
-  boot.kernelParams = [ "amd_pstate=active"
-                        "acpi.ec_no_wakeup=1"
-                        # Force use of the thinkpad_acpi driver for backlight control.
-                        # This allows the backlight save/load systemd service to work.
-                        "acpi_backlight=native"
-                        # Needed for touchpad to work properly (click doesn't register by pushing down the touchpad).
-                        "psmouse.synaptics_intertouch=0"
-                      ];
+  boot.kernelParams = [
+    "amd_pstate=active"
+    "acpi.ec_no_wakeup=1"
+    # Force use of the thinkpad_acpi driver for backlight control.
+    # This allows the backlight save/load systemd service to work.
+    "acpi_backlight=native"
+    # Needed for touchpad to work properly (click doesn't register by pushing down the touchpad).
+    "psmouse.synaptics_intertouch=0"
+  ];
   boot.kernelModules = [ "kvm-amd" ];
   boot.loader.grub.efiSupport = true;
   boot.loader.grub.useOSProber = true; # detect windows since thats on a partition here
@@ -41,22 +42,29 @@
     fsType = "ext4";
   };
 
-  boot.initrd.luks.devices."luks-f400c0ed-57e0-4b5a-b701-c1a10c19480f".device = "/dev/disk/by-uuid/f400c0ed-57e0-4b5a-b701-c1a10c19480f";
+  boot.initrd.luks.devices."luks-f400c0ed-57e0-4b5a-b701-c1a10c19480f".device =
+    "/dev/disk/by-uuid/f400c0ed-57e0-4b5a-b701-c1a10c19480f";
 
   fileSystems."/boot" = {
     device = "/dev/disk/by-uuid/5A5A-DEFE";
     fsType = "vfat";
-    options = [ "fmask=0077" "dmask=0077" ];
+    options = [
+      "fmask=0077"
+      "dmask=0077"
+    ];
   };
 
   # external disk - manual mount so missing travel disks don't block shell startup
   fileSystems."/home/${user.username}/external" = {
     device = "/dev/disk/by-uuid/18818348-1ee4-4fa5-9984-e4e01b9fa304";
     fsType = "ext4";
-    options = [ "noauto" "nofail" ];
+    options = [
+      "noauto"
+      "nofail"
+    ];
   };
 
-  swapDevices = [];
+  swapDevices = [ ];
 
   hardware.graphics = {
     enable = lib.mkDefault true;

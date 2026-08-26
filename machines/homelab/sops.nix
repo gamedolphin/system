@@ -9,17 +9,19 @@
     age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
   };
 
-  sops.secrets.wg_homelab_key = { # wireguard private key
+  sops.secrets.wg_homelab_key = {
+    # wireguard private key
     mode = "600";
     path = "/root/.ssh/wg_private_key";
   };
 
-  sops.secrets.wg_homelab_preshared_key = { # wireguard preshared key
+  sops.secrets.wg_homelab_preshared_key = {
+    # wireguard preshared key
     mode = "600";
     path = "/root/.ssh/wg_preshared_key";
   };
 
-  sops.secrets.wg_peer_public_key = {};       # wireguard VPN server public key
-  sops.secrets.homelab_peer_endpoint = {};     # wireguard peer endpoint for homelab
-  sops.secrets.homelab_domain = {};            # homelab base domain
+  sops.secrets.wg_peer_public_key = { }; # wireguard VPN server public key
+  sops.secrets.homelab_peer_endpoint = { }; # wireguard peer endpoint for homelab
+  sops.secrets.homelab_domain = { }; # homelab base domain
 }

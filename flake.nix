@@ -51,8 +51,9 @@
     kache.url = "github:kunobi-ninja/kache";
   };
 
-  outputs = {
-    self,
+  outputs =
+    {
+      self,
       nixpkgs,
       home-manager,
       emacs-overlay,
@@ -66,7 +67,7 @@
       noctalia-greeter,
       kache,
       ...
-  }@inputs:
+    }@inputs:
     let
       user = import ./user.nix;
       lib = nixpkgs.lib;
@@ -82,12 +83,18 @@
         inherit (user) system;
         overlays = [
           deploy-rs.overlays.default
-          (self: super: { deploy-rs = { inherit (pkgs) deploy-rs; lib = super.deploy-rs.lib; }; })
+          (self: super: {
+            deploy-rs = {
+              inherit (pkgs) deploy-rs;
+              lib = super.deploy-rs.lib;
+            };
+          })
         ];
       };
     in
-      {
-        nixosConfigurations = builtins.listToAttrs (
+    {
+      nixosConfigurations =
+        builtins.listToAttrs (
           builtins.map (machine: {
             name = machine;
             value = lib.nixosSystem {
@@ -108,19 +115,19 @@
                   };
                   home-manager.backupFileExtension = "backup";
                   home-manager.users.${user.username} = {
-                    imports =  [
+                    imports = [
                       ./machines/${machine}/home.nix
                       catppuccin.homeModules.catppuccin
                       noctalia.homeModules.default
                     ];
                   };
                 }
-                niri.nixosModules.niri                       # niri-flake
-                disko.nixosModules.disko                     # disks
-                sops-nix.nixosModules.sops                   # sops
-                catppuccin.nixosModules.catppuccin           # theme
-                kache.nixosModules.default                   # kache
-                noctalia-greeter.nixosModules.default        # login
+                niri.nixosModules.niri # niri-flake
+                disko.nixosModules.disko # disks
+                sops-nix.nixosModules.sops # sops
+                catppuccin.nixosModules.catppuccin # theme
+                kache.nixosModules.default # kache
+                noctalia-greeter.nixosModules.default # login
               ];
               specialArgs = {
                 hostname = machine;
@@ -128,7 +135,8 @@
               };
             };
           }) workstations
-        ) // {
+        )
+        // {
           homelab = lib.nixosSystem {
             modules = [
               ./machines/homelab/configuration.nix
@@ -139,21 +147,21 @@
           };
         };
 
-        deploy.nodes.homelab = {
-          hostname = "homelab";
-          profiles.system = {
-            user = "root";
-            sshUser = "root";
-            path = deployPkgs.deploy-rs.lib.activate.nixos self.nixosConfigurations.homelab;
-          };
-        };
-
-        devShells.${user.system}.default = pkgs.mkShell {
-          buildInputs = with pkgs; [
-            nil               # nix lsp server
-            nixfmt            # nix formatter
-            sops              # used to edit secrets
-          ];
+      deploy.nodes.homelab = {
+        hostname = "homelab";
+        profiles.system = {
+          user = "root";
+          sshUser = "root";
+          path = deployPkgs.deploy-rs.lib.activate.nixos self.nixosConfigurations.homelab;
         };
       };
+
+      devShells.${user.system}.default = pkgs.mkShell {
+        buildInputs = with pkgs; [
+          nil # nix lsp server
+          nixfmt # nix formatter
+          sops # used to edit secrets
+        ];
+      };
+    };
 }

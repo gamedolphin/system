@@ -7,46 +7,147 @@
     enable = true;
     # install with tree sitter enabled
     package = (pkgs.emacs-git-pgtk.override { withTreeSitter = true; });
-    extraPackages = epkgs: [
-      # also install all tree sitter grammars
-      epkgs.manualPackages.treesit-grammars.with-all-grammars
-      epkgs.nerd-icons               # nerd fonts support
-      epkgs.doom-modeline            # model line
-      epkgs.diminish                 # hides modes from modeline
-      epkgs.eldoc                    # doc support
-      epkgs.pulsar                   # pulses the cursor when jumping about
-      epkgs.which-key                # help porcelain
-      epkgs.expreg                   # expand region
-      epkgs.vundo                    # undo tree
-      epkgs.puni                     # structured editing
-      epkgs.avy                      # jumping utility
-      epkgs.consult                  # emacs right click
-      epkgs.vertico                  # minibuffer completion
-      epkgs.marginalia               # annotations for completions
-      epkgs.crux                     # utilities
-      epkgs.magit                    # git porcelain
-      epkgs.nerd-icons-corfu         # nerd icons for completion
-      epkgs.corfu                    # completion
-      epkgs.cape                     # completion extensions
-      epkgs.orderless                # search paradigm
-      epkgs.yasnippet                # snippets support
-      epkgs.yasnippet-snippets       # commonly used snippets
-      epkgs.rg                       # ripgrep
-      epkgs.exec-path-from-shell     # load env and path
-      epkgs.ghostel                  # better shell
-      epkgs.nix-mode                 # nix lang
-      epkgs.hcl-mode                 # hashicorp file mode
-      epkgs.shell-pop                # quick shell popup
-      epkgs.nixpkgs-fmt              # format nix files
-      epkgs.f                        # string + file utilities
-      epkgs.gptel
-      epkgs.agent-shell              # acp-powered agent shell (uses claude-agent-acp)
-      epkgs.catppuccin-theme         # catppuccin theme
-      epkgs.eldoc-box                # docs in a box
-      epkgs.sideline                 # mainly for flymake errors on the side
-      epkgs.sideline-flymake         # mainly for flymake errors on the side
-      epkgs.ben                      # support for loading envrc, async
-    ];
+    extraPackages =
+      epkgs:
+      let
+        gptelPinned = epkgs.melpaBuild {
+          pname = "gptel";
+          version = "20260825.0";
+          src = pkgs.fetchFromGitHub {
+            owner = "karthink";
+            repo = "gptel";
+            rev = "092bbc32fcada63404c572f6c3497c6d68d955f7";
+            hash = "sha256-TOnQcyQsKhmPAL0ZiJT18/GHwpLTN2deaJU0dalsq9A=";
+          };
+          packageRequires = [
+            epkgs.compat
+            epkgs.transient
+          ];
+        };
+        macherPinned = epkgs.melpaBuild {
+          pname = "macher";
+          version = "20260726.0";
+          src = pkgs.fetchFromGitHub {
+            owner = "kmontag";
+            repo = "macher";
+            rev = "fe3622449d73d5404cd34d3e5cdc3419c624b81e";
+            hash = "sha256-h86pDy+Va0X0VsQPaYulqmMFaCt6DqU5+hodgQ4MRHY=";
+          };
+          packageRequires = [ gptelPinned ];
+        };
+        gptelAgentPinned = epkgs.melpaBuild {
+          pname = "gptel-agent";
+          version = "20260823.0";
+          src = pkgs.fetchFromGitHub {
+            owner = "karthink";
+            repo = "gptel-agent";
+            rev = "326e0abb8c6db0e5c4c421bd9af495932ae94b62";
+            hash = "sha256-2eqY1MebzsDOpf3YEHy6o31TbpLA2iIPZMMVrscLYMk=";
+          };
+          files = ''(:defaults "agents" "skills")'';
+          packageRequires = [
+            epkgs.compat
+            gptelPinned
+            epkgs.orderless
+            epkgs.yaml
+          ];
+          patches = [ ./patches/gptel-agent-codex-stream.patch ];
+          postPatch = ''
+            substituteInPlace gptel-agent-tools.el \
+              --replace-fail '(flymake--diag-text diag)' '(flymake-diagnostic-text diag)' \
+              --replace-fail '(flymake--diag-beg diag)' '(flymake-diagnostic-beg diag)' \
+              --replace-fail \
+                '        (let ((severity (flymake--diag-type diag)))' \
+                '        (let* ((type (flymake-diagnostic-type diag))
+               (severity (pcase (symbol-name (or (get type (intern "flymake-category")) type))
+                           ("flymake-error" :error)
+                           ("flymake-warning" :warning)
+                           ("flymake-note" :note)
+                           (_ type))))' \
+              --replace-fail \
+                '                     (line-num (line-number-at-pos beg))' \
+                '                     (_ (goto-char beg))
+                       (line-num (line-number-at-pos beg))'
+          '';
+        };
+        gptelQuickPinned = epkgs.melpaBuild {
+          pname = "gptel-quick";
+          version = "20260607.0";
+          src = pkgs.fetchFromGitHub {
+            owner = "karthink";
+            repo = "gptel-quick";
+            rev = "36fe296e016449433fa1213f4b89cb8dc7d4db5e";
+            hash = "sha256-W2cEtjhoXxAhMxycLAg0qe2Ehpgn1L/m1VcpZu/Trsw=";
+          };
+          packageRequires = [
+            epkgs.compat
+            gptelPinned
+          ];
+          patches = [ ./patches/gptel-quick-codex-stream.patch ];
+        };
+        gptelMagitPinned = epkgs.melpaBuild {
+          pname = "gptel-magit";
+          version = "20250520.0";
+          src = pkgs.fetchFromGitHub {
+            owner = "ragnard";
+            repo = "gptel-magit";
+            rev = "f27c01821b67ed99ddf705c2b995f78b71394d8b";
+            hash = "sha256-AoWGHeO6CPQCuyASOh+xo6FzC2h9Nwdq1nEDNaU0WMs=";
+          };
+          packageRequires = [
+            epkgs.magit
+            epkgs.markdown-mode
+            gptelPinned
+          ];
+          patches = [ ./patches/gptel-magit-codex-stream.patch ];
+        };
+      in
+      [
+        # also install all tree sitter grammars
+        epkgs.manualPackages.treesit-grammars.with-all-grammars
+        epkgs.nerd-icons # nerd fonts support
+        epkgs.doom-modeline # model line
+        epkgs.diminish # hides modes from modeline
+        epkgs.eldoc # doc support
+        epkgs.pulsar # pulses the cursor when jumping about
+        epkgs.which-key # help porcelain
+        epkgs.expreg # expand region
+        epkgs.vundo # undo tree
+        epkgs.puni # structured editing
+        epkgs.avy # jumping utility
+        epkgs.consult # emacs right click
+        epkgs.embark # context actions
+        epkgs.vertico # minibuffer completion
+        epkgs.marginalia # annotations for completions
+        epkgs.crux # utilities
+        epkgs.magit # git porcelain
+        epkgs.markdown-mode # gptel-magit explanation buffers
+        epkgs.nerd-icons-corfu # nerd icons for completion
+        epkgs.corfu # completion
+        epkgs.cape # completion extensions
+        epkgs.orderless # search paradigm
+        epkgs.yasnippet # snippets support
+        epkgs.yasnippet-snippets # commonly used snippets
+        epkgs.rg # ripgrep
+        epkgs.exec-path-from-shell # load env and path
+        epkgs.ghostel # better shell
+        epkgs.nix-mode # nix lang
+        epkgs.hcl-mode # hashicorp file mode
+        epkgs.shell-pop # quick shell popup
+        epkgs.nixpkgs-fmt # format nix files
+        epkgs.f # string + file utilities
+        gptelPinned # chat, context, and one-region proposals
+        macherPinned # project review and multi-file proposals
+        gptelAgentPinned # diagnostics, introspection, and delegation
+        gptelQuickPinned # fast identifier and region explanations
+        gptelMagitPinned # Magit diff explanation and commit drafts
+        epkgs.agent-shell # acp-powered agent shell (uses claude-agent-acp)
+        epkgs.catppuccin-theme # catppuccin theme
+        epkgs.eldoc-box # docs in a box
+        epkgs.sideline # mainly for flymake errors on the side
+        epkgs.sideline-flymake # mainly for flymake errors on the side
+        epkgs.ben # support for loading envrc, async
+      ];
   };
 
   home.sessionVariables = {
@@ -66,6 +167,12 @@
     emacs = {
       source = ./init.el;
       target = ".emacs.d/init.el";
+    };
+
+    emacs-user-lisp = {
+      source = ./user-lisp;
+      target = ".emacs.d/user-lisp";
+      recursive = true;
     };
   };
 

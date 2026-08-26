@@ -19,9 +19,13 @@ jobs:
           version: snapshot
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Setup Nix
+        uses: cachix/install-nix-action@v31
       - name: Tangle
-        run: emacs README.org --batch --eval "(setq org-confirm-babel-evaluate nil)" --eval "(progn (require 'org) (org-babel-goto-named-src-block \"startup\") (org-babel-execute-src-block))" -f org-babel-tangle
+        run: nix develop --command emacs README.org --batch --eval "(setq org-confirm-babel-evaluate nil)" --eval "(progn (require 'org) (org-babel-goto-named-src-block \"startup\") (org-babel-execute-src-block))" -f org-babel-tangle
+      - name: Check formatting
+        run: find . -name '*.nix' -not -path './.git/*' -print0 | xargs -0 nix develop --command nixfmt --check
       - name: Commit
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: Tangle files from the README.
+          commit_message: "np: tangle files from README.org"

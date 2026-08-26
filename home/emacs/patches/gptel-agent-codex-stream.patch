@@ -1,0 +1,21 @@
+diff --git a/gptel-agent-tools.el b/gptel-agent-tools.el
+--- a/gptel-agent-tools.el
++++ b/gptel-agent-tools.el
+@@ -1432,6 +1432,7 @@
+                             (capitalize agent-type) description)))
+       (gptel--update-status " Calling Agent..." 'font-lock-escape-face)
+       (gptel-request prompt
++        :stream t
+         :context (gptel-agent--task-overlay where agent-type description)
+         :fsm (gptel-make-fsm :table gptel-send--transitions
+                              :handlers gptel-agent-request--handlers)
+@@ -1452,7 +1453,8 @@
+                  (plist-put info :tracking-marker where))
+                (gptel--display-tool-calls calls info))
+               ((pred stringp)
+-               (setq partial (concat partial resp))
++               (setq partial (concat partial resp)))
++              ('t
+                ;; If tool use is pending, the agent isn't done, so we just
+                ;; accumulate output without printing it.  We print at the end.
+                (unless (plist-get info :tool-use)

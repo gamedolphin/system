@@ -7,7 +7,10 @@
   services.fail2ban = {
     enable = true;
     # Ban IPs for 1 hour after 5 failures within 10 minutes
-    ignoreIP = [ "172.30.0.0/8" "192.168.0.0/16" ]; # Whitelist your local subnet
+    ignoreIP = [
+      "172.30.0.0/8"
+      "192.168.0.0/16"
+    ]; # Whitelist your local subnet
     bantime = "1h";
     bantime-increment.enable = true; # Increase ban time for repeat offenders
 

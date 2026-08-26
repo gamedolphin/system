@@ -4,9 +4,9 @@
 { user, pkgs, ... }:
 {
   programs = {
-    vscode.enable = true;   # yes, sometimes i like to dabble
-    ripgrep.enable = true;  # fast text search across projects
-    btop.enable = true;     # even better task manager
+    vscode.enable = true; # yes, sometimes i like to dabble
+    ripgrep.enable = true; # fast text search across projects
+    btop.enable = true; # even better task manager
 
     # fuzzy finder
     fzf = {
@@ -47,7 +47,7 @@
       };
 
       shellAliases = {
-        cd = "z";     # zoxide
+        cd = "z"; # zoxide
         jq = "jaq";
         bd = "br"; # beads
       };

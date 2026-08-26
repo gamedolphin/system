@@ -1,0 +1,31 @@
+diff --git a/gptel-quick.el b/gptel-quick.el
+index bcd94c8..32b84cd 100644
+--- a/gptel-quick.el
++++ b/gptel-quick.el
+@@ -121,13 +121,25 @@ word count of the response."
+          (gptel-max-tokens (floor (+ (sqrt (length query-text))
+                                      (* count 2.5))))
+          (gptel-use-context (and gptel-quick-use-context 'system))
++         (gptel-use-tools nil)
++         (response-text "")
+          (gptel-backend (or gptel-quick-backend gptel-backend))
+          (gptel-model (or gptel-quick-model gptel-model)))
+     (gptel-request query-text
++      :stream t
+       :system (funcall gptel-quick-system-message count)
+       :context (list query-text count
+                      (posn-at-point (and (use-region-p) (region-beginning))))
+-      :callback #'gptel-quick--callback-posframe)))
++      :callback
++      (lambda (response info)
++        (cond
++         ((stringp response)
++          (setq response-text (concat response-text response)))
++         ((eq response t)
++          (when (> (length response-text) 0)
++            (gptel-quick--callback-posframe response-text info)))
++         (t
++          (gptel-quick--callback-posframe response info)))))))
+
+ ;; From (info "(elisp) Accessing Mouse")
+ (defun gptel-quick--frame-relative-coordinates (position)

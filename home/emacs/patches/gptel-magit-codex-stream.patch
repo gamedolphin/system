@@ -1,0 +1,29 @@
+diff --git a/gptel-magit.el b/gptel-magit.el
+index 40e9361..02b338a 100644
+--- a/gptel-magit.el
++++ b/gptel-magit.el
+@@ -115,6 +115,23 @@ Respects configured model/backend options."
+   (declare (indent 1))
+   (let* ((gptel-backend (or gptel-magit-backend gptel-backend))
+-         (gptel-model (or gptel-magit-model gptel-model)))
++         (gptel-model (or gptel-magit-model gptel-model))
++         (gptel-use-tools nil)
++         (callback (plist-get (cdr args) :callback))
++         (response-text ""))
++    (when callback
++      (setcdr args
++              (plist-put
++               (cdr args) :callback
++             (lambda (response info)
++               (cond
++                ((stringp response)
++                 (setq response-text (concat response-text response)))
++                ((eq response t)
++                 (when (> (length response-text) 0)
++                   (funcall callback response-text info)))
++                (t
++                 (funcall callback response info)))))))
++    (setcdr args (plist-put (cdr args) :stream t))
+     (apply #'gptel-request args)))
+
+ (defun gptel-magit--generate (callback)

@@ -146,10 +146,18 @@ in
           action = focus-workspace-up;
         };
 
-        "Mod+Shift+P".action = { screenshot-window = [ ]; };
-        "Mod+Shift+A".action = { screenshot = [ ]; };
-        "Mod+Alt+P".action = { screenshot-screen = [ ]; };
-        "Mod+Ctrl+P".action = { screenshot-screen = [ ]; };
+        "Mod+Shift+P".action = {
+          screenshot-window = [ ];
+        };
+        "Mod+Shift+A".action = {
+          screenshot = [ ];
+        };
+        "Mod+Alt+P".action = {
+          screenshot-screen = [ ];
+        };
+        "Mod+Ctrl+P".action = {
+          screenshot-screen = [ ];
+        };
 
         "Mod+Shift+S".action = spawn noctalia "msg" "panel-toggle" "session";
         "Mod+Alt+L" = {
@@ -171,15 +179,33 @@ in
         "Mod+8".action = focus-workspace "8";
         "Mod+9".action = focus-workspace "9";
 
-        "Mod+Shift+1".action = { move-window-to-workspace = "1"; };
-        "Mod+Shift+2".action = { move-window-to-workspace = "2"; };
-        "Mod+Shift+3".action = { move-window-to-workspace = "3"; };
-        "Mod+Shift+4".action = { move-window-to-workspace = "4"; };
-        "Mod+Shift+5".action = { move-window-to-workspace = "5"; };
-        "Mod+Shift+6".action = { move-window-to-workspace = "6"; };
-        "Mod+Shift+7".action = { move-window-to-workspace = "7"; };
-        "Mod+Shift+8".action = { move-window-to-workspace = "8"; };
-        "Mod+Shift+9".action = { move-window-to-workspace = "9"; };
+        "Mod+Shift+1".action = {
+          move-window-to-workspace = "1";
+        };
+        "Mod+Shift+2".action = {
+          move-window-to-workspace = "2";
+        };
+        "Mod+Shift+3".action = {
+          move-window-to-workspace = "3";
+        };
+        "Mod+Shift+4".action = {
+          move-window-to-workspace = "4";
+        };
+        "Mod+Shift+5".action = {
+          move-window-to-workspace = "5";
+        };
+        "Mod+Shift+6".action = {
+          move-window-to-workspace = "6";
+        };
+        "Mod+Shift+7".action = {
+          move-window-to-workspace = "7";
+        };
+        "Mod+Shift+8".action = {
+          move-window-to-workspace = "8";
+        };
+        "Mod+Shift+9".action = {
+          move-window-to-workspace = "9";
+        };
 
         "Mod+Escape" = {
           allow-inhibiting = false;

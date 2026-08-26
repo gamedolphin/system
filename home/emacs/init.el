@@ -318,7 +318,99 @@
   :hook
   (after-init . ben-global-mode))
 
-(use-package gptel)
+;; Pinned in home/emacs/default.nix (Nix fetchFromGitHub + melpaBuild):
+;; gptel 092bbc3, Macher fe36224, gptel-agent 326e0ab,
+;; gptel-quick 36fe296, and gptel-magit f27c018.
+(use-package gptel
+  :demand t
+  :commands (gptel gptel-send)
+  :custom
+  (gptel-model 'gpt-5.6-sol)
+  (gptel-openai-oauth-login-method 'device)
+  (gptel-cache t)
+  (gptel-confirm-tool-calls nil)
+  (gptel-include-reasoning 'ignore)
+  (gptel-include-tool-results 'auto)
+  (gptel-log-level nil)
+  (gptel-system-prompt
+   "You are an assistant inside Emacs. Help me understand and improve code that I write.
+Use active read-only tools when the request needs project evidence.
+Distinguish project evidence from inference. Cite files and symbols.
+Explain the relevant control flow before you propose a change.
+Do not propose code unless I ask for a change.
+Use gptel-rewrite for one local proposal and Macher for a multi-file proposal.
+Do not stage, commit, push, or change Git state.
+Prefer a native Eglot action when it already supplies the requested change.
+After a proposal, name the native diagnostic, build, or test command that establishes correctness.")
+  :config
+  (setq gptel-backend (gptel-make-openai-oauth "OpenAI-sub"))
+  (setf (alist-get 'assistant gptel-directives) gptel-system-prompt))
+
+(use-package gptel-rewrite
+  :after gptel
+  :commands gptel-rewrite
+  :custom
+  (gptel-rewrite-default-action nil))
+
+(use-package gptel-org
+  :after gptel
+  :custom
+  (gptel-org-branching-context t))
+
+(use-package macher
+  :after gptel
+  :demand t
+  :commands (macher-discuss macher-implement macher-revise)
+  :custom
+  (macher-workspace-functions
+   '(macher-workspace-project macher-workspace-file))
+  :config
+  (macher-install)
+  (macher-enable))
+
+(use-package gptel-agent
+  :after gptel
+  :demand t)
+
+(use-package emacs-assistant-context
+  :after gptel
+  :demand t)
+
+(use-package emacs-assistant-activate
+  :after (gptel macher gptel-agent emacs-assistant-context)
+  :demand t
+  :config
+  (emacs-assistant-activate-install-base))
+
+(use-package gptel-quick
+  :commands gptel-quick)
+
+(use-package gptel-magit
+  ;; Fallback: select the Magit diff text and send it with ordinary gptel.
+  :after (gptel magit)
+  :config
+  (require 'markdown-mode)
+  (gptel-magit-install))
+
+(use-package embark
+  :demand t
+  :config
+  (keymap-set embark-identifier-map "?" #'gptel-quick)
+  (keymap-set embark-region-map "?" #'gptel-quick))
+
+(defvar-keymap emacs-assistant-command-map
+  :doc "Quiet LLM assistant commands."
+  "c" #'gptel
+  "s" #'gptel-send
+  "r" #'gptel-rewrite
+  "q" #'gptel-quick
+  "d" #'macher-discuss
+  "p" #'macher-implement
+  "m" #'gptel-menu
+  "i" #'gptel-menu
+  "x" #'gptel-abort)
+
+(keymap-global-set "C-c a" emacs-assistant-command-map)
 
 (use-package sideline-flymake)
 (use-package sideline
