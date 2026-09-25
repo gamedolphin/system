@@ -18,6 +18,8 @@
       agent-browser
       codex
       codegraph
+      chatgpt
+      claude-desktop
     ]
   );
 

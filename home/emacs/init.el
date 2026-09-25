@@ -34,6 +34,7 @@
   (kill-do-not-save-duplicates t)
   (sentence-end-double-space nil)
   (treesit-enabled-modes t)
+  (save-interprogram-paste-before-kill t)
   (display-buffer-base-action
    '((display-buffer-reuse-window display-buffer-use-some-window)))
   :init

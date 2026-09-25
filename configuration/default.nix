@@ -32,6 +32,7 @@
     comma # nix-run helper
     tmux # seems useful for a bunch of things
     kache # rust cache
+    tree # directory listing
     element-desktop
   ];
 

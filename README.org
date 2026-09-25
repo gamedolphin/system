@@ -857,6 +857,8 @@ Adding it to the global packages makes it easier to launch in arbitrary location
         agent-browser
         codex
         codegraph
+        chatgpt
+        claude-desktop
       ]
     );
 
@@ -885,6 +887,7 @@ Adding it to the global packages makes it easier to launch in arbitrary location
     comma # nix-run helper
     tmux # seems useful for a bunch of things
     kache # rust cache
+    tree # directory listing
     element-desktop
   ];
 
@@ -1136,7 +1139,13 @@ Often I work with dotnet directly inside of unity and so we set that up too.
 
     xdg.mimeApps = {
       enable = true;
-      defaultApplications."x-scheme-handler/unityhub" = "unityhub.desktop";
+      defaultApplications = {
+        "x-scheme-handler/http" = "firefox.desktop";
+        "x-scheme-handler/https" = "firefox.desktop";
+        "text/html" = "firefox.desktop";
+        "application/xhtml+xml" = "firefox.desktop";
+        "x-scheme-handler/unityhub" = "unityhub.desktop";
+      };
     };
   }
 #+end_src
@@ -1971,6 +1980,7 @@ Now starts the main emacs configuration.
     (kill-do-not-save-duplicates t)
     (sentence-end-double-space nil)
     (treesit-enabled-modes t)
+    (save-interprogram-paste-before-kill t)
     (display-buffer-base-action
      '((display-buffer-reuse-window display-buffer-use-some-window)))
     :init
