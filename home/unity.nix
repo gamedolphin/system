@@ -10,11 +10,11 @@
 let
   unityCliBin = pkgs.stdenvNoCC.mkDerivation rec {
     pname = "unity-cli-bin";
-    version = "0.1.0-beta.7";
+    version = "1.0.0-beta.13";
 
     src = pkgs.fetchurl {
       url = "https://public-cdn.cloud.unity3d.com/hub/prod/cli/${version}/unity-linux-x64";
-      hash = "sha256-5BmKjJTP0PQ2tDSvjPBTm9Ktfvx380yDkrmfUKEOXhU=";
+      hash = "sha256-qE2s4fXoW2Kf/4Qd38Xsjpf9KheCQvypHIC8VoAUL7M=";
     };
 
     dontUnpack = true;
